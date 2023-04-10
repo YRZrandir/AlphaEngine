@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{d8617897-2b6a-4cdd-8188-9e4b78368302}</ProjectGuid>
+    <RootNamespace>AlphaEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)GLFW\include;$(SolutionDir)Tetgen;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)GLFW\include;$(SolutionDir)Tetgen;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
+    <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>true</VcpkgEnabled>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS; _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
+      <OpenMPSupport>true</OpenMPSupport>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
+      <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2_d.lib;pcl_filtersd.lib;pcl_commond.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>xcopy /EY "$(ProjectDir)dll\debug\*" "$(TargetDir)"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS; _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
+      <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2.lib;pcl_filters.lib;pcl_common.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>xcopy /EY "$(ProjectDir)dll\release\*" "$(TargetDir)"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\acceleration\AABB.cpp" />
+    <ClCompile Include="src\acceleration\BVH.cpp" />
+    <ClCompile Include="src\acceleration\RayIntersectSolver.cpp" />
+    <ClCompile Include="src\application\ApplicationBase.cpp" />
+    <ClCompile Include="src\application\ElasticityApp.cpp" />
+    <ClCompile Include="src\CVT\WeightedCVT.cpp" />
+    <ClCompile Include="src\deform\LaplaceDeformation.cpp" />
+    <ClCompile Include="src\FEM\FEMSolver.cpp" />
+    <ClCompile Include="src\free_cutting\CuttingFace.cpp" />
+    <ClCompile Include="src\free_cutting\CuttingTool.cpp" />
+    <ClCompile Include="src\free_cutting\FreeCuttingManager.cpp" />
+    <ClCompile Include="src\gl\FrameBuffer.cpp" />
+    <ClCompile Include="src\gl\GLCommon.cpp" />
+    <ClCompile Include="src\gl\HalfEdgeMeshRenderer.cpp" />
+    <ClCompile Include="src\gl\IndexBuffer.cpp" />
+    <ClCompile Include="src\gl\Renderer.cpp" />
+    <ClCompile Include="src\gl\SceneObjectRenderer.cpp" />
+    <ClCompile Include="src\gl\ShaderStorageBuffer.cpp" />
+    <ClCompile Include="src\gl\UniformBuffer.cpp" />
+    <ClCompile Include="src\gl\VertexArray.cpp" />
+    <ClCompile Include="src\gl\VertexBuffer.cpp" />
+    <ClCompile Include="src\haptic\Haptic.cpp" />
+    <ClCompile Include="src\input\Input.cpp" />
+    <ClCompile Include="src\input\InputGLFW.cpp" />
+    <ClCompile Include="src\lighting\Light.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\material\Material.cpp" />
+    <ClCompile Include="src\material\Texture.cpp" />
+    <ClCompile Include="src\model\GLLineSegment.cpp" />
+    <ClCompile Include="src\model\HalfEdgeMesh.cpp" />
+    <ClCompile Include="src\model\HalfEdgeSurfaceTester.cpp" />
+    <ClCompile Include="src\model\ModelLoader.cpp" />
+    <ClCompile Include="src\model\Rect.cpp" />
+    <ClCompile Include="src\model\RigidSDF.cpp" />
+    <ClCompile Include="src\model\RigidStatic.cpp" />
+    <ClCompile Include="src\model\Terrain.cpp" />
+    <ClCompile Include="src\model\TetraMesh.cpp" />
+    <ClCompile Include="src\model\Transform.cpp" />
+    <ClCompile Include="src\PBD\CutManager.cpp" />
+    <ClCompile Include="src\PBD\Hand.cpp" />
+    <ClCompile Include="src\PBD\MetaballCutter.cpp" />
+    <ClCompile Include="src\PBD\MetaballCuttingModel.cpp" />
+    <ClCompile Include="src\PBD\MetaballModel.cpp" />
+    <ClCompile Include="src\PBD\MetaballTester.cpp" />
+    <ClCompile Include="src\PBD\PBDGPUTetramodel.cpp" />
+    <ClCompile Include="src\PBD\PBDTetraModel.cpp" />
+    <ClCompile Include="src\PBD\Scalpel.cpp" />
+    <ClCompile Include="src\PBD\ScalpelRect.cpp" />
+    <ClCompile Include="src\PBD\SphereTreeHelper.cpp" />
+    <ClCompile Include="src\PD\Constraints.cpp" />
+    <ClCompile Include="src\PD\PDGPUMetaballModel.cpp" />
+    <ClCompile Include="src\PD\PDMetaballModel.cpp" />
+    <ClCompile Include="src\PD\PDMetaballModelFC.cpp" />
+    <ClCompile Include="src\PD\PDTetraModel.cpp" />
+    <ClCompile Include="src\polar_decom\eigen_3x3.cpp" />
+    <ClCompile Include="src\stb_image\Image.cpp" />
+    <ClCompile Include="src\tinyobjloader\tiny_obj_loader.cc" />
+    <ClCompile Include="src\ui\ImGuiFileDialog.cpp" />
+    <ClCompile Include="src\util\Camera.cpp" />
+    <ClCompile Include="src\util\Fade.cpp" />
+    <ClCompile Include="src\util\GlobalTimer.cpp" />
+    <ClCompile Include="src\util\GridDownSampler.cpp" />
+    <ClCompile Include="src\util\Intersection.cpp" />
+    <ClCompile Include="src\util\Math.cpp" />
+    <ClCompile Include="src\util\PBDScene.cpp" />
+    <ClCompile Include="src\util\Scene.cpp" />
+    <ClCompile Include="src\util\SceneObject.cpp" />
+    <ClCompile Include="src\util\Shader.cpp" />
+    <ClCompile Include="src\util\util.cpp" />
+    <ClCompile Include="src\vr\OpenVRWrapper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\acceleration\AABB.h" />
+    <ClInclude Include="src\acceleration\BVH.h" />
+    <ClInclude Include="src\acceleration\RayIntersectSolver.h" />
+    <ClInclude Include="src\application\ApplicationBase.h" />
+    <ClInclude Include="src\application\ElasticityApp.h" />
+    <ClInclude Include="src\CVT\WeightedCVT.h" />
+    <ClInclude Include="src\deform\LaplaceDeformation.h" />
+    <ClInclude Include="src\FEM\FEMSolver.h" />
+    <ClInclude Include="src\free_cutting\CuttingFace.h" />
+    <ClInclude Include="src\free_cutting\CuttingTool.h" />
+    <ClInclude Include="src\free_cutting\FreeCuttingManager.h" />
+    <ClInclude Include="src\gl\FrameBuffer.h" />
+    <ClInclude Include="src\gl\GLCommon.h" />
+    <ClInclude Include="src\gl\HalfEdgeMeshRenderer.h" />
+    <ClInclude Include="src\gl\IndexBuffer.h" />
+    <ClInclude Include="src\gl\Renderer.h" />
+    <ClInclude Include="src\gl\SceneObjectRenderer.h" />
+    <ClInclude Include="src\gl\ShaderStorageBuffer.h" />
+    <ClInclude Include="src\gl\UniformBuffer.h" />
+    <ClInclude Include="src\gl\VertexArray.h" />
+    <ClInclude Include="src\gl\VertexBuffer.h" />
+    <ClInclude Include="src\haptic\Haptic.h" />
+    <ClInclude Include="src\input\Input.h" />
+    <ClInclude Include="src\input\InputGLFW.h" />
+    <ClInclude Include="src\lighting\Light.h" />
+    <ClInclude Include="src\material\Material.h" />
+    <ClInclude Include="src\material\Texture.h" />
+    <ClInclude Include="src\model\CHalfEdgeMesh.h" />
+    <ClInclude Include="src\model\CSurfaceMesh.hpp" />
+    <ClInclude Include="src\model\GLLineSegment.h" />
+    <ClInclude Include="src\model\HalfEdgeMesh.h" />
+    <ClInclude Include="src\model\HalfEdgeSurfaceTester.h" />
+    <ClInclude Include="src\model\ModelLoader.h" />
+    <ClInclude Include="src\model\Ray.h" />
+    <ClInclude Include="src\model\Rect.h" />
+    <ClInclude Include="src\model\RigidSDF.h" />
+    <ClInclude Include="src\model\RigidStatic.h" />
+    <ClInclude Include="src\model\SphereMesh.h" />
+    <ClInclude Include="src\model\Terrain.h" />
+    <ClInclude Include="src\model\TetraMesh.h" />
+    <ClInclude Include="src\model\Transform.h" />
+    <ClInclude Include="src\model\Triangle.h" />
+    <ClInclude Include="src\PBD\CutManager.h" />
+    <ClInclude Include="src\PBD\Hand.h" />
+    <ClInclude Include="src\PBD\MetaballCutter.h" />
+    <ClInclude Include="src\PBD\MetaballCuttingModel.h" />
+    <ClInclude Include="src\PBD\MetaballModel.h" />
+    <ClInclude Include="src\PBD\MetaballTester.h" />
+    <ClInclude Include="src\PBD\PBDGPUTetraModel.h" />
+    <ClInclude Include="src\PBD\PBDTetraModel.h" />
+    <ClInclude Include="src\PBD\Scalpel.h" />
+    <ClInclude Include="src\PBD\ScalpelRect.h" />
+    <ClInclude Include="src\PBD\SphereTreeHelper.h" />
+    <ClInclude Include="src\PD\Constraints.h" />
+    <ClInclude Include="src\PD\CudaPDSolver.cuh" />
+    <ClInclude Include="src\PD\PDGPUMetaballModel.h" />
+    <ClInclude Include="src\PD\PDMetaballModel.h" />
+    <ClInclude Include="src\PD\PDMetaballModelFC.h" />
+    <ClInclude Include="src\PD\PDTetraModel.h" />
+    <ClInclude Include="src\polar_decom\eigen_3x3.hpp" />
+    <ClInclude Include="src\polar_decom\matrix3x3.hpp" />
+    <ClInclude Include="src\polar_decom\polar_decomposition_3x3.hpp" />
+    <ClInclude Include="src\polar_decom\svd_3x3.hpp" />
+    <ClInclude Include="src\polar_decom\vec3.hpp" />
+    <ClInclude Include="src\stb_image\Image.h" />
+    <ClInclude Include="src\stb_image\stb_image.h" />
+    <ClInclude Include="src\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="src\ui\dirent\dirent.h" />
+    <ClInclude Include="src\ui\ImGuiFileDialog.h" />
+    <ClInclude Include="src\ui\ImGuiFileDialogConfig.h" />
+    <ClInclude Include="src\util\Array3D.h" />
+    <ClInclude Include="src\util\Camera.h" />
+    <ClInclude Include="src\util\CudaBuffer.h" />
+    <ClInclude Include="src\util\CudaMatrixHelpers.cuh" />
+    <ClInclude Include="src\util\CudaVecHelper.cuh" />
+    <ClInclude Include="src\util\Fade.h" />
+    <ClInclude Include="src\util\GlobalTimer.h" />
+    <ClInclude Include="src\util\GridDownSampler.h" />
+    <ClInclude Include="src\util\Instrumentor.h" />
+    <ClInclude Include="src\util\Intersection.h" />
+    <ClInclude Include="src\util\math.h" />
+    <ClInclude Include="src\util\MathTypeConverter.h" />
+    <ClInclude Include="src\util\PBDScene.h" />
+    <ClInclude Include="src\util\RenderConfig.h" />
+    <ClInclude Include="src\util\Scene.h" />
+    <ClInclude Include="src\util\SceneObject.h" />
+    <ClInclude Include="src\util\Shader.h" />
+    <ClInclude Include="src\util\util.h" />
+    <ClInclude Include="src\vr\OpenVRWrapper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\PBD\CudaPbdSolver.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="src\PD\CudaPDSolver.cu" />
+    <CudaCompile Include="src\util\CudaMatrixHelpers.cu" />
+    <CudaCompile Include="src\util\CudaVecHelper.cu" />
+    <None Include="res\shaders\common\Material.glsl" />
+    <None Include="res\shaders\common\Shadow.glsl" />
+    <None Include="res\shaders\depth_pd.glsl" />
+    <None Include="src\PBD\CudaPbdSolver.cuh" />
+    <None Include="src\polar_decom\polar_decomposition_3x3.inl" />
+    <None Include="src\polar_decom\svd_3x3.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CHAI3D\CHAI3D.vcxproj">
+      <Project>{6e5e533b-a732-4b5a-9cba-3e1c6a676caa}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Geogram\Geogram.vcxproj">
+      <Project>{7805548e-82f7-41a5-8fb0-f7af79f985b7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GLAD\GLAD.vcxproj">
+      <Project>{c52e0c9b-cb52-4b2e-9e87-376dc30ee9a7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GLFW\GLFW.vcxproj">
+      <Project>{35fffc23-37b3-47a2-bae7-61d93cb242b6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Imgui\Imgui.vcxproj">
+      <Project>{e7c3857c-6125-4ac3-a033-d94267be8df2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\SDFGen\SDFGen.vcxproj">
+      <Project>{ef54e7e0-6a82-468d-af6b-3200d2d059c8}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\SphereTree\SphereTree.vcxproj">
+      <Project>{ebf8a110-ed80-4dbb-a97e-22e98dc04086}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Tetgen\Tetgen.vcxproj">
+      <Project>{2f001499-8800-4d84-98a3-c9c7fdb70ab7}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.targets" />
+  </ImportGroup>
+</Project>

@@ -1,0 +1,17 @@
+
+This file kindly reminds you that your software uses a non-commercial
+license of the Fade2D library:
+
+* Commercial evaluation is legal during 4 weeks or the period agreed
+  explicitly as long as you do NOT redistribute the library. 
+
+* Non-commercial research with Fade2D is free. Please support the
+  project: LINK, MENTION and CITE it if Fade2D is helpful to you!
+  If you did that already, please ignore this message. Thank you!
+
+  Is there anything we could do for you? Are you missing a feature?
+  Feel free to contact us: 
+
+  Geom Software, https://www.geom.at
+  Bernhard Kornberger, bkorn@geom.at
+

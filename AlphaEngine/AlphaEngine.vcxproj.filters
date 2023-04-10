@@ -1,0 +1,510 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\acceleration\AABB.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\acceleration\BVH.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\acceleration\RayIntersectSolver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CVT\WeightedCVT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\deform\LaplaceDeformation.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\free_cutting\CuttingFace.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\free_cutting\CuttingTool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\free_cutting\FreeCuttingManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\FrameBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\IndexBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\Renderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\ShaderStorageBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\VertexArray.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\VertexBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\Input.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\InputGLFW.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lighting\Light.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\material\Material.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\material\Texture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\GLLineSegment.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\HalfEdgeMesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\HalfEdgeSurfaceTester.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\ModelLoader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Rect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\RigidSDF.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\RigidStatic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Terrain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\TetraMesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Transform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\CutManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\Hand.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\MetaballCutter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\MetaballCuttingModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\MetaballModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\MetaballTester.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\PBDTetraModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\Scalpel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\ScalpelRect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\SphereTreeHelper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PD\Constraints.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PD\PDMetaballModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PD\PDTetraModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\polar_decom\eigen_3x3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stb_image\Image.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tinyobjloader\tiny_obj_loader.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Camera.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Fade.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\GlobalTimer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\GridDownSampler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Intersection.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Math.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\PBDScene.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Scene.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\SceneObject.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\Shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\util.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\vr\OpenVRWrapper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\application\ApplicationBase.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\application\ElasticityApp.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBD\PBDGPUTetramodel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\haptic\Haptic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FEM\FEMSolver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PD\PDGPUMetaballModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\UniformBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\GLCommon.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\HalfEdgeMeshRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\SceneObjectRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PD\PDMetaballModelFC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ImGuiFileDialog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\acceleration\AABB.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\acceleration\BVH.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\acceleration\RayIntersectSolver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CVT\WeightedCVT.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\deform\LaplaceDeformation.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\free_cutting\CuttingFace.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\free_cutting\CuttingTool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\free_cutting\FreeCuttingManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\FrameBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\IndexBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\Renderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\ShaderStorageBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\VertexArray.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\VertexBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\Input.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\InputGLFW.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lighting\Light.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\material\Material.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\material\Texture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\CHalfEdgeMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\GLLineSegment.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\HalfEdgeMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\HalfEdgeSurfaceTester.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\ModelLoader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Ray.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Rect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\RigidSDF.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\RigidStatic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\SphereMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Terrain.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\TetraMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Transform.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Triangle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\CutManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\Hand.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\MetaballCutter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\MetaballCuttingModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\MetaballModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\MetaballTester.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\PBDTetraModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\Scalpel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\ScalpelRect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\SphereTreeHelper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\Constraints.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\PDMetaballModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\PDTetraModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\polar_decom\eigen_3x3.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\polar_decom\matrix3x3.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\polar_decom\polar_decomposition_3x3.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\polar_decom\svd_3x3.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\polar_decom\vec3.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stb_image\Image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stb_image\stb_image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tinyobjloader\tiny_obj_loader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Array3D.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Camera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Fade.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\GlobalTimer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\GridDownSampler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Instrumentor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Intersection.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\math.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\PBDScene.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\RenderConfig.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Scene.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\SceneObject.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Shader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vr\OpenVRWrapper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\application\ApplicationBase.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\application\ElasticityApp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\PBDGPUTetraModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\CudaBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\haptic\Haptic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\PDGPUMetaballModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\CudaMatrixHelpers.cuh" />
+    <ClInclude Include="src\PD\CudaPDSolver.cuh" />
+    <ClInclude Include="src\FEM\FEMSolver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\CudaVecHelper.cuh" />
+    <ClInclude Include="src\gl\UniformBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\CSurfaceMesh.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\MathTypeConverter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\GLCommon.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\HalfEdgeMeshRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\SceneObjectRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\PDMetaballModelFC.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ImGuiFileDialog.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ImGuiFileDialogConfig.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\dirent\dirent.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\polar_decom\polar_decomposition_3x3.inl">
+      <Filter>头文件</Filter>
+    </None>
+    <None Include="src\polar_decom\svd_3x3.inl">
+      <Filter>头文件</Filter>
+    </None>
+    <None Include="src\PBD\CudaPbdSolver.cuh" />
+    <None Include="res\shaders\common\Material.glsl" />
+    <None Include="res\shaders\common\Shadow.glsl" />
+    <None Include="res\shaders\depth_pd.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\PBD\CudaPbdSolver.cu" />
+    <CudaCompile Include="src\util\CudaMatrixHelpers.cu" />
+    <CudaCompile Include="src\PD\CudaPDSolver.cu" />
+    <CudaCompile Include="src\util\CudaVecHelper.cu" />
+  </ItemGroup>
+</Project>
