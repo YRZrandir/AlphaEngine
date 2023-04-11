@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <tinycolormap.hpp>
 #include <CGAL/Simple_cartesian.h>
+#include "acceleration/AABB.h"
 #include "CVT/WeightedCVT.h"
 #include "input/Input.h"
 #include "material/Material.h"

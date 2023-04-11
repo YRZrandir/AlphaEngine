@@ -209,11 +209,11 @@ void PD::PDGPUMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::GPUMeshlessStrainConstraint>( indices, k, _current_pos, this ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::GPUMeshlessStrainConstraint>( indices, _cfg._k_stiff, _current_pos, this ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
             }
         }
     }
@@ -366,9 +366,9 @@ void PD::PDGPUMetaballModel::Init()
             PD::AttachConstraint* C = dynamic_cast<PD::AttachConstraint*>(_constraints[i].get());
             _host_attach_consts.push_back( { C->_indices[0], C->_loc, {C->_fixed_pos.x(), C->_fixed_pos.y(), C->_fixed_pos.z()} } );
         }
-        else if (typeid(*_constraints[i]) == typeid(PD::GPUMeshlessStrainConstraint))
+        else if (typeid(*_constraints[i]) == typeid(PD::MeshlessStrainConstraint<Particle>))
         {
-            auto* C = dynamic_cast<PD::GPUMeshlessStrainConstraint*>(_constraints[i].get());
+            auto* C = dynamic_cast<PD::MeshlessStrainConstraint<Particle>*>(_constraints[i].get());
             CudaMetaballConst c;
             c.id = C->_indices[0];
             c.loc = C->_loc;

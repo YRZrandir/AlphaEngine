@@ -7,6 +7,7 @@ namespace PD
 {
 class PDGPUMetaballModel;
 class PDMetaballModel;
+class PDMetaballModelFC;
 }
 class HalfEdgeMesh;
 class PDMetaballHalfEdgeMesh;
@@ -23,6 +24,7 @@ protected:
     virtual void DrawGUI() override;
     virtual void DrawGraphics() override;
     PD::PDGPUMetaballModel* LoadPDGPUMetaballModel( tinyxml2::XMLElement* root );
+    PD::PDMetaballModelFC* LoadPDMetaballModelFC( tinyxml2::XMLElement* root );
     PD::PDMetaballModel* LoadPDMetaballModel( tinyxml2::XMLElement* root );
     HalfEdgeMesh* LoadMesh( tinyxml2::XMLElement* root );
     PDMetaballHalfEdgeMesh* LoadPDMetaballHalfEdgeMesh( tinyxml2::XMLElement* root );

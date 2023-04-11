@@ -24,15 +24,6 @@ PD::PDMetaballModel::PDMetaballModel( const PDMetaballModelConfig& cfg, PDMetaba
 {
     Instrumentor::Get().BeginSession( "PDMetaballModel", "PDMetaballModel.json" );
     _line_segments = std::make_unique<GLLineSegment>();
-    //_surface = ModelLoader::LoadPDMetaballHalfEdgeMesh( cfg._fine_surface );
-    //for (auto& v : _surface->_vertices)
-    //{
-    //    v.pos += _cfg._displacement;
-    //    v.rest_pos += _cfg._displacement;
-    //}
-    //_surface->UpdatePosBuffer();
-    //_surface->UpdateNormal();
-    //_surface->UpdateAttrBuffer();
 
     _simple_ball = std::make_unique<HalfEdgeMesh>( "res/models/ball960.obj" );
     _simple_ball->_material_main->SetDiffuseColor( 0.8f, 0.f, 0.f );
@@ -58,7 +49,6 @@ PD::PDMetaballModel::PDMetaballModel( const PDMetaballModelConfig& cfg, PDMetaba
 
     std::srand( std::time( 0 ) );
     _color = COLORS[rand() % _countof( COLORS )] / 255.f;
-
 
     _mesh = std::make_unique<SphereMesh<Particle>>();
     _coarse_surface = std::make_unique<HalfEdgeMesh>( cfg._coarse_surface );
@@ -201,11 +191,11 @@ void PD::PDMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint>( indices, k, _current_pos, this ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint>( indices, _cfg._k_stiff, _current_pos, this ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
             }
         }
     }

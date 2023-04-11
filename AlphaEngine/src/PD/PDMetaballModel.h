@@ -40,7 +40,6 @@ class PDMetaballModel :
     public SceneObject
 {
 public:
-
     class Particle : public SphereBase
     {
     public:
@@ -65,7 +64,6 @@ public:
         Matrix3 R = Matrix3::Identity();
         glm::vec3 outside = glm::vec3( 0.f );
         float sdf = 0.f;
-
     };
 
     static const int NEICOUNT = 10;

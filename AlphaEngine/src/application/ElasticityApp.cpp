@@ -25,6 +25,7 @@
 #include "PD/PDMetaballModel.h"
 #include "PD/PDGPUMetaballModel.h"
 #include "PD/PDTetraModel.h"
+#include "PD/PDMetaballModelFC.h"
 #include "FEM/FEMSolver.h"
 #include "ui/ImGuiFileDialog.h"
 #include "util/Scene.h"
@@ -136,7 +137,7 @@ ElasticityApp::~ElasticityApp()
 
 void ElasticityApp::Init()
 {
-    glViewport( 0, 0, _width, _height );
+    glViewport( 0, 0, static_cast<GLsizei>(_width), static_cast<GLsizei>(_height) );
     glEnable( GL_DEPTH_TEST );
     glEnable( GL_BLEND );
     //glEnable( GL_MULTISAMPLE );
@@ -151,8 +152,8 @@ void ElasticityApp::Init()
     Camera::main = cam;
     Camera::current = Camera::main;
     cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
-    cam->_yaw = 28.4;
-    cam->_pitch = 35.4;
+    cam->_yaw = 28.4f;
+    cam->_pitch = 35.4f;
     //cam->mTransform.SetPos( glm::vec3( 0.582, -1.04, -3.09 ) );
     //cam->_yaw = -12.6;
     //cam->_pitch = -20.4;
@@ -191,7 +192,7 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
-#define EXAMPLE_ARMA
+
 #ifdef EXAMPLE_ARMA
     cam->mTransform.SetPos( glm::vec3( 1.4, 0.550, 0.530 ) );
     cam->_yaw = 250.0f;
@@ -518,7 +519,6 @@ void ElasticityApp::DrawGUI()
 {
     using namespace ImGui;
 
-
     Begin( "FPS" );
     Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / GetIO().Framerate, GetIO().Framerate );
     End();
@@ -528,10 +528,20 @@ void ElasticityApp::DrawGUI()
     {
         if (ImGui::MenuItem( "Open" ))
         {
-
+            ImGuiFileDialog::Instance()->OpenDialog( "ChooseFileKey", "File", ".xml", "D:/models" );
         }
+        ImGui::EndMenu();
     }
     EndMainMenuBar();
+    if (ImGuiFileDialog::Instance()->Display( "ChooseFileKey" ))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            LoadSceneFile( path.c_str() );
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
 
     auto fem = Scene::active->GetChild<FEMSolver>();
     if (fem)
@@ -607,7 +617,7 @@ void ElasticityApp::DrawGUI()
 
 void ElasticityApp::DrawGraphics()
 {
-    glViewport( 0, 0, _width, _height );
+    glViewport( 0, 0, static_cast<GLsizei>(_width), static_cast<GLsizei>(_height) );
     glClearColor( 1, 1, 1, 1 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     Scene::active->Draw();
@@ -679,10 +689,50 @@ PD::PDMetaballModel* ElasticityApp::LoadPDMetaballModel( tinyxml2::XMLElement* r
 
     auto surface = LoadPDMetaballHalfEdgeMesh( root->FirstChildElement( "FineSurface" ) );
 
-    std::string name = get_elem_text( root, "Name" );
     auto model = Scene::active->AddChild( std::make_unique<PD::PDMetaballModel>( config, surface ) );
-    model->mName = name;
+    if (root->FirstChildElement( "Name" ) != nullptr)
+    {
+        std::string name = get_elem_text( root, "Name" );
+        model->mName = name;
+    }
 
+    return model;
+}
+
+PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElement* root )
+{
+    auto get_elem_text = []( const tinyxml2::XMLElement* parent, const char* name ) {
+        return parent->FirstChildElement( name )->GetText();
+    };
+
+    PD::PDMetaballModelConfig config;
+    config._method = std::stoi( get_elem_text( root, "MetaballGenMethod" ) );
+    config._coarse_surface = boost::algorithm::trim_copy( std::string( get_elem_text( root, "Surface" ) ) );
+
+    config._metaball_path = boost::algorithm::trim_copy( std::string( get_elem_text( root, "MetaballFile" ) ) );
+    config._density = std::stof( get_elem_text( root, "Density" ) );
+    config._sample_dx = std::stof( get_elem_text( root, "Sampledx" ) );
+    config._nb_lloyd = std::stoi( get_elem_text( root, "NumberLloyd" ) );
+    config._k_attach = std::stof( get_elem_text( root, "K_Attach" ) );
+    config._k_stiff = std::stof( get_elem_text( root, "K_Stiff" ) );
+    config._k_edge_stiff = config._k_stiff;
+    config._nb_points = std::stoi( get_elem_text( root, "NumberPoints" ) );
+    config._dt = std::stof( get_elem_text( root, "dt" ) );
+    config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
+    config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
+    config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
+
+    std::stringstream ss( get_elem_text( root, "Displacement" ) );
+    ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
+
+    auto surface = LoadPDMetaballHalfEdgeMesh( root->FirstChildElement( "FineSurface" ) );
+
+    auto model = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( config, surface ) );
+    if (root->FirstChildElement( "Name" ) != nullptr)
+    {
+        std::string name = get_elem_text( root, "Name" );
+        model->mName = name;
+    }
     return  model;
 }
 
@@ -753,6 +803,10 @@ void ElasticityApp::LoadSceneFile( const char* filename )
             else if (std::strcmp( child->Name(), "PDMetaballModel" ) == 0)
             {
                 LoadPDMetaballModel( child );
+            }
+            else if (std::strcmp( child->Name(), "PDMetaballModelFC" ) == 0)
+            {
+                LoadPDMetaballModelFC( child );
             }
             child = child->NextSiblingElement();
         }

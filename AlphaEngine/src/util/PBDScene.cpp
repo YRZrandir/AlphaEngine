@@ -4,6 +4,7 @@
 #include "util/GlobalTimer.h"
 #include "util/Instrumentor.h"
 #include "PD/PDGPUMetaballModel.h"
+#include "PD/PDMetaballModelFC.h"
 #include "PBD/MetaballModel.h"
 #include "Camera.h"
 
@@ -121,47 +122,53 @@ void PBDScene::Update()
         }
 
         std::vector<PD::PDMetaballModel*> pdmodels = GetAllChildOfType<PD::PDMetaballModel>();
-        if (!pdmodels.empty())
+        for (int i = 0; i < 1; i++)
         {
-            for (int i = 0; i < 1; i++)
+            for (auto model : pdmodels)
             {
-                for (auto model : pdmodels)
+                if (model->_simulate)
                 {
-                    if (model->_simulate)
-                    {
-                        model->PhysicalUpdate();
-                        model->CollisionDetection();
-                        model->PostPhysicalUpdate();
-                    }
+                    model->PhysicalUpdate();
+                    model->CollisionDetection();
+                    model->PostPhysicalUpdate();
+                }
+            }
+        }
+
+        std::vector<PD::PDMetaballModelFC*> pdfcmodels = GetAllChildOfType<PD::PDMetaballModelFC>();
+        for (int i = 0; i < 1; i++)
+        {
+            for (auto model : pdfcmodels)
+            {
+                if (model->_simulate)
+                {
+                    model->PhysicalUpdate();
                 }
             }
         }
 
         std::vector<PD::PDGPUMetaballModel*> gpupdmodels = GetAllChildOfType<PD::PDGPUMetaballModel>();
-        if (!gpupdmodels.empty())
+        for (int i = 0; i < 1; i++)
         {
-            for (int i = 0; i < 1; i++)
+            for (auto model : gpupdmodels)
             {
-                for (auto model : gpupdmodels)
+                if (model->_simulate)
                 {
-                    if (model->_simulate)
-                    {
-                        model->CudaPhysicalUpdate();
-                    }
+                    model->CudaPhysicalUpdate();
                 }
-                for (auto model : gpupdmodels)
+            }
+            for (auto model : gpupdmodels)
+            {
+                if (model->_simulate)
                 {
-                    if (model->_simulate)
-                    {
-                        model->CollisionDetection();
-                    }
+                    model->CollisionDetection();
                 }
-                for (auto model : gpupdmodels)
+            }
+            for (auto model : gpupdmodels)
+            {
+                if (model->_simulate)
                 {
-                    if (model->_simulate)
-                    {
-                        model->PostPhysicalUpdate();
-                    }
+                    model->PostPhysicalUpdate();
                 }
             }
         }
