@@ -13,6 +13,7 @@
 #include "model/GLLineSegment.h"
 #include "model/HalfEdgeMesh.h"
 #include "model/ModelLoader.h"
+#include "util/Scene.h"
 #include "util/SceneObject.h"
 #include "util/util.h"
 
@@ -301,59 +302,18 @@ inline void SphereMesh<Sphere>::Draw()
         temp2 = !temp2;
     if (_show_ball)
     {
-        //visualizing different radius
-        float max_r = std::max_element( _balls.begin(), _balls.end(),
-            []( Sphere& b1, Sphere& b2 ) { return b1.r < b2.r; } )->r;
-
-        if (!temp2)
+        //TODO: Add a instanced drawing class for this.
+        for (int i = 0; i < _balls.size(); i++)
         {
-            for (auto& ball : _balls)
-            {
-                _ballmesh->mTransform.SetPos( ball.x );
-                float r = ball.r;
-                _ballmesh->mTransform.SetScale( glm::vec3( r * 2 ) );
-                //visualizing different radius
-                unsigned char* data = _ballmesh->_material_main->mDiffuseTexture->GetImage().Data();
-                auto mapcolor = tinycolormap::GetParulaColor( glm::pow( ball.m_rel, 1.0 / 3.0 ) );
-                data[0] = static_cast<unsigned char>(mapcolor[0] * 255);
-                data[1] = static_cast<unsigned char>(mapcolor[1] * 255);
-                data[2] = static_cast<unsigned char>(mapcolor[2] * 255);
-                //data[0] = static_cast<unsigned char>(ball.color.x * 255);
-                //data[1] = static_cast<unsigned char>(ball.color.y * 255);
-                //data[2] = static_cast<unsigned char>(ball.color.z * 255);
-                //data[0] = static_cast<unsigned char>(255);
-                //data[1] = static_cast<unsigned char>(0);
-                //data[2] = static_cast<unsigned char>(0);
-                _ballmesh->_material_main->mDiffuseTexture->UpdateData();
-                _ballmesh->Draw();
-            }
-
-        }
-        else
-        {
-            for (auto& ball : _balls)
-            {
-                _ballmesh->mTransform.SetPos( ball.x );
-                float r = ball.r;
-                _ballmesh->mTransform.SetScale( glm::vec3( 0.01f ) );
-                _ballmesh->mRenderConfig._draw_face = true;
-                _ballmesh->mRenderConfig._draw_line = false;
-                //visualizing different radius
-                unsigned char* data = _ballmesh->_material_main->mDiffuseTexture->GetImage().Data();
-                auto mapcolor = tinycolormap::GetParulaColor( glm::pow( ball.m_rel, 1.0 / 3.0 ) );
-                data[0] = static_cast<unsigned char>(mapcolor[0] * 255);
-                data[1] = static_cast<unsigned char>(mapcolor[1] * 255);
-                data[2] = static_cast<unsigned char>(mapcolor[2] * 255);
-                //data[0] = static_cast<unsigned char>(ball.color.x * 255);
-                //data[1] = static_cast<unsigned char>(ball.color.y * 255);
-                //data[2] = static_cast<unsigned char>(ball.color.z * 255);
-                data[0] = static_cast<unsigned char>(255);
-                data[1] = static_cast<unsigned char>(0);
-                data[2] = static_cast<unsigned char>(0);
-                _ballmesh->_material_main->mAlpha = 1.0f;
-                _ballmesh->_material_main->mDiffuseTexture->UpdateData();
-                _ballmesh->Draw();
-            }
+            auto& ball = _balls[i];
+            _ballmesh->mTransform.SetPos( ball.x );
+            float r = ball.r;
+            _ballmesh->mTransform.SetScale( glm::vec3( r * 2 ) );
+            Scene::active->_transform_ubo_info.world_mat = _ballmesh->mTransform.GetModelMat();
+            Scene::active->_transform_ubo->SetData( sizeof( Scene::active->_transform_ubo_info ), &Scene::active->_transform_ubo_info, GL_DYNAMIC_DRAW );
+            auto mapcolor = tinycolormap::GetParulaColor( glm::pow( ball.m_rel, 1.0 / 3.0 ) );
+            _ballmesh->_material_main->mDiffuseColor = ball.color;
+            _ballmesh->Draw();
         }
     }
 

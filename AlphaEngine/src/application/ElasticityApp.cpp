@@ -192,7 +192,7 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
-
+#define EXAMPLE_ARMA
 #ifdef EXAMPLE_ARMA
     cam->mTransform.SetPos( glm::vec3( 1.4, 0.550, 0.530 ) );
     cam->_yaw = 250.0f;
@@ -625,7 +625,6 @@ void ElasticityApp::DrawGraphics()
 
 PD::PDGPUMetaballModel* ElasticityApp::LoadPDGPUMetaballModel( tinyxml2::XMLElement* root )
 {
-
     auto get_elem_text = []( const tinyxml2::XMLElement* parent, const char* name ) {
         return parent->FirstChildElement( name )->GetText();
     };
@@ -807,6 +806,10 @@ void ElasticityApp::LoadSceneFile( const char* filename )
             else if (std::strcmp( child->Name(), "PDMetaballModelFC" ) == 0)
             {
                 LoadPDMetaballModelFC( child );
+            }
+            else if (std::strcmp( child->Name(), "Mesh" ) == 0)
+            {
+                LoadMesh( child );
             }
             child = child->NextSiblingElement();
         }

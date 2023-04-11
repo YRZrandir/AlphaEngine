@@ -143,6 +143,7 @@ void PBDScene::Update()
                 if (model->_simulate)
                 {
                     model->PhysicalUpdate();
+                    model->PostPhysicalUpdate();
                 }
             }
         }

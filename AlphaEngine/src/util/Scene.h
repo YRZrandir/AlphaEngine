@@ -89,7 +89,8 @@ protected:
     void SetUniformBuffers();
     void SetUniformBuffersForObject( const SceneObject& obj );
     void DrawChild( SceneObject& obj );
-
+public:
+    //TODO This should not be public. Maybe move to a Render class.
     CameraUniformBlock _camera_ubo_info;
     LightUniformBlock _lights_ubo_info;
     TransformUniformBlock _transform_ubo_info;

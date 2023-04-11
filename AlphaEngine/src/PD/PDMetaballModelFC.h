@@ -33,6 +33,35 @@ public:
         glm::mat4 R = glm::mat4( 1.0f );
     };
 
+    struct Contact
+    {
+        Contact( Vector3 n, Vector3 t1, int id ) : n( n ), t1( t1 ), id( id )
+        {
+            t2 = n.cross( t1 );
+            R.col( 0 ) = n;
+            R.col( 1 ) = t1;
+            R.col( 2 ) = t2;
+        }
+
+        float NormalComponent( const Vector3& v ) const
+        {
+            return (v.transpose() * R.transpose()).dot( n );
+        }
+
+        Vector3 TangentialComponent( const Vector3& v ) const
+        {
+            return v - NormalComponent( v ) * R.transpose() * n;
+        }
+        Vector3 n;
+        Vector3 t1;
+        Vector3 t2;
+        Matrix3 R;
+        Vector3 p;
+        int id;
+    };
+
+
+
     PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
     void Init();
     void PhysicalUpdate();
@@ -65,9 +94,16 @@ protected:
     Matrix3X _momentum;         //3*n
     Matrix3X _fext;    //3*n
     Eigen::SimplicialLDLT<SparseMatrix> _llt;
+    SparseMatrix _AS;
     SparseMatrix _StAt;
+    SparseMatrix _C;
     SparseMatrix _P;
     Matrix3X _p;
+    Matrix3X _bn_tilde;
+    Matrix3X _f;
+    Matrix3X _ksi;
+    Matrix3X _r;
+    MatrixX _J;
 
     SparseMatrix _Dinv;
     SparseMatrix _LU;
@@ -96,6 +132,8 @@ protected:
 
     AABB _aabb;
 
+    std::vector<Contact> _contacts;
+    std::unique_ptr<GLLineSegment> _contacts_vis;
 };
 
 }

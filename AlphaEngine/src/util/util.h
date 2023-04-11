@@ -104,8 +104,6 @@ public:
         return std::hash<float>()(vec.x) ^ std::hash<float>()(vec.y) ^ std::hash<float>()(vec.z);
     }
 };
-
-
 }
 
 template <int size, typename T, glm::qualifier Q>
@@ -146,3 +144,4 @@ void PolarDecomposition( const Eigen::Matrix<T, 3, 3>& A, Eigen::Matrix<T, 3, 3>
         }
     }
 }
+

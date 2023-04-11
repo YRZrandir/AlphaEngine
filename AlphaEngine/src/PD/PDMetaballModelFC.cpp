@@ -70,6 +70,8 @@ PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHa
         _mesh->Ball( i ).m_rel = _mesh->Ball( i ).m / m_max;
     }
     Init();
+
+    _contacts_vis = std::make_unique<GLLineSegment>();
 }
 
 void PD::PDMetaballModelFC::Init()
@@ -86,6 +88,9 @@ void PD::PDMetaballModelFC::Init()
     _momentum.resize( 3, nb_points );
     _v.setZero();
     _fext.setZero();
+    _bn_tilde.resize( 3, nb_points );
+    _f.resize( 3, nb_points );
+    _ksi.resize( 3, nb_points );
 
     for (int i = 0; i < nb_points; ++i)
     {
@@ -187,10 +192,11 @@ void PD::PDMetaballModelFC::Init()
     }
     _p.setZero( 3, total_id );
 
-    SparseMatrix AS( total_id, nb_points );
-    AS.setFromTriplets( triplets.begin(), triplets.end() );
-    _StAt = AS.transpose();
-    _P = _StAt * AS + _M / (_cfg._dt * _cfg._dt);
+    _AS.resize( total_id, nb_points );
+    _AS.setFromTriplets( triplets.begin(), triplets.end() );
+    _StAt = _AS.transpose();
+    _C = _cfg._dt * _cfg._dt * _StAt * _AS;
+    _P = _M + _C;
 
     _llt.compute( _P );
     if (_llt.info() != Eigen::ComputationInfo::Success)
@@ -335,6 +341,7 @@ void PDMetaballModelFC::Draw()
         _surface->Draw();
     }
 
+    _contacts_vis->Draw();
     //for (auto& pair : _array_ext_forces)
     //{
     //    glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ).eval() );
@@ -397,6 +404,8 @@ void PDMetaballModelFC::PhysicalUpdate()
         _x.col( c ) = _momentum.col( c );
     }
 
+    CollisionDetection();
+
     for (int i = 0; i < _cfg._nb_solve; i++)
     {
 #pragma omp parallel for
@@ -405,12 +414,50 @@ void PDMetaballModelFC::PhysicalUpdate()
             _constraints[j]->Project( _x, _p );
         }
 
+
 #pragma omp parallel for
         for (int r = 0; r < 3; r++)
         {
-            auto bn = _StAt * _p.row( r ).transpose() + _M / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-            Eigen::VectorXf b_tilde_n = (bn - _P * _x_last.row( r ).transpose()) / _cfg._dt;
-            _v.row( r ) = _llt.solve( b_tilde_n ).transpose();
+            auto bn = _cfg._dt * _cfg._dt * _StAt * _p.row( r ).transpose() + _M * _momentum.row( r ).transpose();
+            _bn_tilde.row( r ) = (bn - _P * _x_last.row( r ).transpose()) / _cfg._dt;
+            _f.row( r ) = _bn_tilde.row( r ) - _C * _v.row( r ).transpose();
+            _ksi.row( r ).setZero();
+        }
+
+        //#pragma omp parallel for
+        //        for (int c = 0; c < _contacts.size(); c++)
+        //        {
+        //            const Contact& contact = _contacts[c];
+        //            Vector3 fi = _f.col( contact.id );
+        //            Vector3 dj = contact.R.transpose() * fi;
+        //            float djn = contact.NormalComponent( dj );
+        //            Vector3 djt = contact.TangentialComponent( dj );
+        //            Vector3 rj;
+        //            if (djn >= 0)
+        //            {
+        //                rj.setZero();
+        //            }
+        //            else
+        //            {
+        //                rj.y() = -djn;
+        //                if (djt.norm() <= -djn * 0.5f)
+        //                {
+        //                    rj += -djt;
+        //                }
+        //                else
+        //                {
+        //                    rj += -0.5f * djn * djt.normalized();
+        //                }
+        //            }
+        //
+        //            _ksi.col( contact.id ) += contact.R.transpose() * rj;
+        //        }
+
+#pragma omp parallel for
+        for (int r = 0; r < 3; r++)
+        {
+            Eigen::VectorXf f = _bn_tilde.row( r ) - _C * _v.row( r );
+            _v.row( r ) = _llt.solve( _bn_tilde.row( r ).transpose() + _ksi.row( r ).transpose() );
             _x.row( r ) = _x_last.row( r ) + _cfg._dt * _v.row( r );
         }
     }
@@ -435,7 +482,38 @@ void PDMetaballModelFC::CollisionDetection()
     std::vector<RigidSDF*> rigid_sdfs = Scene::active->GetAllChildOfType<RigidSDF>();
     std::vector<RigidBall*> rigid_balls = Scene::active->GetAllChildOfType<RigidBall>();
 
+    _contacts.clear();
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        Vector3 p = _x.col( i );
+        float r = _mesh->Ball( i ).r;
 
+        Vector3 plane( 0, -0.5, 0 );
+        Vector3 plane_n( 0, 1, 0 );
+        plane_n.normalize();
+
+        float test = (p - plane).dot( plane_n );
+        if (test < r)
+        {
+            _contacts.push_back( Contact( plane_n, Vector3( 0, 0, 1 ), i ) );
+            _contacts.back().p = p - plane_n * (r - test);
+        }
+    }
+    if (_contacts.size() > 0)
+    {
+        std::cout << _contacts.size() << "contacts" << std::endl;
+    }
+    _contacts_vis->Clear();
+    for (const auto& c : _contacts)
+    {
+        _contacts_vis->AddPoint( ToGLM( c.p ), glm::RED );
+        _contacts_vis->AddPoint( ToGLM( c.p + c.n * 0.05f ), glm::RED );
+        _contacts_vis->AddPoint( ToGLM( c.p ), glm::GREEN );
+        _contacts_vis->AddPoint( ToGLM( c.p + c.t1 * 0.05f ), glm::GREEN );
+        _contacts_vis->AddPoint( ToGLM( c.p ), glm::BLUE );
+        _contacts_vis->AddPoint( ToGLM( c.p + c.t2 * 0.05f ), glm::BLUE );
+    }
+    _contacts_vis->UpdateMem();
 }
 
 void PDMetaballModelFC::PostPhysicalUpdate()
