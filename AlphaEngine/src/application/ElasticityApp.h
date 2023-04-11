@@ -2,6 +2,7 @@
 #include "ApplicationBase.h"
 #include <sstream>
 #include <tinyxml2.h>
+#include "model/Transform.h"
 
 namespace PD
 {
@@ -11,6 +12,9 @@ class PDMetaballModelFC;
 }
 class HalfEdgeMesh;
 class PDMetaballHalfEdgeMesh;
+class RigidBall;
+class RigidStatic;
+class Transform;
 
 class ElasticityApp : public ApplicationBase
 {
@@ -23,10 +27,13 @@ protected:
     virtual void PostDraw() override;
     virtual void DrawGUI() override;
     virtual void DrawGraphics() override;
+
     PD::PDGPUMetaballModel* LoadPDGPUMetaballModel( tinyxml2::XMLElement* root );
     PD::PDMetaballModelFC* LoadPDMetaballModelFC( tinyxml2::XMLElement* root );
     PD::PDMetaballModel* LoadPDMetaballModel( tinyxml2::XMLElement* root );
     HalfEdgeMesh* LoadMesh( tinyxml2::XMLElement* root );
     PDMetaballHalfEdgeMesh* LoadPDMetaballHalfEdgeMesh( tinyxml2::XMLElement* root );
+    Transform LoadTransform( tinyxml2::XMLElement* root );
+    RigidBall* LoadRigidBall( tinyxml2::XMLElement* root );
     void LoadSceneFile( const char* filename );
 };

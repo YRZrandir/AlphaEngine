@@ -4,6 +4,7 @@
 #include <imgui/imgui.h>
 #include <tinyxml2.h>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include "input/Input.h"
 #include "lighting/Light.h"
@@ -432,8 +433,6 @@ void ElasticityApp::Init()
      //Scene::active->AddChild( std::make_unique<RigidSDF>( "D:/models/cylinder.obj", 0.02f ) );
      //Scene::active->AddChild( std::make_unique<PBD::GPUTetraModel>( "D:/models/arma/armadillo_coarse.obj", "D:/models/arma/armadillo_coarse.obj", 10000.f ) );
 
-    Scene::active->AddChild( std::make_unique<HalfEdgeMesh>( "D:/models/floor.obj" ) );
-
     //auto ball = Scene::active->AddChild( std::make_unique<CHalfEdgeMesh<ItemBase>>( "res/models/ball960.obj" ) );
     //ball->mName = "haptic";
     //Haptic::Init( UpdateHaptics );
@@ -719,7 +718,7 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
+    //config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
 
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
@@ -755,6 +754,11 @@ HalfEdgeMesh* ElasticityApp::LoadMesh( tinyxml2::XMLElement* root )
     {
         mesh->mLayer = std::stoi( root->FirstChildElement( "Layer" )->GetText() );
     }
+
+    if (root->FirstChildElement( "Transform" ) != nullptr)
+    {
+        mesh->mTransform = LoadTransform( root->FirstChildElement( "Transform" ) );
+    }
     return mesh;
 }
 
@@ -777,6 +781,81 @@ PDMetaballHalfEdgeMesh* ElasticityApp::LoadPDMetaballHalfEdgeMesh( tinyxml2::XML
         mesh->mLayer = std::stoi( root->FirstChildElement( "Layer" )->GetText() );
     }
     return mesh;
+}
+
+Transform ElasticityApp::LoadTransform( tinyxml2::XMLElement* root )
+{
+    Transform t;
+    if (root->FirstChildElement( "Position" ) != nullptr)
+    {
+        std::stringstream ss( root->FirstChildElement( "Position" )->GetText() );
+        glm::vec3 p;
+        ss >> p.x >> p.y >> p.z;
+        t.SetPos( p );
+    }
+    if (root->FirstChildElement( "Scale" ) != nullptr)
+    {
+        std::stringstream ss( root->FirstChildElement( "Scale" )->GetText() );
+        glm::vec3 s;
+        ss >> s.x >> s.y >> s.z;
+        t.SetScale( s );
+    }
+    if (root->FirstChildElement( "Rotation" ) != nullptr)
+    {
+        std::string s( root->FirstChildElement( "Rotation" )->GetText() );
+        std::vector<std::string> result;
+        boost::algorithm::split( result, s, []( char c ) {  return c == ' '; } );
+        if (result.size() == 3)
+        {
+            glm::vec3 euler;
+            euler.x = std::stof( result[0] );
+            euler.y = std::stof( result[1] );
+            euler.z = std::stof( result[2] );
+            t.SetRotation( euler );
+        }
+        else if (result.size() == 4)
+        {
+            glm::quat q;
+            q.w = std::stof( result[0] );
+            q.x = std::stof( result[1] );
+            q.y = std::stof( result[2] );
+            q.z = std::stof( result[3] );
+            t.SetRotation( q );
+        }
+        else if (result.size() == 9)
+        {
+            glm::mat3 rot;
+            rot[0][0] = std::stof( result[0] );
+            rot[1][0] = std::stof( result[1] );
+            rot[2][0] = std::stof( result[2] );
+            rot[0][1] = std::stof( result[3] );
+            rot[1][1] = std::stof( result[4] );
+            rot[2][1] = std::stof( result[5] );
+            rot[0][2] = std::stof( result[6] );
+            rot[1][2] = std::stof( result[7] );
+            rot[2][2] = std::stof( result[8] );
+            t.SetRotation( glm::toQuat( rot ) );
+        }
+    }
+    return t;
+}
+
+RigidBall* ElasticityApp::LoadRigidBall( tinyxml2::XMLElement* root )
+{
+    std::stringstream ss( root->FirstChildElement( "Position" )->GetText() );
+    glm::vec3 pos;
+    ss >> pos.x >> pos.y >> pos.z;
+
+    float r = std::stof( root->FirstChildElement( "Radius" )->GetText() );
+
+
+    auto rigidball = Scene::active->AddChild( std::make_unique<RigidBall>( pos, r ) );
+    if (root->FirstChildElement( "Name" ))
+    {
+        rigidball->mName = std::string( root->FirstChildElement( "Name" )->GetText() );
+    }
+
+    return rigidball;
 }
 
 void ElasticityApp::LoadSceneFile( const char* filename )
@@ -810,6 +889,10 @@ void ElasticityApp::LoadSceneFile( const char* filename )
             else if (std::strcmp( child->Name(), "Mesh" ) == 0)
             {
                 LoadMesh( child );
+            }
+            else if (std::strcmp( child->Name(), "RigidBall" ) == 0)
+            {
+                LoadRigidBall( child );
             }
             child = child->NextSiblingElement();
         }

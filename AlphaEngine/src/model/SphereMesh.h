@@ -23,6 +23,7 @@ using CGALPoint = Kernel::Point_3;
 using CGALLine = Kernel::Line_3;
 using CGALSeg = Kernel::Segment_3;
 
+//TODO: Move this and all duplicate classes to somewhere else. Maybe replace with boost::hash.
 class IndexPair
 {
 public:

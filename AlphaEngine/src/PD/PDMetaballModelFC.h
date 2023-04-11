@@ -19,12 +19,15 @@ public:
         glm::vec3 outside = glm::vec3( 0.f );
         float sdf = 0.f;
     };
+
     static const int NEICOUNT = 10;
+
     struct VtxSkinningInfo
     {
         std::array<int, NEICOUNT> indices;
         std::array<float, NEICOUNT> weights;
     };
+
     struct BallSkinningInfo
     {
         glm::vec4 u = glm::vec4( 0.f );
@@ -38,19 +41,21 @@ public:
         Contact( Vector3 n, Vector3 t1, int id ) : n( n ), t1( t1 ), id( id )
         {
             t2 = n.cross( t1 );
-            R.col( 0 ) = n;
-            R.col( 1 ) = t1;
+            R.col( 0 ) = t1;
+            R.col( 1 ) = n;
             R.col( 2 ) = t2;
         }
 
         float NormalComponent( const Vector3& v ) const
         {
-            return (v.transpose() * R.transpose()).dot( n );
+            return v.y();
+            //return (v.transpose() * R.transpose()).dot( Vector3( 0, 1, 0 ) );
         }
 
         Vector3 TangentialComponent( const Vector3& v ) const
         {
-            return v - NormalComponent( v ) * R.transpose() * n;
+            return Vector3( v.x(), 0, v.z() );
+            //return v - NormalComponent( v ) * R.transpose() * Vector3( 0, 1, 0 );
         }
         Vector3 n;
         Vector3 t1;
@@ -59,8 +64,6 @@ public:
         Vector3 p;
         int id;
     };
-
-
 
     PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
     void Init();
@@ -78,6 +81,7 @@ protected:
 
 public:
     bool _simulate = false;
+
 protected:
     PDMetaballModelConfig _cfg;
 
@@ -129,6 +133,7 @@ protected:
 
     bool _show_surface = true;
     bool _show_balls = false;
+    bool _show_contacts = false;
 
     AABB _aabb;
 
