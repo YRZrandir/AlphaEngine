@@ -198,6 +198,7 @@
     <ClCompile Include="src\model\Rect.cpp" />
     <ClCompile Include="src\model\RigidSDF.cpp" />
     <ClCompile Include="src\model\RigidStatic.cpp" />
+    <ClCompile Include="src\model\SphereMesh.cpp" />
     <ClCompile Include="src\model\Terrain.cpp" />
     <ClCompile Include="src\model\TetraMesh.cpp" />
     <ClCompile Include="src\model\Transform.cpp" />

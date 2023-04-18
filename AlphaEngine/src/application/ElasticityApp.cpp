@@ -193,7 +193,7 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
-#define EXAMPLE_ARMA
+
 #ifdef EXAMPLE_ARMA
     cam->mTransform.SetPos( glm::vec3( 1.4, 0.550, 0.530 ) );
     cam->_yaw = 250.0f;
@@ -527,7 +527,7 @@ void ElasticityApp::DrawGUI()
     {
         if (ImGui::MenuItem( "Open" ))
         {
-            ImGuiFileDialog::Instance()->OpenDialog( "ChooseFileKey", "File", ".xml", "D:/models" );
+            ImGuiFileDialog::Instance()->OpenDialog( "ChooseFileKey", "File", ".xml", "D:/models", "" );
         }
         ImGui::EndMenu();
     }
@@ -706,8 +706,8 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
     PD::PDMetaballModelConfig config;
     config._method = std::stoi( get_elem_text( root, "MetaballGenMethod" ) );
     config._coarse_surface = boost::algorithm::trim_copy( std::string( get_elem_text( root, "Surface" ) ) );
-
-    config._metaball_path = boost::algorithm::trim_copy( std::string( get_elem_text( root, "MetaballFile" ) ) );
+    if (config._method == 2)
+        config._metaball_path = boost::algorithm::trim_copy( std::string( get_elem_text( root, "MetaballFile" ) ) );
     config._density = std::stof( get_elem_text( root, "Density" ) );
     config._sample_dx = std::stof( get_elem_text( root, "Sampledx" ) );
     config._nb_lloyd = std::stoi( get_elem_text( root, "NumberLloyd" ) );
@@ -718,7 +718,7 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    //config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
+    //config._attach_filter = []( glm::vec3 v )->bool { return  v[0] < 0.3f && v[0] > -0.3f; };
 
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
@@ -856,6 +856,11 @@ RigidBall* ElasticityApp::LoadRigidBall( tinyxml2::XMLElement* root )
     }
 
     return rigidball;
+}
+
+RigidStatic* ElasticityApp::LoadRigidStatic( tinyxml2::XMLElement* root )
+{
+    return nullptr;
 }
 
 void ElasticityApp::LoadSceneFile( const char* filename )

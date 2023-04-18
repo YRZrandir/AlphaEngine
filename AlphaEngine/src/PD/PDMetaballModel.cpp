@@ -129,25 +129,23 @@ void PD::PDMetaballModel::Init()
     int nb_points = _mesh->BallsNum();
     std::vector<SparseMatrixTriplet> m_triplets;
     std::vector<SparseMatrixTriplet> m_inv_triplets;
-    _current_pos.resize( 3, nb_points );
-    _rest_pos.resize( 3, nb_points );
-    _current_vel.resize( 3, nb_points );
+    _x.resize( 3, nb_points );
+    _x0.resize( 3, nb_points );
+    _v.resize( 3, nb_points );
     _pene.resize( 3, nb_points );
     _external_force.resize( 3, nb_points );
-    _last_pos.resize( 3, nb_points );
-    _last_pos1.resize( 3, nb_points );
+    _x_last.resize( 3, nb_points );
     _momentum.resize( 3, nb_points );
-    _current_vel.setZero();
+    _v.setZero();
     _external_force.setZero();
 
     for (int i = 0; i < nb_points; ++i)
     {
         m_triplets.push_back( { i, i, _mesh->Ball( i ).m } );
         m_inv_triplets.push_back( { i, i, 1.f / _mesh->Ball( i ).m } );
-        _current_pos.col( i ) = Vector3( _mesh->Ball( i ).x0.x, _mesh->Ball( i ).x0.y, _mesh->Ball( i ).x0.z );
-        _rest_pos.col( i ) = _current_pos.col( i );
-        _last_pos.col( i ) = _current_pos.col( i );
-        _last_pos1.col( i ) = _current_pos.col( i );
+        _x.col( i ) = Vector3( _mesh->Ball( i ).x0.x, _mesh->Ball( i ).x0.y, _mesh->Ball( i ).x0.z );
+        _x0.col( i ) = _x.col( i );
+        _x_last.col( i ) = _x.col( i );
     }
     _mass_matrix.resize( nb_points, nb_points );
     _mass_matrix_inv.resize( nb_points, nb_points );
@@ -191,11 +189,11 @@ void PD::PDMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _x, _mesh.get(), &_x0 ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _x, _mesh.get(), &_x0 ) );
             }
         }
     }
@@ -213,7 +211,7 @@ void PD::PDMetaballModel::Init()
         }
         for (const IndexPair& pair : edges)
         {
-            _constraints.push_back( std::make_unique<PD::EdgeConstraint>( pair.i0, pair.i1, _cfg._k_stiff, _current_pos ) );
+            _constraints.push_back( std::make_unique<PD::EdgeConstraint>( pair.i0, pair.i1, _cfg._k_stiff, _x ) );
         }
     }
     if (_cfg._attach_filter != nullptr)
@@ -222,13 +220,13 @@ void PD::PDMetaballModel::Init()
         {
             if (_cfg._attach_filter( _mesh->Ball( i ).x0 ))
             {
-                _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
+                _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
             }
         }
     }
     for (int i : _select_balls)
     {
-        _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
+        _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
     }
     _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
     _select_balls.clear();
@@ -239,15 +237,28 @@ void PD::PDMetaballModel::Init()
     {
         c->AddConstraint( triplets, total_id );
     }
-    _projections.setZero( 3, total_id );
+    _p.setZero( 3, total_id );
 
-    SparseMatrix A( total_id, nb_points );
-    A.setFromTriplets( triplets.begin(), triplets.end() );
-    _At = A.transpose();
-    _N = _At * A + _mass_matrix / _cfg._dt / _cfg._dt;
-    _llt.compute( _N );
+    _AS.resize( total_id, nb_points );
+    _AS.setFromTriplets( triplets.begin(), triplets.end() );
+    _StAt = _AS.transpose();
+    _P = _StAt * _AS + _mass_matrix / _cfg._dt / _cfg._dt;
+    _llt.compute( _P );
     if (_llt.info() != Eigen::ComputationInfo::Success)
         std::cout << "ERROR: " << _llt.info() << std::endl;
+
+    SparseMatrix StAtAS;
+    StAtAS.resize( nb_points, nb_points );
+    for (auto& c : _constraints)
+    {
+        auto A = c->GetA();
+        auto S = c->GetS( nb_points );
+        StAtAS += c->_weight * S.transpose() * A.transpose() * A * S;
+    }
+
+    SparseMatrix SAAS2 = _StAt * _AS;
+    SparseMatrix diff = StAtAS - SAAS2;
+    std::cout << "<<< DIFF = " << diff.norm() << " >>>" << std::endl;
 
     std::cout << "Metaballs: " << nb_points << std::endl;
     std::cout << "ProjectVariable size: " << total_id << std::endl;
@@ -329,8 +340,8 @@ void PD::PDMetaballModel::Update()
         float m_sum = 0.f;
         for (int i = 0; i < _mesh->BallsNum(); i++)
         {
-            cm0 += _mesh->Ball( i ).m * _rest_pos.col( i );
-            cm += _mesh->Ball( i ).m * _current_pos.col( i );
+            cm0 += _mesh->Ball( i ).m * _x0.col( i );
+            cm += _mesh->Ball( i ).m * _x.col( i );
             m_sum += _mesh->Ball( i ).m;
         }
         cm0 /= m_sum;
@@ -338,8 +349,8 @@ void PD::PDMetaballModel::Update()
 
         for (int i = 0; i < _mesh->BallsNum(); i++)
         {
-            Vector3 d0 = _rest_pos.col( i ) - cm0;
-            _current_pos.col( i ) = cm0 + ER * d0;
+            Vector3 d0 = _x0.col( i ) - cm0;
+            _x.col( i ) = cm0 + ER * d0;
         }
 
         _simulate = false;
@@ -373,7 +384,7 @@ void PD::PDMetaballModel::Update()
 
     for (int i = 0; i < _mesh->BallsNum(); ++i)
     {
-        Vector3 p = _current_pos.col( i );
+        Vector3 p = _x.col( i );
         _mesh->Ball( i ).x = glm::vec3( p[0], p[1], p[2] );
     }
     //if (_simulate)
@@ -405,8 +416,8 @@ void PD::PDMetaballModel::Draw()
 
     for (auto& pair : _array_ext_forces)
     {
-        glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ).eval() );
-        glm::vec3 end_pos = ToGLM( (_current_pos.col( pair.first ) + pair.second.normalized() * 0.2f).eval() );
+        glm::vec3 start_pos = ToGLM( _x.col( pair.first ).eval() );
+        glm::vec3 end_pos = ToGLM( (_x.col( pair.first ) + pair.second.normalized() * 0.2f).eval() );
         start_pos = start_pos + 0.05f * (end_pos - start_pos);
         //_simple_ball->mTransform.SetPos( start_pos );
         //_simple_ball->Draw();
@@ -477,7 +488,7 @@ void PD::PDMetaballModel::PhysicalUpdate()
                 {
                     AttachConstraint* c = dynamic_cast<AttachConstraint*>(_constraints[i].get());
                     int id = c->_indices[0];
-                    if (_rest_pos.col( id ).y() < -0.2f)
+                    if (_x0.col( id ).y() < -0.2f)
                     {
                         auto p0 = c->_fixed_pos;
                         p0 = m * p0;
@@ -489,13 +500,14 @@ void PD::PDMetaballModel::PhysicalUpdate()
         }
     }
 
+
 #pragma omp parallel for
     for (int c = 0; c < _mesh->BallsNum(); c++)
     {
-        _momentum.col( c ) = _current_pos.col( c ) + _current_vel.col( c ) * _cfg._dt;
+        _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
         _momentum.col( c ) += _cfg._dt * _cfg._dt * _external_force.col( c );
-        _last_pos.col( c ) = _current_pos.col( c );
-        _current_pos.col( c ) = _momentum.col( c );
+        _x_last.col( c ) = _x.col( c );
+        _x.col( c ) = _momentum.col( c );
     }
 
     for (int i = 0; i < _cfg._nb_solve; i++)
@@ -505,14 +517,14 @@ void PD::PDMetaballModel::PhysicalUpdate()
 #pragma omp for 
             for (int j = 0; j < _constraints.size(); j++)
             {
-                _constraints[j]->Project( _current_pos, _projections );
+                _constraints[j]->Project( _x, _p );
             }
             auto start_t = std::chrono::high_resolution_clock::now();
 #pragma omp for
             for (int r = 0; r < 3; r++)
             {
-                Eigen::VectorXf rh_vec = _At * _projections.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-                _current_pos.row( r ) = _llt.solve( rh_vec ).transpose();
+                Eigen::VectorXf rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                _x.row( r ) = _llt.solve( rh_vec ).transpose();
             }
             //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_t).count() << std::endl;
         }
@@ -523,7 +535,7 @@ void PD::PDMetaballModel::PhysicalUpdate()
 #pragma omp for
         for (int c = 0; c < _mesh->BallsNum(); c++)
         {
-            _current_vel.col( c ) = 0.9f / _cfg._dt * (_current_pos.col( c ) - _last_pos.col( c ));
+            _v.col( c ) = 0.9f / _cfg._dt * (_x.col( c ) - _x_last.col( c ));
         }
     }
 
@@ -531,8 +543,8 @@ void PD::PDMetaballModel::PhysicalUpdate()
     _aabb.min_corner = glm::vec3( FLT_MAX );
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        _aabb.Expand( glm::vec3( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
-        _aabb.Expand( glm::vec3( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
     }
 
     _external_force.setZero();
@@ -667,8 +679,8 @@ void PD::PDMetaballModel::CollisionDetection()
             ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             HalfEdgeMesh& sur = rigid->Surface();
-            glm::vec3 pos( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) );
-            glm::vec3 last_pos( _last_pos.col( i )(0), _last_pos.col( i )(1), _last_pos.col( i )(2) );
+            glm::vec3 pos( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) );
+            glm::vec3 last_pos( _x_last.col( i )(0), _x_last.col( i )(1), _x_last.col( i )(2) );
             Vector3 dist( 0.f, 0.f, 0.f );
             for (int j = 0; j < sur.GetFaceNumber(); j++)
             {
@@ -687,16 +699,16 @@ void PD::PDMetaballModel::CollisionDetection()
                         dx = glm::normalize( dx );
                     }
                     Vector3 newpos = ToEigen( last_pos + dx * info.t );
-                    dist += newpos - _current_pos.col( i );
+                    dist += newpos - _x.col( i );
                     Vector3 n = ToEigen( info.nc );
-                    Vector3 v = _current_vel.col( i );
+                    Vector3 v = _v.col( i );
                     Vector3 vn = n * v.dot( n );
                     Vector3 vt = v - vn;
-                    _current_vel.col( i ) = -vn + vt;
+                    _v.col( i ) = -vn + vt;
 
                 }
             }
-            _current_pos.col( i ) += dist;
+            _x.col( i ) += dist;
             //_last_pos.col( i ) = _current_pos.col( i );
             //glm::vec3 normal;
             //float depth;
@@ -750,40 +762,40 @@ void PD::PDMetaballModel::CollisionDetection()
         {
             glm::vec3 normal;
             float depth;
-            glm::vec3 pos( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) );
+            glm::vec3 pos( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) );
 
             if (rigid_sdf->CheckBall( pos, pi.r, &normal, &depth ))
             {
                 Vector3 n( normal.x, normal.y, normal.z );
-                Vector3 dx = _current_pos.col( i ) - _last_pos.col( i );
+                Vector3 dx = _x.col( i ) - _x_last.col( i );
                 Vector3 dx_n = n * dx.dot( n );
                 Vector3 dx_t = dx - dx_n;
                 float s = std::min( 1000 * depth, 1.0f );
                 Vector3 fric = -s * dx_t;
 
-                Vector3 v = _current_vel.col( i );
+                Vector3 v = _v.col( i );
                 Vector3 vn = n * v.dot( n );
                 Vector3 vt = v - vn;
 
-                _current_pos.col( i ) += n * depth - s * dx_t;
-                _current_vel.col( i ) = -1.0 * vn + (1.f - s) * vt;
+                _x.col( i ) += n * depth - s * dx_t;
+                _v.col( i ) = -1.0 * vn + (1.f - s) * vt;
             }
         }
 
         for (RigidBall* rigid : rigid_balls)
         {
-            glm::vec3 pos = ToGLM( _current_pos.col( i ).eval() );
-            glm::vec3 last_pos = ToGLM( _last_pos.col( i ).eval() );
+            glm::vec3 pos = ToGLM( _x.col( i ).eval() );
+            glm::vec3 last_pos = ToGLM( _x_last.col( i ).eval() );
             auto info = BallBallIntersect( pos, pi.r, rigid->GetPos(), rigid->GetRadius() );
             if (info.has_value())
             {
                 glm::vec3 newpos = pos - info->d * info->c1toc2;
-                _current_pos.col( i ) = ToEigen( newpos );
-                Vector3 v = _current_vel.col( i );
+                _x.col( i ) = ToEigen( newpos );
+                Vector3 v = _v.col( i );
                 Vector3 n = ToEigen( info->c1toc2 );
                 Vector3 vn = n * v.dot( n );
                 Vector3 vt = v - vn;
-                _current_vel.col( i ) = -vn + vt;
+                _v.col( i ) = -vn + vt;
             }
         }
 
@@ -864,19 +876,19 @@ void PD::PDMetaballModel::CollisionDetection()
         //    }
         //}
 
-        glm::vec3 pos = ToGLM( _current_pos.col( i ).eval() );
+        glm::vec3 pos = ToGLM( _x.col( i ).eval() );
         if (pos.y < -2.f)
         {
             Vector3 n( 0.f, 1.f, 0.f );
-            Vector3 dx = _current_pos.col( i ) - _last_pos.col( i );
+            Vector3 dx = _x.col( i ) - _x_last.col( i );
             Vector3 dxn = n * dx.dot( n );
             Vector3 dxt = dx - dxn;
-            _current_pos.col( i ) -= dxt * 0.5f;
-            _current_pos.col( i ).y() = -2.f;
-            Vector3 v = _current_vel.col( i );
+            _x.col( i ) -= dxt * 0.5f;
+            _x.col( i ).y() = -2.f;
+            Vector3 v = _v.col( i );
             Vector3 vn = n * v.dot( n );
             Vector3 vt = v - vn;
-            _current_vel.col( i ) = -vn + 0.01 * vt;
+            _v.col( i ) = -vn + 0.01 * vt;
         }
     }
 
@@ -893,10 +905,10 @@ void PD::PDMetaballModel::CollisionDetection()
             for (int j = 0; j < model->_mesh->BallsNum(); j++)
             {
                 Particle& pj = model->_mesh->Ball( j );
-                Vector3 xj = model->_current_pos.col( j );
+                Vector3 xj = model->_x.col( j );
                 float r = model->_mesh->Ball( j ).r;
                 float dist = r + pi.r;
-                Vector3 distvec = xj - _current_pos.col( i );
+                Vector3 distvec = xj - _x.col( i );
                 float dist2 = (distvec).norm();
                 float h = dist - dist2;
 
@@ -916,7 +928,7 @@ void PD::PDMetaballModel::CollisionDetection()
 
                     float sdfi = pi.sdf;
                     float sdfj = pj.sdf;
-                    Vector3 xji = _current_pos.col( i ) - xj;
+                    Vector3 xji = _x.col( i ) - xj;
                     float mass_ratio = pj.m / (pj.m + pi.m);
                     //float d = std::min( sdfi, sdfj );
 
@@ -931,49 +943,49 @@ void PD::PDMetaballModel::CollisionDetection()
                         float d = pj.r + pi.r - xji.norm();
                         d = pj.sdf;
 
-                        _current_pos.col( i ) += d * mass_ratio * n;
-                        _last_pos.col( i ) = _pene.col( i );
-                        model->_current_pos.col( j ) -= d * (1 - mass_ratio) * n;
-                        model->_last_pos.col( j ) = model->_current_pos.col( j );
+                        _x.col( i ) += d * mass_ratio * n;
+                        _x_last.col( i ) = _pene.col( i );
+                        model->_x.col( j ) -= d * (1 - mass_ratio) * n;
+                        model->_x_last.col( j ) = model->_x.col( j );
 
-                        Vector3 v = _current_vel.col( i );
+                        Vector3 v = _v.col( i );
                         Vector3 vn = v.dot( n ) * n;
                         Vector3 vt = v - vn;
-                        _current_vel.col( i ) = 1.0 * vn + 0.5 * vt;
+                        _v.col( i ) = 1.0 * vn + 0.5 * vt;
 
-                        Vector3 vj = model->_current_vel.col( j );
+                        Vector3 vj = model->_v.col( j );
                         Vector3 vjn = vj.dot( n ) * n;
                         Vector3 vjt = vj - vjn;
-                        model->_current_vel.col( j ) = -vjn + 0.5 * vjt;
+                        model->_v.col( j ) = -vjn + 0.5 * vjt;
 
                     }
                     else
                     {
                         //positive side of j
                         Vector3 n = xji.normalized();
-                        Vector3 dx = _current_pos.col( i ) - _last_pos.col( i );
+                        Vector3 dx = _x.col( i ) - _x_last.col( i );
                         Vector3 dx_n = dx.dot( n ) * n;
                         Vector3 dx_t = dx - dx_n;
 
                         float d = pj.r + pi.r - xji.norm();
-                        _current_pos.col( i ) += d * mass_ratio * n/* - dx_t * 0.8f*/;
-                        _last_pos.col( i ) = _current_pos.col( i );
+                        _x.col( i ) += d * mass_ratio * n/* - dx_t * 0.8f*/;
+                        _x_last.col( i ) = _x.col( i );
 
-                        Vector3 dxj = model->_current_pos.col( j ) - model->_last_pos.col( j );
+                        Vector3 dxj = model->_x.col( j ) - model->_x_last.col( j );
                         Vector3 dxjn = dxj.dot( n ) * n;
                         Vector3 dxjt = dxj - dxjn;
-                        model->_current_pos.col( j ) -= d * (1 - mass_ratio) * n/* - dxjt * 0.8*/;
-                        model->_last_pos.col( j ) = model->_current_pos.col( j );
+                        model->_x.col( j ) -= d * (1 - mass_ratio) * n/* - dxjt * 0.8*/;
+                        model->_x_last.col( j ) = model->_x.col( j );
 
-                        Vector3 v = _current_vel.col( i );
+                        Vector3 v = _v.col( i );
                         Vector3 vn = v.dot( n ) * n;
                         Vector3 vt = v - vn;
-                        _current_vel.col( i ) = -0.8 * vn + 0.2 * vt;
+                        _v.col( i ) = -0.8 * vn + 0.2 * vt;
 
-                        Vector3 vj = model->_current_vel.col( j );
+                        Vector3 vj = model->_v.col( j );
                         Vector3 vjn = vj.dot( n ) * n;
                         Vector3 vjt = vj - vjn;
-                        model->_current_vel.col( j ) = -0.8 * vjn + 0.2 * vjt;
+                        model->_v.col( j ) = -0.8 * vjn + 0.2 * vjt;
 
                     }
                     //if (true)
@@ -1360,7 +1372,7 @@ void PD::PDMetaballModel::ComputeBallOrit2()
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        Vector3 ui = _current_pos.col( i ) - _rest_pos.col( i );
+        Vector3 ui = _x.col( i ) - _x0.col( i );
         Vector3 sx = Vector3::Zero();
         Vector3 sy = Vector3::Zero();
         Vector3 sz = Vector3::Zero();
@@ -1368,8 +1380,8 @@ void PD::PDMetaballModel::ComputeBallOrit2()
         int cnt = 0;
         for (int j : _mesh->Ball( i ).neighbors)
         {
-            Vector3 uj = _current_pos.col( j ) - _rest_pos.col( j );
-            Vector3 xij = _rest_pos.col( j ) - _rest_pos.col( i );
+            Vector3 uj = _x.col( j ) - _x0.col( j );
+            Vector3 xij = _x0.col( j ) - _x0.col( i );
             float wij = _weights_for_edge_consts[i][cnt++];
             wsum += wij;
             sx += (uj[0] - ui[0]) * xij * wij;
@@ -1417,14 +1429,14 @@ void PD::PDMetaballModel::ComputeAinvForEdgeConsts()
         _weights_for_edge_consts[i].resize( ball.neighbors.size() );
 
         for (int j : ball.neighbors)
-            avg_dist += (_rest_pos.col( i ) - _rest_pos.col( j )).norm();
+            avg_dist += (_x0.col( i ) - _x0.col( j )).norm();
         avg_dist /= (ball.neighbors.size());
 
         float wsum = 0.f;
         int cnt = 0;
         for (int j : ball.neighbors)
         {
-            Vector3 xij = _rest_pos.col( j ) - _rest_pos.col( i );
+            Vector3 xij = _x0.col( j ) - _x0.col( i );
             float r = xij.norm();
             float h = avg_dist * 3;
             float wij = 0.f;

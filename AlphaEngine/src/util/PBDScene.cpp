@@ -139,13 +139,17 @@ void PBDScene::Update()
         for (int i = 0; i < 1; i++)
         {
             for (auto model : pdfcmodels)
-            {
                 if (model->_simulate)
-                {
-                    model->PhysicalUpdate();
+                    model->UpdateSn();
+            for (auto model : pdfcmodels)
+                if (model->_simulate)
+                    model->CollisionDetection();
+            for (auto model : pdfcmodels)
+                if (model->_simulate)
+                    model->PDSolve();
+            for (auto model : pdfcmodels)
+                if (model->_simulate)
                     model->PostPhysicalUpdate();
-                }
-            }
         }
 
         std::vector<PD::PDGPUMetaballModel*> gpupdmodels = GetAllChildOfType<PD::PDGPUMetaballModel>();

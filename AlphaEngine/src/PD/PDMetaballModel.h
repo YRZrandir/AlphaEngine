@@ -107,7 +107,7 @@ private:
 
 public:
     std::unique_ptr<SphereMesh<Particle>> _mesh;
-    Matrix3X _rest_pos;          //3*n
+    Matrix3X _x0;          //3*n
     bool _simulate = false;
 
 private:
@@ -115,22 +115,23 @@ private:
     SparseMatrix _mass_matrix; //3n*3n
     SparseMatrix _mass_matrix_inv; //3n*3n
 
-    Matrix3X _last_pos;
-    Matrix3X _last_pos1;
-    Matrix3X _current_pos;       //3*n
-    Matrix3X _current_vel;       //3*n
+    Matrix3X _x_last;
+    Matrix3X _x;       //3*n
+    Matrix3X _v;       //3*n
     Matrix3X _pene;
     Matrix3X _friction;
     Matrix3X _momentum;         //3*n
     Matrix3X _external_force;    //3*n
     Eigen::SimplicialLDLT<SparseMatrix> _llt;
-    SparseMatrix _At;
-    SparseMatrix _N;
-    Matrix3X _projections;
+    SparseMatrix _AS;
+    SparseMatrix _StAt;
+    SparseMatrix _P;
+    Matrix3X _p;
 
-    SparseMatrix _Dinv;
-    SparseMatrix _LU;
-    SparseMatrix _B;
+    bool _newton;
+    SparseMatrix _J;
+    Matrix3X _g;
+
 
     Eigen::Vector3f _err = Eigen::Vector3f( -1.f, -1.f, -1.f );
 

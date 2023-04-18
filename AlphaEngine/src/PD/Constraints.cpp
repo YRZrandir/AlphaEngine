@@ -1,7 +1,8 @@
 ﻿#include "Constraints.h"
 #include "PDGPUMetaballModel.h"
 
-
+namespace PD
+{
 PD::TetraStrainConstraint::TetraStrainConstraint( const std::vector<int>& indices, float weight, const Matrix3X& positions )
     :Constraint( indices, weight )
 {
@@ -19,10 +20,10 @@ void PD::TetraStrainConstraint::AddConstraint( std::vector<SparseMatrixTriplet>&
     _loc = total_id;
     int n = 3;
     for (int i = 0; i < n; ++i) {
-        triplets.push_back( SparseMatrixTriplet( _loc + i, _indices[0], -_weight * (_rest( 0, i ) + _rest( 1, i ) + _rest( 2, i )) ) );
-        triplets.push_back( SparseMatrixTriplet( _loc + i, _indices[1], _weight * _rest( 0, i ) ) );
-        triplets.push_back( SparseMatrixTriplet( _loc + i, _indices[2], _weight * _rest( 1, i ) ) );
-        triplets.push_back( SparseMatrixTriplet( _loc + i, _indices[3], _weight * _rest( 2, i ) ) );
+        triplets.emplace_back( _loc + i, _indices[0], -_weight * (_rest( 0, i ) + _rest( 1, i ) + _rest( 2, i )) );
+        triplets.emplace_back( _loc + i, _indices[1], _weight * _rest( 0, i ) );
+        triplets.emplace_back( _loc + i, _indices[2], _weight * _rest( 1, i ) );
+        triplets.emplace_back( _loc + i, _indices[3], _weight * _rest( 2, i ) );
     }
     total_id += n;
 }
@@ -41,7 +42,21 @@ void PD::TetraStrainConstraint::Project( const Matrix3X& pos, Matrix3X& proj ) c
     if (svd.matrixU().determinant() * svd.matrixV().determinant() < 0.0f) S( 2 ) = -S( 2 );
     F = svd.matrixU() * S.asDiagonal() * svd.matrixV().transpose();
     proj.block<3, 3>( 0, _loc ) = _weight * F;
+}
 
+SparseMatrix PD::TetraStrainConstraint::GetA() const
+{
+    std::vector<SparseMatrixTriplet> triplets;
+    SparseMatrix m( 3, _indices.size() );
+    for (int i = 0; i < 3; i++)
+    {
+        triplets.emplace_back( i, 0, -_weight * (_rest( 0, i ) + _rest( 1, i ) + _rest( 2, i )) );
+        triplets.emplace_back( i, 1, _weight * _rest( 0, i ) );
+        triplets.emplace_back( i, 2, _weight * _rest( 1, i ) );
+        triplets.emplace_back( i, 3, _weight * _rest( 2, i ) );
+    }
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
 }
 
 PD::EdgeConstraint::EdgeConstraint( int i0, int i1, float weight, const Matrix3X& pos )
@@ -65,4 +80,36 @@ void PD::EdgeConstraint::Project( const Matrix3X& pos, Matrix3X& proj ) const
     Vector3 edge = pos.col( _indices[1] ) - pos.col( _indices[0] );
     edge.normalize();
     proj.col( _loc ) = _weight * edge;
+}
+
+SparseMatrix PD::EdgeConstraint::GetA() const
+{
+    std::vector<SparseMatrixTriplet> triplets;
+    SparseMatrix m( 1, _indices.size() );
+    triplets.emplace_back( 0, 0, -_weight * _rest );
+    triplets.emplace_back( 0, 1, _weight * _rest );
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
+}
+
+void PD::AttachConstraint::AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const
+{
+    _loc = total_id;
+    triplets.push_back( SparseMatrixTriplet( total_id, _indices[0], _weight * 1 ) );
+    total_id += 1;
+}
+
+void PD::AttachConstraint::Project( const Matrix3X& pos, Matrix3X& proj ) const
+{
+    proj.col( _loc ) = _weight * _fixed_pos;
+}
+
+SparseMatrix PD::AttachConstraint::GetA() const
+{
+    std::vector<SparseMatrixTriplet> triplets;
+    SparseMatrix m( 1, 1 );
+    triplets.emplace_back( 0, 0, _weight );
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
+}
 }

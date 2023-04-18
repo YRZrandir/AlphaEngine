@@ -38,9 +38,17 @@ public:
 
     struct Contact
     {
-        Contact( Vector3 n, Vector3 t1, int id ) : n( n ), t1( t1 ), id( id )
+        Contact( Vector3 n, Vector3 t1, int id, int type ) : n( n ), t1( t1 ), id( id ), type( type )
         {
-            t2 = n.cross( t1 );
+            t2 = n.cross( t1 ).normalized();
+            R.col( 0 ) = t1;
+            R.col( 1 ) = n;
+            R.col( 2 ) = t2;
+        }
+
+        Contact( Vector3 n, Vector3 t1, int id, int id2, int type ) : n( n ), t1( t1 ), id( id ), id2( id2 ), type( type )
+        {
+            t2 = n.cross( t1 ).normalized();
             R.col( 0 ) = t1;
             R.col( 1 ) = n;
             R.col( 2 ) = t2;
@@ -62,12 +70,17 @@ public:
         Vector3 t2;
         Matrix3 R;
         Vector3 p;
+        Vector3 uf;
         int id;
+        int id2;
+        int type = 0;
     };
 
     PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
     void Init();
     void PhysicalUpdate();
+    void UpdateSn();
+    void PDSolve();
     void CollisionDetection();
     void PostPhysicalUpdate();
     virtual void Update() override;
@@ -133,11 +146,12 @@ protected:
 
     bool _show_surface = true;
     bool _show_balls = false;
-    bool _show_contacts = false;
+    bool _show_contacts = true;
 
     AABB _aabb;
 
     std::vector<Contact> _contacts;
+    std::vector<int> _contact_counter;
     std::unique_ptr<GLLineSegment> _contacts_vis;
 };
 

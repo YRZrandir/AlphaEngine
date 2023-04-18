@@ -65,7 +65,6 @@ private:
     Matrix3X _projections;
 
     std::vector<std::unique_ptr<Constraint>> _constraints;
-    std::vector<CollisionConstraint*> _colli_constraints;
 
     std::unordered_map<int, Vector3> _ext_forces;
 

@@ -35,5 +35,6 @@ protected:
     PDMetaballHalfEdgeMesh* LoadPDMetaballHalfEdgeMesh( tinyxml2::XMLElement* root );
     Transform LoadTransform( tinyxml2::XMLElement* root );
     RigidBall* LoadRigidBall( tinyxml2::XMLElement* root );
+    RigidStatic* LoadRigidStatic( tinyxml2::XMLElement* root );
     void LoadSceneFile( const char* filename );
 };

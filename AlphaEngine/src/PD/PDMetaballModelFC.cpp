@@ -24,11 +24,6 @@ namespace PD
 PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface )
     :_cfg( config ), _surface( surface )
 {
-    Contact test_c( Vector3( 0.5, 1, 0 ), Vector3( 0, 0, 1 ), 0 );
-    test_c.p = Vector3( 0, 0, 0 );
-    std::cout << "normal " << test_c.NormalComponent( Vector3( 2, 2, 2 ) ) << std::endl;
-    std::cout << "tangent " << test_c.TangentialComponent( Vector3( 2, 2, 2 ) ) << std::endl;
-
     _mesh = std::make_unique<SphereMesh<Particle>>();
     _coarse_surface = std::make_unique<HalfEdgeMesh>( _cfg._coarse_surface );
 
@@ -96,6 +91,7 @@ void PD::PDMetaballModelFC::Init()
     _bn_tilde.resize( 3, nb_points );
     _f.resize( 3, nb_points );
     _ksi.resize( 3, nb_points );
+    _contact_counter.resize( nb_points, 0 );
 
     for (int i = 0; i < nb_points; ++i)
     {
@@ -423,9 +419,9 @@ void PDMetaballModelFC::PhysicalUpdate()
 #pragma omp parallel for
         for (int r = 0; r < 3; r++)
         {
-            auto bn = _cfg._dt * _cfg._dt * _StAt * _p.row( r ).transpose() + _M * _momentum.row( r ).transpose();
+            VectorX bn = _cfg._dt * _cfg._dt * _StAt * _p.row( r ).transpose() + _M * _momentum.row( r ).transpose();
             _bn_tilde.row( r ) = (bn - _P * _x_last.row( r ).transpose()) / _cfg._dt;
-            _f.row( r ) = _bn_tilde.row( r ) - _C * _v.row( r ).transpose();
+            _f.row( r ) = _bn_tilde.row( r ) - (_C * _v.row( r ).transpose()).transpose();
             _ksi.row( r ).setZero();
         }
 
@@ -433,24 +429,26 @@ void PDMetaballModelFC::PhysicalUpdate()
         for (int c = 0; c < _contacts.size(); c++)
         {
             const Contact& contact = _contacts[c];
-            Vector3 fi = _f.col( contact.id );
-            Vector3 dj = contact.R.transpose() * fi;
-            float djn = contact.NormalComponent( dj );
-            Vector3 djt = contact.TangentialComponent( dj );
-            Vector3 rj = Vector3::Zero();
-            if (djn < 0)
+            if (contact.type == 0)
             {
-                rj.y() = -djn;
-                if (djt.norm() <= -djn * 0.5f)
+                Vector3 dj = contact.R.transpose() * _f.col( contact.id );
+                float djn = contact.NormalComponent( dj );
+                Vector3 djt = contact.TangentialComponent( dj );
+                Vector3 rj = Vector3::Zero();
+                if (djn < 0)
                 {
-                    rj += -djt;
+                    rj.y() = -djn;
+                    if (djt.norm() <= -djn * 0.6f)
+                    {
+                        rj += -djt;
+                    }
+                    else
+                    {
+                        rj += -0.6f * (-djn) * djt.normalized();
+                    }
                 }
-                else
-                {
-                    rj += -0.5f * rj.y() * djt.normalized();
-                }
+                _ksi.col( contact.id ) += contact.R * rj;
             }
-            _ksi.col( contact.id ) += contact.R.transpose() * rj;
         }
 
 #pragma omp parallel for
@@ -474,6 +472,124 @@ void PDMetaballModelFC::PhysicalUpdate()
     _fext.setZero();
 }
 
+void PDMetaballModelFC::UpdateSn()
+{
+    for (int i = 0; i < _mesh->BallsNum(); ++i)
+        _fext.col( i ).y() -= 9.8f;
+    for (auto& pair : _ext_forces)
+        _fext.col( pair.first ) += pair.second;
+
+#pragma omp parallel for
+    for (int c = 0; c < _mesh->BallsNum(); c++)
+    {
+        _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
+        _momentum.col( c ) += _cfg._dt * _cfg._dt * _fext.col( c );
+        _x_last.col( c ) = _x.col( c );
+        _x.col( c ) = _momentum.col( c );
+    }
+
+    _aabb.max_corner = glm::vec3( -FLT_MAX );
+    _aabb.min_corner = glm::vec3( FLT_MAX );
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
+    }
+}
+
+void PDMetaballModelFC::PDSolve()
+{
+    for (int i = 0; i < _cfg._nb_solve; i++)
+    {
+#pragma omp parallel for
+        for (int j = 0; j < _constraints.size(); j++)
+        {
+            _constraints[j]->Project( _x, _p );
+        }
+
+#pragma omp parallel for
+        for (int r = 0; r < 3; r++)
+        {
+            VectorX bn = _cfg._dt * _cfg._dt * _StAt * _p.row( r ).transpose() + _M * _momentum.row( r ).transpose();
+            _bn_tilde.row( r ) = (bn - _P * _x_last.row( r ).transpose()) / _cfg._dt;
+            _f.row( r ) = _bn_tilde.row( r ) - (_C * _v.row( r ).transpose()).transpose();
+            _ksi.row( r ).setZero();
+        }
+
+#pragma omp parallel for
+        for (int c = 0; c < _contacts.size(); c++)
+        {
+            const Contact& contact = _contacts[c];
+            if (contact.type == 0)
+            {
+                Vector3 dj = contact.R.transpose() * _f.col( contact.id );
+                float djn = contact.NormalComponent( dj );
+                Vector3 djt = contact.TangentialComponent( dj );
+                Vector3 rj = Vector3::Zero();
+                if (djn < 0)
+                {
+                    rj.y() = -djn;
+                    if (djt.norm() <= -djn * 0.6f)
+                    {
+                        rj += -djt;
+                    }
+                    else
+                    {
+                        rj += -0.6f * (-djn) * djt.normalized();
+                    }
+                }
+                _ksi.col( contact.id ) += contact.R * rj;
+            }
+            else if (contact.type == 1)
+            {
+                Vector3 dj = contact.R.transpose() * _f.col( contact.id ) + _mesh->Ball( contact.id ).m * contact.uf;
+                float djn = contact.NormalComponent( dj );
+                Vector3 djt = contact.TangentialComponent( dj );
+                Vector3 rj = Vector3::Zero();
+                if (djn < 0)
+                {
+                    rj.y() = -djn;
+                    if (djt.norm() <= -djn * 0.1f)
+                    {
+                        rj += -djt;
+                    }
+                    else
+                    {
+                        rj += -0.1f * (-djn) * djt.normalized();
+                    }
+                }
+                _ksi.col( contact.id ) += contact.R * rj;
+            }
+        }
+#pragma omp parallel for
+        for (int i = 0; i < _contact_counter.size(); i++)
+        {
+            if (_contact_counter[i] > 1)
+            {
+                _ksi.col( i ) /= _contact_counter[i];
+            }
+        }
+#pragma omp parallel for
+        for (int r = 0; r < 3; r++)
+        {
+            _v.row( r ) = _llt.solve( _bn_tilde.row( r ).transpose() + _ksi.row( r ).transpose() );
+            _x.row( r ) = _x_last.row( r ) + _cfg._dt * _v.row( r );
+        }
+    }
+
+    _v *= 0.9999f;
+
+    _aabb.max_corner = glm::vec3( -FLT_MAX );
+    _aabb.min_corner = glm::vec3( FLT_MAX );
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
+    }
+
+    _fext.setZero();
+}
+
 void PDMetaballModelFC::CollisionDetection()
 {
     std::vector<RigidStatic*> rigid_bodys = Scene::active->GetAllChildOfType<RigidStatic>();
@@ -482,22 +598,24 @@ void PDMetaballModelFC::CollisionDetection()
     std::vector<RigidBall*> rigid_balls = Scene::active->GetAllChildOfType<RigidBall>();
 
     _contacts.clear();
-    //for (int i = 0; i < _mesh->BallsNum(); i++)
-    //{
-    //    Vector3 p = _x.col( i );
-    //    float r = _mesh->Ball( i ).r;
+    std::fill( _contact_counter.begin(), _contact_counter.end(), 0 );
 
-    //    Vector3 plane( 0, -0.5, 0 );
-    //    Vector3 plane_n( 0.0, 1, 0 );
-    //    plane_n.normalize();
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        Vector3 p = _x.col( i );
+        float r = _mesh->Ball( i ).r;
 
-    //    float test = (p - plane).dot( plane_n );
-    //    if (test < r)
-    //    {
-    //        _contacts.push_back( Contact( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i ) );
-    //        _contacts.back().p = p + plane_n * (r - test);
-    //    }
-    //}
+        Vector3 plane( 0, -1.0, 0 );
+        Vector3 plane_n( 0.0, 1, 0 );
+        plane_n.normalize();
+
+        float test = (p - plane).dot( plane_n );
+        if (test < r)
+        {
+            _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
+            _contacts.back().p = p + plane_n * (r - test);
+        }
+    }
 
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
@@ -512,13 +630,67 @@ void PDMetaballModelFC::CollisionDetection()
                 Vector3 n = (p - ToEigen( rigid->GetPos() )).normalized();
                 Vector3 test( 1.1, 2.2, 3.4 );
                 Vector3 t = n.cross( test ).normalized();
-
 #pragma omp critical
                 {
-                    _contacts.emplace_back( n, t, i );
+                    _contacts.emplace_back( n, t, i, 0 );
+                    _contacts.back().p = ToEigen( rigid->GetPos() ) + n * rigid->GetRadius();
                 }
             }
         }
+    }
+
+    //#pragma omp parallel for
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        Vector3 pi = _x.col( i );
+        Vector3 pi0 = _x_last.col( i );
+        float ri = _mesh->Ball( i ).r;
+
+        for (auto model : pd_models)
+        {
+            if (model == this)
+                continue;
+            //if (!BallAABBIntersect( ToGLM( pi ), ri, model->_aabb ))
+            //    continue;
+            for (int j = 0; j < model->_mesh->BallsNum(); j++)
+            {
+                Vector3 pj = model->_x.col( j );
+                Vector3 pj0 = model->_x_last.col( j );
+                float rj = model->_mesh->Ball( j ).r;
+                float t = 0.f;
+                if (TestMovingSphereSphere( ToGLM( pi0 ), ri, ToGLM( pi - pi0 ), ToGLM( pj0 ), rj, ToGLM( pj - pj0 ), &t ))
+                {
+                    Vector3 pci = pi0 + t * (pi - pi0);
+                    Vector3 pcj = pj0 + t * (pj - pj0);
+                    Vector3 n = (pci - pcj).normalized();
+                    Vector3 test( 1.1, 2.2, 3.4 );
+                    Vector3 t = n.cross( test ).normalized();
+#pragma omp critical
+                    {
+                        _contacts.emplace_back( n, t, i, 0 );
+                        _contacts.back().uf = _contacts.back().R.transpose() * model->_v.col( j );
+                        _contacts.back().p = pci;
+                    }
+                }
+                //auto ret = BallBallIntersect( ToGLM( pi ), ri, ToGLM( pj ), rj );
+                //if (ret.has_value())
+                //{
+                //    Vector3 n = (pi - pj).normalized();
+                //    Vector3 t = n.cross( Vector3( 1.1, 2.3, 3.7 ) ).normalized();
+                //    //#pragma omp critical
+                //    {
+                //        _contacts.emplace_back( n, t, i, 1 );
+                //        _contacts.back().uf = _contacts.back().R.transpose() * -model->_v.col( j );
+                //        _contacts.back().p = pi;
+                //    }
+                //}
+            }
+        }
+    }
+
+    for (const auto& c : _contacts)
+    {
+        _contact_counter[c.id]++;
     }
 
     if (_show_contacts)
@@ -533,6 +705,7 @@ void PDMetaballModelFC::CollisionDetection()
             _contacts_vis->AddPoint( ToGLM( c.p ), glm::BLUE );
             _contacts_vis->AddPoint( ToGLM( c.p + c.t2 * 0.05f ), glm::BLUE );
         }
+        _contacts_vis->UpdateMem();
     }
 }
 
