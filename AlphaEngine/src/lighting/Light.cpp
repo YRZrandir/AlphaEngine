@@ -69,7 +69,7 @@ void DirLight::Draw()
 
 glm::mat4 DirLight::GetLightSpaceMat()
 {
-    glm::mat4 proj = glm::ortho( -5.f, 5.f, -5.f, 5.f, 0.001f, 10.f );
+    glm::mat4 proj = glm::ortho( -4.f, 4.f, -4.f, 4.f, -5.f, 5.f );
     glm::vec3 up = glm::vec3( 0, 1, 0 );
     if (std::abs( dir.x ) < 1e-4 && std::abs( dir.z ) < 1e-4)
     {

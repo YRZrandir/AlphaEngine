@@ -3,12 +3,15 @@
 
 namespace PD
 {
+class SpatialHash;
+
 class PDMetaballModelFC : public SceneObject
 {
 public:
     class Particle : public SphereBase
     {
     public:
+        Vector3 x_last;
         glm::vec3 v = glm::vec3( 0.f );
         glm::vec3 f = glm::vec3( 0.f );
         float rc = 0.f;
@@ -18,6 +21,7 @@ public:
         Matrix3 R = Matrix3::Identity();
         glm::vec3 outside = glm::vec3( 0.f );
         float sdf = 0.f;
+        PDMetaballModelFC* pmodel;
     };
 
     static const int NEICOUNT = 10;
@@ -76,14 +80,17 @@ public:
         int type = 0;
     };
 
+    friend class PBDScene;
+
     PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
     void Init();
     void PhysicalUpdate();
     void UpdateSn();
     void PDSolve();
-    void CollisionDetection();
+    void CollisionDetection( SpatialHash* table );
     void PostPhysicalUpdate();
     virtual void Update() override;
+    virtual void DrawShadowDepth() override;
     virtual void Draw() override;
     void DrawGUI();
 
@@ -96,6 +103,7 @@ public:
     bool _simulate = false;
 
 protected:
+    friend class PD::SpatialHash;
     PDMetaballModelConfig _cfg;
 
     std::unique_ptr<SphereMesh<Particle>> _mesh;
@@ -127,7 +135,9 @@ protected:
     SparseMatrix _B;
 
     std::unique_ptr<HalfEdgeMesh> _coarse_surface;
+
     PDMetaballHalfEdgeMesh* _surface;
+    glm::vec3 _color;
     std::vector<VtxSkinningInfo>        _vtx_skinning_table;
     std::vector<BallSkinningInfo>       _ball_skinning_infos;
     std::unique_ptr<ShaderStorageBuffer> _skin_vtx_buffer;
@@ -146,13 +156,49 @@ protected:
 
     bool _show_surface = true;
     bool _show_balls = false;
-    bool _show_contacts = true;
+    bool _show_contacts = false;
 
     AABB _aabb;
 
     std::vector<Contact> _contacts;
+    std::vector<std::vector<int>> _contact_bylayer;
     std::vector<int> _contact_counter;
     std::unique_ptr<GLLineSegment> _contacts_vis;
+};
+
+class SpatialHash
+{
+    using Sphere = PDMetaballModelFC::Particle;
+    using GridPos = std::tuple<int, int, int>;
+    struct GridHash
+    {
+        size_t operator()( const GridPos& p ) const
+        {
+            return std::abs( std::get<0>( p ) * 73856093 ^ std::get<1>( p ) * 19349663 ^ std::get<2>( p ) * 83492791 );
+        }
+    };
+    struct GridPred
+    {
+        bool operator()( const GridPos& p1, const GridPos& p2 ) const
+        {
+            return std::get<0>( p1 ) == std::get<0>( p2 ) && std::get<1>( p1 ) == std::get<1>( p2 ) && std::get<2>( p1 ) == std::get<2>( p2 );
+        }
+    };
+
+public:
+    SpatialHash( float dx );
+    void Insert( Sphere* s );
+    void Clear();
+    std::vector<Sphere*> CheckIntersection( Sphere* s ) const;
+    void SetDx( float dx );
+
+protected:
+    int GridCoord( float p ) const;
+
+protected:
+    float _dx;
+    std::unordered_map<GridPos, std::vector<Sphere*>, GridHash, GridPred> _table;
+
 };
 
 }

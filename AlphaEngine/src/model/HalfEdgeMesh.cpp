@@ -1669,6 +1669,7 @@ void PDMetaballHalfEdgeMesh::Draw()
 {
     static auto set_uniforms = [&]( Shader& shader, const Transform* transform, const Material* mat_main )
     {
+        Light::SetAllLightUniforms( shader );
         mat_main->SetShaderUniforms( shader );
         shader.setFloat( "uAlpha", mat_main->mAlpha );
     };
@@ -1690,6 +1691,8 @@ void PDMetaballHalfEdgeMesh::Draw()
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
         glDisable( GL_POLYGON_OFFSET_FILL );
         glDepthMask( true );
+        glEnable( GL_CULL_FACE );
+        glCullFace( GL_BACK );
         glDrawArrays( GL_TRIANGLES, 0, mRenderingVtxCount );
     }
     if (mRenderConfig._draw_line)

@@ -1009,36 +1009,3 @@ inline const Sphere& SphereMesh<Sphere>::operator[]( unsigned int id ) const
 {
     return _balls[id];
 }
-
-class SpatialHashing
-{
-public:
-    SpatialHashing( float dx );
-    void Insert( SphereBase* s );
-    std::vector<SphereBase*> CheckIntersection( SphereBase* s ) const;
-
-protected:
-    int GridCoord( float p ) const;
-
-    using GridPos = std::tuple<int, int, int>;
-
-    struct GridHash
-    {
-        size_t operator()( const GridPos& p ) const
-        {
-            return std::get<0>( p ) * 73856093 ^ std::get<1>( p ) * 19349663 ^ std::get<2>( p ) * 83492791;
-        }
-    };
-
-    struct GridPred
-    {
-        bool operator()( const GridPos& p1, const GridPos& p2 ) const
-        {
-            return std::get<0>( p1 ) == std::get<0>( p2 ) && std::get<1>( p1 ) == std::get<1>( p2 ) && std::get<2>( p1 ) == std::get<2>( p2 );
-        }
-    };
-
-protected:
-    float _dx;
-    std::unordered_map<GridPos, std::vector<SphereBase*>, GridHash, GridPred> _table;
-};

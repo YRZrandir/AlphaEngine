@@ -146,7 +146,7 @@ void ElasticityApp::Init()
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
-    Scene::active = std::make_unique<PBDScene>( false );
+    Scene::active = std::make_unique<PBDScene>( true );
 
     //Camera
     auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
@@ -172,8 +172,7 @@ void ElasticityApp::Init()
     //    70.0f,
     //    1.0f, 0.2f, 0.1f ) );
 
-    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 10.0f, glm::vec3( 1.f ) ) );
-
+    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, 0 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
 
     //Shaders
     const std::string SHADER_PATH = "res/shaders/";
@@ -193,12 +192,12 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
-
 #ifdef EXAMPLE_ARMA
     cam->mTransform.SetPos( glm::vec3( 1.4, 0.550, 0.530 ) );
     cam->_yaw = 250.0f;
     cam->_pitch = 25.0f;
     LoadSceneFile( "D:/models/arma/model.xml" );
+
 #endif
 
 #ifdef EXAMPLE_DUCK
@@ -422,6 +421,41 @@ void ElasticityApp::Init()
     surface->mLayer = 1;
     auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
     pdmetaball->mName = "model0";
+#endif
+
+#ifdef EXAMPLE_BUNNYS
+    PD::PDMetaballModelConfig cfg{};
+    cfg._method = 0;
+    cfg._coarse_surface = "D:/models/bunny/bunny.obj";
+    cfg._fine_surface = "D:/models/bunny/bunnys.obj";
+    cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
+    cfg._density = 1.0f;
+    cfg._sample_dx = 0.03f;
+    cfg._nb_lloyd = 1;
+    cfg._k_attach = 200.0f;
+    cfg._k_stiff = 50.0f;
+    cfg._nb_points = 48;
+    cfg._dt = 0.005f;
+    cfg._nb_solve = 5;
+    cfg._physical_step = 1;
+    cfg._const_type = 0;
+    cfg._attach_filter = []( glm::vec3 v )->bool { return false; };
+    cfg._displacement = glm::vec3( 0, 0, 0 );
+    auto surface = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( "D:/models/bunny/bunnys.obj" ) );
+
+    for (int i = -1; i <= 1; i++)
+    {
+        for (int j = -1; j <= 1; j++)
+        {
+            for (int k = 2; k <= 4; k++)
+            {
+                cfg._displacement = glm::vec3( i, k, j ) * 0.5f;
+                auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( cfg, surface ) );
+            }
+        }
+    }
+
+    Scene::active->AddChild( std::make_unique<HalfEdgeMesh>( "D:/models/floor.obj" ) );
 #endif
     //auto rigid_box = Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cylinder.obj" ) );
     //rigid_box->mTransform.Translate( { 0,-1, 0 } );
@@ -769,7 +803,7 @@ PDMetaballHalfEdgeMesh* ElasticityApp::LoadPDMetaballHalfEdgeMesh( tinyxml2::XML
     };
 
     std::string path( get_elem_text( root, "Path" ) );
-    auto mesh = Scene::active->AddChild( make_unique<PDMetaballHalfEdgeMesh>( path ) );
+    auto mesh = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( path ) );
 
     if (root->FirstChildElement( "Name" ) != nullptr)
     {
@@ -860,7 +894,26 @@ RigidBall* ElasticityApp::LoadRigidBall( tinyxml2::XMLElement* root )
 
 RigidStatic* ElasticityApp::LoadRigidStatic( tinyxml2::XMLElement* root )
 {
-    return nullptr;
+    auto get_elem_text = []( const tinyxml2::XMLElement* parent, const char* name ) {
+        return parent->FirstChildElement( name )->GetText();
+    };
+
+    std::string path( get_elem_text( root, "Path" ) );
+    boost::algorithm::trim( path );
+    auto rigid_static = Scene::active->AddChild( std::make_unique<RigidStatic>( path ) );
+
+    if (root->FirstChildElement( "Name" ) != nullptr)
+    {
+        std::string name( get_elem_text( root, "Name" ) );
+        rigid_static->mName = name;
+    }
+
+    if (root->FirstChildElement( "Transform" ) != nullptr)
+    {
+        rigid_static->mTransform = LoadTransform( root->FirstChildElement( "Transform" ) );
+    }
+
+    return rigid_static;
 }
 
 void ElasticityApp::LoadSceneFile( const char* filename )
@@ -898,6 +951,10 @@ void ElasticityApp::LoadSceneFile( const char* filename )
             else if (std::strcmp( child->Name(), "RigidBall" ) == 0)
             {
                 LoadRigidBall( child );
+            }
+            else if (std::strcmp( child->Name(), "RigidStatic" ) == 0)
+            {
+                LoadRigidStatic( child );
             }
             child = child->NextSiblingElement();
         }

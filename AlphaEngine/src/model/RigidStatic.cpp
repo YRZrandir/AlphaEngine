@@ -162,6 +162,15 @@ bool RigidStatic::CheckInside( glm::vec3 p, glm::vec3* normal, float* depth, int
     return false;
 }
 
+std::optional<MovingSphereTriIntersectInfo> RigidStatic::CheckMovingBall( glm::vec3 p0, glm::vec3 p1, float r ) const
+{
+    std::vector<MovingSphereTriIntersectInfo> infos;
+    if (((BVHTree_HalfEdgeMesh*)_bvh.get())->CheckMovingSphere( p0, p1, r, std::back_inserter( infos ) ))
+    {
+        return *std::min_element( infos.begin(), infos.end(), []( const auto& info1, const auto& info2 ) { return info1.t < info2.t; } );
+    }
+}
+
 void RigidStatic::UpdateTransPos()
 {
     glm::mat4 T = mTransform.GetModelMat();

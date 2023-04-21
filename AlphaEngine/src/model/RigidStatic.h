@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <optional>
 #include <string>
 #include <memory>
 #include "util/SceneObject.h"
@@ -19,6 +20,7 @@ public:
     glm::vec3 GetPos( size_t i ) const { return _trans_pos[i]; }
     bool CheckLineseg( glm::vec3 p0, glm::vec3 p1, IntersectionRec* rec, int* id ) const;
     std::vector<PBD::CollisionConstraint> CheckBall( glm::vec3 c, float r, int id ) const;
+    std::optional<MovingSphereTriIntersectInfo> CheckMovingBall( glm::vec3 p0, glm::vec3 p1, float r ) const;
     bool CheckInside( glm::vec3 p, glm::vec3* normal, float* depth, int* id ) const;
     void UpdateTransPos();
 private:

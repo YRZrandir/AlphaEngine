@@ -12,6 +12,7 @@
 PBDScene::PBDScene( bool mt )
     :Scene(), _mt( mt )
 {
+    _spatial_hash = std::make_unique<PD::SpatialHash>( 0.1f );
 }
 
 void PBDScene::Update()
@@ -74,7 +75,7 @@ void PBDScene::Update()
         std::vector<PD::PDGPUMetaballModel*> gpupdmodels = GetAllChildOfType<PD::PDGPUMetaballModel>();
         if (!gpupdmodels.empty())
         {
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 1; i++)
             {
 #pragma omp parallel for
                 for (int j = 0; j < gpupdmodels.size(); j++)
@@ -99,6 +100,49 @@ void PBDScene::Update()
                     {
                         gpupdmodels[j]->PostPhysicalUpdate();
                     }
+                }
+            }
+        }
+
+        std::vector<PD::PDMetaballModelFC*> pdfcmodels = GetAllChildOfType<PD::PDMetaballModelFC>();
+        if (!pdfcmodels.empty())
+        {
+            for (int i = 0; i < 1; i++)
+            {
+#pragma omp parallel for
+                for (int j = 0; j < pdfcmodels.size(); j++)
+                {
+                    if (pdfcmodels[j]->_simulate)
+                        pdfcmodels[j]->UpdateSn();
+                }
+
+                _spatial_hash->Clear();
+                for (auto model : pdfcmodels)
+                {
+                    if (model->_simulate)
+                    {
+                        for (int j = 0; j < model->_mesh->BallsNum(); j++)
+                        {
+                            _spatial_hash->Insert( &model->_mesh->Ball( j ) );
+                        }
+                    }
+                }
+
+#pragma omp parallel for
+                for (int j = 0; j < pdfcmodels.size(); j++)
+                {
+                    if (pdfcmodels[j]->_simulate)
+                        pdfcmodels[j]->CollisionDetection( _spatial_hash.get() );
+                }
+#pragma omp parallel for
+                for (int j = 0; j < pdfcmodels.size(); j++)
+                    if (pdfcmodels[j]->_simulate)
+                        pdfcmodels[j]->PDSolve();
+#pragma omp parallel for
+                for (int j = 0; j < pdfcmodels.size(); j++)
+                {
+                    if (pdfcmodels[j]->_simulate)
+                        pdfcmodels[j]->PostPhysicalUpdate();
                 }
             }
         }
@@ -141,9 +185,22 @@ void PBDScene::Update()
             for (auto model : pdfcmodels)
                 if (model->_simulate)
                     model->UpdateSn();
+
+            _spatial_hash->Clear();
+            for (auto model : pdfcmodels)
+            {
+                if (model->_simulate)
+                {
+                    for (int j = 0; j < model->_mesh->BallsNum(); j++)
+                    {
+                        _spatial_hash->Insert( &model->_mesh->Ball( j ) );
+                    }
+                }
+            }
+
             for (auto model : pdfcmodels)
                 if (model->_simulate)
-                    model->CollisionDetection();
+                    model->CollisionDetection( _spatial_hash.get() );
             for (auto model : pdfcmodels)
                 if (model->_simulate)
                     model->PDSolve();

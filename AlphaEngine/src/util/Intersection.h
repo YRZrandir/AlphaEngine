@@ -105,10 +105,10 @@ bool TestRaySphere( glm::vec<3, Scalar> p, glm::vec<3, Scalar> d, glm::vec<3, Sc
 {
     auto m = p - c;
     Scalar b = glm::dot( m, d );
-    Scalar c = glm::dot( m, m ) - r * r;
-    if (c > 0.0 && b > 0.0)
+    Scalar cc = glm::dot( m, m ) - r * r;
+    if (cc > 0.0 && b > 0.0)
         return false;
-    Scalar discr = b * b - c;
+    Scalar discr = b * b - cc;
     if (discr < 0.0)
         return false;
 

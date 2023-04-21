@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <vector>
 #include <array>
@@ -10,6 +11,7 @@
 #include "AABB.h"
 #include "../model/HalfEdgeMesh.h"
 #include "../model/Ray.h"
+#include "util/Intersection.h"
 
 class VertexArray;
 class VertexBuffer;
@@ -41,6 +43,7 @@ public:
     virtual bool CheckLineseg( glm::vec3 p0, glm::vec3 p1, IntersectionRec* rec, int* id ) const = 0;
     virtual bool CheckBall( glm::vec3 c, float r, std::vector<CollisionInfo>* infos ) const = 0;
     virtual bool CheckRay( glm::vec3 o, glm::vec3 d, CollisionInfo* info, float* t ) const = 0;
+
 protected:
     static void Init();
 
@@ -77,18 +80,6 @@ protected:
 };
 
 
-class BVHTree_HalfEdgeMesh
-    : public BVHTree
-{
-public:
-    BVHTree_HalfEdgeMesh( HalfEdgeMesh* mesh );
-    virtual void Refit() override;
-    virtual bool CheckLineseg( glm::vec3 p0, glm::vec3 p1, IntersectionRec* rec, int* id ) const override;
-
-private:
-    HalfEdgeMesh* _mesh = nullptr;
-};
-
 class BVHNode_HalfEdgeMesh
     : public BVHNode
 {
@@ -98,10 +89,62 @@ public:
     virtual bool CheckLineseg( glm::vec3 p0, glm::vec3 p1, IntersectionRec* rec, int* id ) const override;
     virtual bool CheckBall( glm::vec3 c, float r, std::vector<CollisionInfo>* infos ) const override;
     virtual bool CheckRay( glm::vec3 o, glm::vec3 d, CollisionInfo* info, float* t ) const override;
+    template <std::output_iterator<MovingSphereTriIntersectInfo> It>
+    bool CheckMovingSphere( glm::vec3 p0, glm::vec3 p1, float r, It it ) const
+    {
+        float t = 0.f;
+        if (!TestMovingSphereAABB( p0, r, p1 - p0, mBoundingBox, &t ))
+        {
+            return false;
+        }
+        if (mLeft && mRight)
+        {
+            bool left = ((BVHNode_HalfEdgeMesh*)mLeft.get())->CheckMovingSphere( p0, p1, r, it );
+            bool right = ((BVHNode_HalfEdgeMesh*)mRight.get())->CheckMovingSphere( p0, p1, r, it );
+            return left || right;
+        }
+        else if (!mLeft && !mRight)
+        {
+            bool intersect = false;
+            for (int i : mIndices)
+            {
+                auto [ia, ib, ic] = _mesh->GetFaceIndices( i );
+                glm::vec3 va = _mesh->GetPosition( ia );
+                glm::vec3 vb = _mesh->GetPosition( ib );
+                glm::vec3 vc = _mesh->GetPosition( ic );
+                MovingSphereTriIntersectInfo info;
+                if (MovingSphereTriIntersect( p0, r, p1 - p0, va, vb, vc, &info ))
+                {
+                    *it = info;
+                    it++;
+                    intersect = true;
+                }
+            }
+            return intersect;
+        }
+    };
 
 private:
     HalfEdgeMesh* _mesh;
 };
+
+class BVHTree_HalfEdgeMesh
+    : public BVHTree
+{
+public:
+    BVHTree_HalfEdgeMesh( HalfEdgeMesh* mesh );
+    virtual void Refit() override;
+    virtual bool CheckLineseg( glm::vec3 p0, glm::vec3 p1, IntersectionRec* rec, int* id ) const override;
+    template <std::output_iterator<MovingSphereTriIntersectInfo> It>
+    bool CheckMovingSphere( glm::vec3 p0, glm::vec3 p1, float r, It it ) const
+    {
+        return ((BVHNode_HalfEdgeMesh*)_root.get())->CheckMovingSphere( p0, p1, r, it );
+    };
+
+private:
+    HalfEdgeMesh* _mesh = nullptr;
+};
+
 
 
 class BVHTree_Metaball

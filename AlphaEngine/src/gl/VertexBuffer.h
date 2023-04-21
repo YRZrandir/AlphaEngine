@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <mutex>
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
@@ -37,6 +38,7 @@ class VertexBuffer
 private:
     unsigned int _id;
     VertexBufferLayout _layout;
+    static std::mutex _gl_lock;
 
 public:
     VertexBuffer( const void* data, unsigned int size, GLenum usage = GL_STATIC_DRAW );

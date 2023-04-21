@@ -21,9 +21,11 @@ std::ostream& operator<<( std::ostream& os, const VertexBufferLayout& layout )
     return os;
 }
 
+std::mutex VertexBuffer::_gl_lock;
 
 VertexBuffer::VertexBuffer( const void* data, unsigned int size, GLenum usage )
 {
+    std::lock_guard<std::mutex> lock( _gl_lock );
     glGenBuffers( 1, &_id );
     glBindBuffer( GL_ARRAY_BUFFER, _id );
     glBufferData( GL_ARRAY_BUFFER, size, data, usage );
@@ -72,12 +74,14 @@ void VertexBuffer::Unbind()
 
 void VertexBuffer::UpdateData( const void* data, unsigned int size, GLenum usage )
 {
+    std::lock_guard<std::mutex> lock( _gl_lock );
     Bind();
     glBufferData( GL_ARRAY_BUFFER, size, data, usage );
 }
 
 void VertexBuffer::UpdateSubData( const void* data, unsigned int offset, unsigned int size )
 {
+    std::lock_guard<std::mutex> lock( _gl_lock );
     Bind();
     glBufferSubData( GL_ARRAY_BUFFER, offset, size, data );
 }
@@ -110,6 +114,7 @@ void VertexBuffer::CopySubDataFrom( const VertexBuffer& src, unsigned int readOf
 
 void VertexBuffer::CopySubDataFrom( unsigned src, unsigned int readOffset, unsigned int writeOffset, unsigned int size )
 {
+    std::lock_guard<std::mutex> lock( _gl_lock );
     glCopyNamedBufferSubData( src, _id, readOffset, writeOffset, size );
 }
 

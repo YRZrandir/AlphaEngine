@@ -1,7 +1,11 @@
 ﻿#pragma once
 #include "Scene.h"
 #include <condition_variable>
-#include <thread_pool.hpp>
+
+namespace PD
+{
+class SpatialHash;
+}
 
 class PBDScene :
     public Scene
@@ -12,5 +16,6 @@ public:
     virtual void Update();
 private:
     bool _mt = true;
+    std::unique_ptr<PD::SpatialHash> _spatial_hash;
 };
 
