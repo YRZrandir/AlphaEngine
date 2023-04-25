@@ -8,6 +8,17 @@ class PDGPUMetaballModel :
     public SceneObject
 {
 public:
+    using Real = float;
+    using Vector2 = Eigen::Vector2<Real>;
+    using Vector3 = Eigen::Vector3<Real>;
+    using Vector4 = Eigen::Vector4<Real>;
+    using Matrix3 = Eigen::Matrix3<Real>;
+    using Matrix4 = Eigen::Matrix4<Real>;
+    using VectorX = Eigen::VectorX<Real>;
+    using MatrixX = Eigen::MatrixX<Real>;
+    using Matrix3X = Eigen::Matrix3X<Real>;
+    using MatrixX3 = Eigen::MatrixX3<Real>;
+    using SparseMatrix = Eigen::SparseMatrix<Real>;
 
     class Particle : public SphereBase
     {
@@ -93,11 +104,21 @@ private:
     Matrix3X _friction;
     Matrix3X _momentum;         //3*n
     Matrix3X _external_force;    //3*n
-    Eigen::SimplicialLDLT<SparseMatrix> _llt;
+    std::vector<std::unique_ptr<Constraint<Real>>> _constraints;
+    SparseMatrix _AS;
+    SparseMatrix _StAt;
     SparseMatrix _At;
     SparseMatrix _N;
     Matrix3X _projections;
-    std::vector<std::unique_ptr<Constraint>> _constraints;
+    Eigen::SimplicialLDLT<SparseMatrix> _llt;
+
+    SparseMatrix _StAtAS;
+    SparseMatrix _J;
+    Matrix3X _g;
+    std::vector<SparseMatrix> _CStAtAS;
+    std::vector<SparseMatrix> _CStAt;
+    std::vector<SparseMatrix> _CAS;
+    Eigen::SimplicialLDLT<SparseMatrix> _newtonllt;
 
     SparseMatrix _Dinv;
     SparseMatrix _LU;
@@ -139,7 +160,7 @@ private:
     std::unordered_map<int, Vector3> _ext_forces;
     std::unordered_set<int> _select_balls;
     std::vector<int> _attached_balls;
-    std::vector<std::pair<int, Vector3>> _array_ext_forces;
+    std::vector<std::pair<int, Eigen::Vector3f>> _array_ext_forces;
     std::unique_ptr<HalfEdgeMesh> _simple_ball;
     std::unique_ptr<HalfEdgeMesh> _simple_cylin;
 

@@ -107,7 +107,7 @@ void PBDScene::Update()
         std::vector<PD::PDMetaballModelFC*> pdfcmodels = GetAllChildOfType<PD::PDMetaballModelFC>();
         if (!pdfcmodels.empty())
         {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 2; i++)
             {
 #pragma omp parallel for
                 for (int j = 0; j < pdfcmodels.size(); j++)
@@ -173,7 +173,7 @@ void PBDScene::Update()
                 if (model->_simulate)
                 {
                     model->PhysicalUpdate();
-                    model->CollisionDetection();
+                    //model->CollisionDetection();
                     model->PostPhysicalUpdate();
                 }
             }

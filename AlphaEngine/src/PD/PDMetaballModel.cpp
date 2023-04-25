@@ -127,8 +127,8 @@ PD::PDMetaballModel::~PDMetaballModel()
 void PD::PDMetaballModel::Init()
 {
     int nb_points = _mesh->BallsNum();
-    std::vector<SparseMatrixTriplet> m_triplets;
-    std::vector<SparseMatrixTriplet> m_inv_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_inv_triplets;
     _x.resize( 3, nb_points );
     _x0.resize( 3, nb_points );
     _v.resize( 3, nb_points );
@@ -189,11 +189,11 @@ void PD::PDMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _x, _mesh.get(), &_x0 ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, k, _x, _mesh.get(), &_x0 ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _x, _mesh.get(), &_x0 ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff * _mesh->Ball( i ).m, _x, _mesh.get(), &_x0 ) );
             }
         }
     }
@@ -211,7 +211,7 @@ void PD::PDMetaballModel::Init()
         }
         for (const IndexPair& pair : edges)
         {
-            _constraints.push_back( std::make_unique<PD::EdgeConstraint>( pair.i0, pair.i1, _cfg._k_stiff, _x ) );
+            _constraints.push_back( std::make_unique<PD::EdgeConstraint<Real>>( pair.i0, pair.i1, _cfg._k_stiff, _x ) );
         }
     }
     if (_cfg._attach_filter != nullptr)
@@ -220,48 +220,65 @@ void PD::PDMetaballModel::Init()
         {
             if (_cfg._attach_filter( _mesh->Ball( i ).x0 ))
             {
-                _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
+                _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
             }
         }
     }
     for (int i : _select_balls)
     {
-        _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
+        _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
     }
     _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
     _select_balls.clear();
 
-    std::vector<SparseMatrixTriplet> triplets;
+    std::vector<Eigen::Triplet<Real, int>> triplets;
     int total_id = 0;
     for (auto& c : _constraints)
     {
-        c->AddConstraint( triplets, total_id );
+        c->AddConstraint( triplets, total_id, 0.0f );
     }
     _p.setZero( 3, total_id );
-
     _AS.resize( total_id, nb_points );
     _AS.setFromTriplets( triplets.begin(), triplets.end() );
-    _StAt = _AS.transpose();
-    _P = _StAt * _AS + _mass_matrix / _cfg._dt / _cfg._dt;
-    _llt.compute( _P );
-    if (_llt.info() != Eigen::ComputationInfo::Success)
-        std::cout << "ERROR: " << _llt.info() << std::endl;
 
-    SparseMatrix StAtAS;
-    StAtAS.resize( nb_points, nb_points );
+    triplets.clear();
+    Eigen::SparseMatrix<Real> temp_StAt;
+    temp_StAt.resize( total_id, nb_points );
+    total_id = 0;
+    for (auto& c : _constraints)
+    {
+        c->AddConstraint( triplets, total_id, 1.0f );
+    }
+    temp_StAt.setFromTriplets( triplets.begin(), triplets.end() );
+    _StAt.resize( nb_points, total_id );
+    _StAt = temp_StAt.transpose();
+
+    std::cout << "Metaballs: " << nb_points << std::endl;
+    std::cout << "ProjectVariable size: " << total_id << std::endl;
+
+    //Newton
+    _CStAt.clear();
+    _CStAtAS.clear();
+    _CAS.clear();
+    _StAtAS.resize( nb_points, nb_points );
     for (auto& c : _constraints)
     {
         auto A = c->GetA();
         auto S = c->GetS( nb_points );
-        StAtAS += c->_weight * S.transpose() * A.transpose() * A * S;
+        _StAtAS += c->_weight * S.transpose() * A.transpose() * A * S;
+        _CStAtAS.push_back( c->_weight * S.transpose() * A.transpose() * A * S );
+        _CStAt.push_back( c->_weight * S.transpose() * A.transpose() );
+        _CAS.push_back( A * S );
     }
+    _J = _StAtAS + _mass_matrix / (_cfg._dt * _cfg._dt);
+    _g.resize( 3, nb_points );
+    _newtonllt.compute( _J );
 
-    SparseMatrix SAAS2 = _StAt * _AS;
-    SparseMatrix diff = StAtAS - SAAS2;
-    std::cout << "<<< DIFF = " << diff.norm() << " >>>" << std::endl;
+    _P = _StAtAS + _mass_matrix / (_cfg._dt * _cfg._dt);
+    _llt.compute( _P );
 
-    std::cout << "Metaballs: " << nb_points << std::endl;
-    std::cout << "ProjectVariable size: " << total_id << std::endl;
+    if (_llt.info() != Eigen::ComputationInfo::Success)
+        std::cout << "ERROR: " << _llt.info() << std::endl;
 }
 
 void PD::PDMetaballModel::Update()
@@ -319,8 +336,8 @@ void PD::PDMetaballModel::Update()
             glm::vec2 delta = Input::GetMousePosition() - _init_cursor;
             glm::vec3 delta3d = -delta.x * Camera::current->mTransform.Left() - delta.y * Camera::current->mTransform.Up();
             delta3d *= _cfg._force;
-            _ext_forces.insert( { _hold_idx, ToEigen( delta3d ) } );
-            std::cout << "Fext " << _hold_idx << ":" << delta3d << std::endl;
+            _ext_forces.insert( { _hold_idx, ToEigen( delta3d ).cast<Real>() } );
+            //std::cout << "Fext " << _hold_idx << ":" << delta3d << std::endl;
         }
     }
     if (Input::IsMouseButtonReleased( Input::MouseButton::Left ))
@@ -332,7 +349,7 @@ void PD::PDMetaballModel::Update()
         static float deg = 0.f;
         glm::mat3 R = glm::rotate( glm::mat4( 1.f ), glm::radians( deg ), glm::normalize( glm::vec3( 0.2, 1, 0.5 ) ) );
         deg += 10.f;
-        Matrix3 ER = ToEigen( R );
+        Matrix3 ER = ToEigen( R ).cast<Real>();
         Vector3 cm0;
         Vector3 cm;
         cm0.setZero();
@@ -417,7 +434,7 @@ void PD::PDMetaballModel::Draw()
     for (auto& pair : _array_ext_forces)
     {
         glm::vec3 start_pos = ToGLM( _x.col( pair.first ).eval() );
-        glm::vec3 end_pos = ToGLM( (_x.col( pair.first ) + pair.second.normalized() * 0.2f).eval() );
+        glm::vec3 end_pos = ToGLM( (_x.col( pair.first ) + pair.second.normalized().cast<Real>() * 0.2f) );
         start_pos = start_pos + 0.05f * (end_pos - start_pos);
         //_simple_ball->mTransform.SetPos( start_pos );
         //_simple_ball->Draw();
@@ -437,13 +454,14 @@ void PD::PDMetaballModel::DrawGUI()
     {
         Init();
     }
+    ImGui::Checkbox( "newton", &_cfg._newton );
     ImGui::Checkbox( "simulate", &_simulate );
     ImGui::DragInt( "solve", &_cfg._nb_solve );
     ImGui::DragFloat( "stiffness", &_cfg._k_stiff, 1.0f, 0.0f, 5000.0f );
     ImGui::DragFloat( "force", &_cfg._force, 1.0f, 0.0f, 200.0f );
     if (ImGui::Button( "AddForce" ))
     {
-        _array_ext_forces.push_back( { 0, Vector3::Zero() } );
+        _array_ext_forces.push_back( { 0, Eigen::Vector3f::Zero() } );
     }
     for (int i = 0; i < _array_ext_forces.size(); i++)
     {
@@ -471,7 +489,7 @@ void PD::PDMetaballModel::PhysicalUpdate()
     }
     for (auto& pair : _array_ext_forces)
     {
-        _external_force.col( pair.first ) += pair.second;
+        _external_force.col( pair.first ) += pair.second.cast<Real>();
     }
 
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -480,13 +498,13 @@ void PD::PDMetaballModel::PhysicalUpdate()
         rad += 0.01f;
         if (rad <= 3.14 / 6)
         {
-            auto q = Eigen::Quaternionf( Eigen::AngleAxisf( 0.00f, Eigen::Vector3f( 0, 1, 0 ) ) );
-            Eigen::Matrix3f m = q.toRotationMatrix();
+            auto q = Eigen::Quaternion<Real>( Eigen::AngleAxis<Real>( 0.00f, Vector3( 0, 1, 0 ) ) );
+            Matrix3 m = q.toRotationMatrix();
             for (int i = 0; i < _constraints.size(); i++)
             {
-                if (typeid(*_constraints[i]) == typeid(AttachConstraint))
+                if (typeid(*_constraints[i]) == typeid(AttachConstraint<Real>))
                 {
-                    AttachConstraint* c = dynamic_cast<AttachConstraint*>(_constraints[i].get());
+                    AttachConstraint<Real>* c = dynamic_cast<AttachConstraint<Real>*>(_constraints[i].get());
                     int id = c->_indices[0];
                     if (_x0.col( id ).y() < -0.2f)
                     {
@@ -500,34 +518,198 @@ void PD::PDMetaballModel::PhysicalUpdate()
         }
     }
 
-
 #pragma omp parallel for
     for (int c = 0; c < _mesh->BallsNum(); c++)
     {
         _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
         _momentum.col( c ) += _cfg._dt * _cfg._dt * _external_force.col( c );
         _x_last.col( c ) = _x.col( c );
-        _x.col( c ) = _momentum.col( c );
     }
 
-    for (int i = 0; i < _cfg._nb_solve; i++)
+    if (Input::IsKeyDown( Input::Key::M ))
     {
-#pragma omp parallel
+        std::cout << "Convergence: " << std::endl;
+
+        //Accurate
+        Matrix3X x1 = _momentum;
+        for (int i = 0; i < 100; i++)
         {
-#pragma omp for 
-            for (int j = 0; j < _constraints.size(); j++)
-            {
-                _constraints[j]->Project( _x, _p );
-            }
-            auto start_t = std::chrono::high_resolution_clock::now();
-#pragma omp for
+#pragma omp parallel for
             for (int r = 0; r < 3; r++)
             {
-                Eigen::VectorXf rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-                _x.row( r ) = _llt.solve( rh_vec ).transpose();
+                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * x1.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
             }
-            //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_t).count() << std::endl;
+            //#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                auto p = _constraints[j]->GetP( x1 );
+                _g.row( 0 ) += (_CStAtAS[j] * x1.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+                _g.row( 1 ) += (_CStAtAS[j] * x1.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+                _g.row( 2 ) += (_CStAtAS[j] * x1.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+                float alpha = 1.0f;
+                VectorX x_1 = x1.row( r ).transpose() + alpha * d;
+                float W_min = FLT_MAX;
+                float alpha_min = 1.0f;
+                for (int s = 0; s < 10; s++)
+                {
+                    x_1 = x1.row( r ).transpose() + alpha * d;
+                    float W = ((x_1.transpose() - _momentum.row( r )) * _mass_matrix * (x_1 - _momentum.row( r ).transpose())).norm() / (2 * _cfg._dt * _cfg._dt);
+                    for (int j = 0; j < _constraints.size(); j++)
+                    {
+                        auto p = _constraints[j]->GetP( x_1 );
+                        W += 0.5 * _constraints[j]->_weight * (_CAS[j] * x_1 - p).squaredNorm();
+                    }
+                    if (W < W_min)
+                    {
+                        alpha_min = alpha;
+                        W_min = W;
+                    }
+                    alpha -= 0.1f;
+                }
+                x1.row( r ) += d.transpose();
+            }
         }
+
+        //Newton
+        std::cout << "Newton: " << std::endl;
+        Matrix3X x2 = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * x2.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+            }
+            //#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                auto p = _constraints[j]->GetP( x2 );
+                _g.row( 0 ) += (_CStAtAS[j] * x2.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+                _g.row( 1 ) += (_CStAtAS[j] * x2.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+                _g.row( 2 ) += (_CStAtAS[j] * x2.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+                float alpha = 1.0f;
+                VectorX x_1 = x1.row( r ).transpose() + alpha * d;
+                float W_min = FLT_MAX;
+                float alpha_min = 1.0f;
+                for (int s = 0; s < 10; s++)
+                {
+                    x_1 = x1.row( r ).transpose() + alpha * d;
+                    float W = ((x_1.transpose() - _momentum.row( r )) * _mass_matrix * (x_1 - _momentum.row( r ).transpose())).norm() / (2 * _cfg._dt * _cfg._dt);
+                    for (int j = 0; j < _constraints.size(); j++)
+                    {
+                        auto p = _constraints[j]->GetP( x_1 );
+                        W += 0.5 * _constraints[j]->_weight * (_CAS[j] * x_1 - p).squaredNorm();
+                    }
+                    if (W < W_min)
+                    {
+                        alpha_min = alpha;
+                        W_min = W;
+                    }
+                    alpha -= 0.1f;
+                }
+                x2.row( r ) += d.transpose();
+            }
+            std::cout << i << " " << (x2 - x1).norm() << std::endl;
+        }
+
+        //PD
+        std::cout << "PD1: " << std::endl;
+        Matrix3X xk = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+            std::cout << i << " " << (xk - x1).norm() << std::endl;
+#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                _constraints[j]->Project( xk, _p );
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                xk.row( r ) = _llt.solve( rh_vec ).transpose();
+            }
+        }
+
+        std::cout << "PD2: " << std::endl;
+        Matrix3X xk2 = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+            std::cout << i << " " << (xk2 - xk).norm() << std::endl;
+#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                _constraints[j]->Project( xk2, _p );
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                xk2.row( r ) = _llt.solve( rh_vec ).transpose();
+            }
+        }
+    }
+
+    if (_cfg._newton)
+    {
+        Matrix3X xk = _x;
+        for (int i = 0; i < _cfg._nb_solve; i++)
+        {
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * xk.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+            }
+            //#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                auto p = _constraints[j]->GetP( xk );
+                _g.row( 0 ) += (_CStAtAS[j] * xk.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+                _g.row( 1 ) += (_CStAtAS[j] * xk.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+                _g.row( 2 ) += (_CStAtAS[j] * xk.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+                xk.row( r ) += d.transpose();
+            }
+        }
+        _x = xk;
+    }
+    else
+    {
+        Matrix3X xk = _x;
+#pragma omp parallel for
+        for (int c = 0; c < _mesh->BallsNum(); c++)
+        {
+            xk.col( c ) = _momentum.col( c );
+        }
+        for (int i = 0; i < _cfg._nb_solve; i++)
+        {
+#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                _constraints[j]->Project( xk, _p );
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                xk.row( r ) = _llt.solve( rh_vec ).transpose();
+            }
+        }
+        _x = xk;
     }
 
 #pragma omp parallel
@@ -535,7 +717,7 @@ void PD::PDMetaballModel::PhysicalUpdate()
 #pragma omp for
         for (int c = 0; c < _mesh->BallsNum(); c++)
         {
-            _v.col( c ) = 0.9f / _cfg._dt * (_x.col( c ) - _x_last.col( c ));
+            _v.col( c ) = 1.f / _cfg._dt * (_x.col( c ) - _x_last.col( c ));
         }
     }
 
@@ -698,9 +880,9 @@ void PD::PDMetaballModel::CollisionDetection()
                     {
                         dx = glm::normalize( dx );
                     }
-                    Vector3 newpos = ToEigen( last_pos + dx * info.t );
+                    Vector3 newpos = ToEigen( last_pos + dx * info.t ).cast<Real>();
                     dist += newpos - _x.col( i );
-                    Vector3 n = ToEigen( info.nc );
+                    Vector3 n = ToEigen( info.nc ).cast<Real>();
                     Vector3 v = _v.col( i );
                     Vector3 vn = n * v.dot( n );
                     Vector3 vt = v - vn;
@@ -790,9 +972,9 @@ void PD::PDMetaballModel::CollisionDetection()
             if (info.has_value())
             {
                 glm::vec3 newpos = pos - info->d * info->c1toc2;
-                _x.col( i ) = ToEigen( newpos );
+                _x.col( i ) = ToEigen( newpos ).cast<Real>();
                 Vector3 v = _v.col( i );
-                Vector3 n = ToEigen( info->c1toc2 );
+                Vector3 n = ToEigen( info->c1toc2 ).cast<Real>();
                 Vector3 vn = n * v.dot( n );
                 Vector3 vt = v - vn;
                 _v.col( i ) = -vn + vt;
@@ -1123,7 +1305,7 @@ void PD::PDMetaballModel::CreateSurfaceMapping()
         _vtx_skinning_table[i].indices = indices;
         _vtx_skinning_table[i].weights = weights;
     }
-    _skin_vtx_buffer->UpdateData( _vtx_skinning_table.data(), _vtx_skinning_table.size() * sizeof( _vtx_skinning_table[0] ) );
+    _skin_vtx_buffer->UpdateData( _vtx_skinning_table.data(), static_cast<unsigned>(_vtx_skinning_table.size() * sizeof( _vtx_skinning_table[0] )) );
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
     std::cout << "CreateSurfaceMapping: " << duration.count() << std::endl;
 }

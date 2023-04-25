@@ -658,6 +658,19 @@ bool MovingSphereTriIntersect( glm::vec3 C, float r, glm::vec3 v, glm::vec3 p0, 
     //if (glm::dot( v, n ) >= 0.f)
     //    return false;
 
+    if (true)
+    {
+        glm::vec3 p;
+        if (TestBallTri( C + v, r, p0, p1, p2, &p ))
+        {
+            info->t = 0.f;
+            info->p = p;
+            info->nc = glm::normalize( C + v - p );
+            return true;
+        }
+        return false;
+    }
+
     glm::vec3 D = C - r * n;
     Ray DP( D, glm::normalize( v ) );
 

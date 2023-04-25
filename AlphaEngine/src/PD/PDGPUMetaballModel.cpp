@@ -209,11 +209,11 @@ void PD::PDGPUMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
             }
         }
     }
@@ -230,7 +230,7 @@ void PD::PDGPUMetaballModel::Init()
         }
         for (const IndexPair& pair : edges)
         {
-            _constraints.push_back( std::make_unique<PD::EdgeConstraint>( pair.i0, pair.i1, _cfg._k_stiff, _current_pos ) );
+            _constraints.push_back( std::make_unique<PD::EdgeConstraint<Real>>( pair.i0, pair.i1, _cfg._k_stiff, _current_pos ) );
         }
         ComputeAinvForEdgeConsts();
     }
@@ -240,13 +240,13 @@ void PD::PDGPUMetaballModel::Init()
         {
             if (_cfg._attach_filter( _mesh->Ball( i ).x0 ))
             {
-                _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
+                _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
             }
         }
     }
     for (int i : _select_balls)
     {
-        _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
+        _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
     }
     _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
     _select_balls.clear();
@@ -291,38 +291,66 @@ void PD::PDGPUMetaballModel::Init()
     _cudapd.dt = _cfg._dt;
     _cudapd.nb_points = nb_points;
 
-    std::vector<SparseMatrixTriplet> triplets;
+    std::vector<Eigen::Triplet<Real, int>> triplets;
     int total_id = 0;
     for (auto& c : _constraints)
     {
-        c->AddConstraint( triplets, total_id );
+        c->AddConstraint( triplets, total_id, 0.0f );
     }
     _projections.setZero( 3, total_id );
 
-    cudaMalloc( (void**)&_cudapd.p, sizeof( float3 ) * total_id );
+    _AS.resize( total_id, nb_points );
+    _AS.setFromTriplets( triplets.cbegin(), triplets.cend() );
 
-    SparseMatrix A( total_id, nb_points );
-    A.setFromTriplets( triplets.begin(), triplets.end() );
-    _At = A.transpose();
-    _N = _At * A + _mass_matrix / _cfg._dt / _cfg._dt;
+    triplets.clear();
+    Eigen::SparseMatrix<Real> temp_StAt;
+    temp_StAt.resize( total_id, nb_points );
+    total_id = 0;
+    for (const auto& c : _constraints)
+    {
+        c->AddConstraint( triplets, total_id, 1.0f );
+    }
+    temp_StAt.setFromTriplets( triplets.cbegin(), triplets.cend() );
+    _StAt = temp_StAt.transpose();
+
+    _StAtAS = _StAt * _AS;
+
+    _N = _StAtAS + _mass_matrix / _cfg._dt / _cfg._dt;
     _llt.compute( _N );
     if (_llt.info() != Eigen::ComputationInfo::Success)
         std::cout << "ERROR: " << _llt.info() << std::endl;
+
+    _CStAt.clear();
+    _CStAtAS.clear();
+    _CAS.clear();
+    for (const auto& c : _constraints)
+    {
+        auto A = c->GetA();
+        auto S = c->GetS( nb_points );
+        _CAS.push_back( A * S );
+        _CStAt.push_back( c->_weight * S.transpose() * A.transpose() );
+        _CStAtAS.push_back( _CStAt.back() * _CAS.back() );
+    }
+    _g.resize( 3, nb_points );
+    _J = _N;
+    _newtonllt.compute( _J );
+
+    cudaMalloc( (void**)&_cudapd.p, sizeof( float3 ) * total_id );
 
     _At.makeCompressed();
     _d_At = CreateCUDASparseMatrix( _At );
 
     _LU = SparseMatrix( _N.cols(), _N.cols() );
     _Dinv = SparseMatrix( _N.cols(), _N.cols() );
-    std::vector<SparseMatrixTriplet> LU_triplets;
-    std::vector<SparseMatrixTriplet> Dinv_triplets;
+    std::vector<Eigen::Triplet<Real, int>> LU_triplets;
+    std::vector<Eigen::Triplet<Real, int>> Dinv_triplets;
     for (int k = 0; k < _N.outerSize(); ++k)
         for (SparseMatrix::InnerIterator it( _N, k ); it; ++it)
         {
             if (it.row() == it.col())
-                Dinv_triplets.push_back( SparseMatrixTriplet( it.row(), it.col(), 1.f / it.value() ) );
+                Dinv_triplets.push_back( Eigen::Triplet<Real, int>( it.row(), it.col(), 1.f / it.value() ) );
             else
-                LU_triplets.push_back( SparseMatrixTriplet( it.row(), it.col(), -it.value() ) );
+                LU_triplets.push_back( Eigen::Triplet<Real, int>( it.row(), it.col(), -it.value() ) );
         }
     _LU.setFromTriplets( LU_triplets.begin(), LU_triplets.end() );
     _Dinv.setFromTriplets( Dinv_triplets.begin(), Dinv_triplets.end() );
@@ -361,10 +389,10 @@ void PD::PDGPUMetaballModel::Init()
 
     for (int i = 0; i < _constraints.size(); i++)
     {
-        if (typeid(*_constraints[i]) == typeid(PD::AttachConstraint))
+        if (typeid(*_constraints[i]) == typeid(PD::AttachConstraint<Real>))
         {
-            PD::AttachConstraint* C = dynamic_cast<PD::AttachConstraint*>(_constraints[i].get());
-            _host_attach_consts.push_back( { C->_indices[0], C->_loc, {C->_fixed_pos.x(), C->_fixed_pos.y(), C->_fixed_pos.z()} } );
+            PD::AttachConstraint<Real>* C = dynamic_cast<PD::AttachConstraint<Real>*>(_constraints[i].get());
+            _host_attach_consts.push_back( CudaAttachConst{ C->_indices[0], C->_loc, {(float)C->_fixed_pos.x(), (float)C->_fixed_pos.y(), (float)C->_fixed_pos.z()} } );
         }
         else if (typeid(*_constraints[i]) == typeid(PD::MeshlessStrainConstraint<Particle>))
         {
@@ -387,9 +415,9 @@ void PD::PDGPUMetaballModel::Init()
                 _host_metaball_neiinfos.push_back( { C->_indices[j], C->_w[j] } );
             }
         }
-        else if (typeid(*_constraints[i]) == typeid(PD::EdgeConstraint))
+        else if (typeid(*_constraints[i]) == typeid(PD::EdgeConstraint<Real>))
         {
-            auto* C = dynamic_cast<PD::EdgeConstraint*>(_constraints[i].get());
+            auto* C = dynamic_cast<PD::EdgeConstraint<Real>*>(_constraints[i].get());
             CudaEdgeConst c;
             c.id0 = C->_indices[0];
             c.id1 = C->_indices[1];
@@ -559,8 +587,8 @@ void PD::PDGPUMetaballModel::Draw()
 
     for (auto& pair : _array_ext_forces)
     {
-        glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ).eval() );
-        glm::vec3 end_pos = ToGLM( (_current_pos.col( pair.first ) + pair.second.normalized() * 0.2f).eval() );
+        glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ) );
+        glm::vec3 end_pos = ToGLM( (_current_pos.col( pair.first ).cast<float>() + pair.second.normalized() * 0.2f).eval() );
         start_pos = start_pos + 0.05f * (end_pos - start_pos);
         //_simple_ball->mTransform.SetPos( start_pos );
         //_simple_ball->Draw();
@@ -655,7 +683,7 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
 #pragma omp for
             for (int r = 0; r < 3; r++)
             {
-                Eigen::VectorXf rh_vec = _At * _projections.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                auto rh_vec = _At * _projections.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
                 _current_pos.row( r ) = _llt.solve( rh_vec ).transpose();
             }
             //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_t).count() << std::endl;
@@ -785,8 +813,8 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     _aabb.min_corner = glm::vec3( FLT_MAX );
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        _aabb.Expand( ToGLM( _current_pos.col( i ).eval() ) + glm::vec3( _mesh->Ball( i ).r ) );
-        _aabb.Expand( ToGLM( _current_pos.col( i ).eval() ) - glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( ToGLM( _current_pos.col( i ).cast<float>() ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( ToGLM( _current_pos.col( i ).cast<float>() ) - glm::vec3( _mesh->Ball( i ).r ) );
     }
     //if (Input::IsKeyHeld( Input::Key::R ))
     //{
@@ -867,8 +895,8 @@ void PD::PDGPUMetaballModel::CollisionDetection()
                     Vector3 pene = _current_pos.col( i ) - newpos;
                     Vector3 pene_n = n * pene.dot( n );
                     Vector3 pene_t = pene - pene_n;
-                    Vector3 dxn = n * ToEigen( dx ).dot( n );
-                    Vector3 dxt = ToEigen( dx ) - dxn;
+                    Vector3 dxn = n * ToEigen( dx ).cast<Real>().dot( n );
+                    Vector3 dxt = ToEigen( dx ).cast<Real>() - dxn;
 
                     Vector3 vn = n * v.dot( n );
                     Vector3 vt = v - vn;

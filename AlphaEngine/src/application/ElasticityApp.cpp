@@ -146,14 +146,14 @@ void ElasticityApp::Init()
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
-    Scene::active = std::make_unique<PBDScene>( true );
+    Scene::active = std::make_unique<PBDScene>( false );
 
     //Camera
     auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
     Camera::main = cam;
     Camera::current = Camera::main;
-    cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
-    cam->_yaw = 28.4f;
+    cam->mTransform.SetPos( glm::vec3( 0.0, 0.397, 4.0 ) );
+    cam->_yaw = -180.4f;
     cam->_pitch = 35.4f;
     //cam->mTransform.SetPos( glm::vec3( 0.582, -1.04, -3.09 ) );
     //cam->_yaw = -12.6;
@@ -172,7 +172,7 @@ void ElasticityApp::Init()
     //    70.0f,
     //    1.0f, 0.2f, 0.1f ) );
 
-    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, 0 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
+    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, -0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
 
     //Shaders
     const std::string SHADER_PATH = "res/shaders/";
@@ -189,6 +189,7 @@ void ElasticityApp::Init()
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "normal_visualization.glsl" ), "normal_visualization" );
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "GLLineSegments.glsl" ), "GLLineSegments" );
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "GLPoints.glsl" ), "GLPoints" );
+    Shader::Add( std::make_unique<Shader>( SHADER_PATH + "bvh.glsl" ), "bvh" );
 
     Shader::Find( "model" )->BuildShaderInfo();
 
@@ -435,7 +436,7 @@ void ElasticityApp::Init()
     cfg._k_attach = 200.0f;
     cfg._k_stiff = 50.0f;
     cfg._nb_points = 48;
-    cfg._dt = 0.005f;
+    cfg._dt = 0.006f;
     cfg._nb_solve = 5;
     cfg._physical_step = 1;
     cfg._const_type = 0;
@@ -447,7 +448,7 @@ void ElasticityApp::Init()
     {
         for (int j = -1; j <= 1; j++)
         {
-            for (int k = 2; k <= 4; k++)
+            for (int k = 1; k <= 7; k++)
             {
                 cfg._displacement = glm::vec3( i, k, j ) * 0.5f;
                 auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( cfg, surface ) );
@@ -455,7 +456,7 @@ void ElasticityApp::Init()
         }
     }
 
-    Scene::active->AddChild( std::make_unique<HalfEdgeMesh>( "D:/models/floor.obj" ) );
+    Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cube.obj" ) );
 #endif
     //auto rigid_box = Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cylinder.obj" ) );
     //rigid_box->mTransform.Translate( { 0,-1, 0 } );
@@ -480,6 +481,13 @@ void ElasticityApp::PreDraw()
     GlobalTimer::Update();
     //Scene::active->GetChild<PointLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
     Scene::active->GetChild<DirLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
+
+    if (Input::IsKeyDown( Input::Key::F ))
+    {
+        auto arma1 = Scene::active->GetChild<PD::PDMetaballModel>( "armadillo1" );
+        auto arma2 = Scene::active->GetChild<PD::PDMetaballModel>( "armadillo2" );
+        std::cout << "distance: " << arma1->_mesh->Distance( *arma2->_mesh ) << std::endl;
+    }
 
 #ifdef EXAMPLE_DUCK
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -552,8 +560,18 @@ void ElasticityApp::DrawGUI()
 {
     using namespace ImGui;
 
+    static int frame_count = 0;
+    if (Input::IsKeyDown( Input::Key::P ))
+    {
+        frame_count++;
+    }
+    if (frame_count >= 1)
+    {
+        frame_count++;
+    }
+
     Begin( "FPS" );
-    Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / GetIO().Framerate, GetIO().Framerate );
+    Text( "Application average %.3f ms/frame (%.1f FPS)\nframe=%i", 1000.0f / GetIO().Framerate, GetIO().Framerate, frame_count );
     End();
 
     BeginMainMenuBar();
@@ -585,7 +603,7 @@ void ElasticityApp::DrawGUI()
     auto metaballpd = Scene::active->GetChild<PD::PDMetaballModel>();
     if (metaballpd)
     {
-        //metaballpd->DrawGUI();
+        metaballpd->DrawGUI();
 
         if (metaballpd->_simulate)
         {
@@ -715,6 +733,12 @@ PD::PDMetaballModel* ElasticityApp::LoadPDMetaballModel( tinyxml2::XMLElement* r
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
     config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
+
+    if (root->FirstChildElement( "Solve" ))
+    {
+        int solve = std::stoi( get_elem_text( root, "Solve" ) );
+        config._newton = solve == 1;
+    }
 
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
@@ -911,6 +935,7 @@ RigidStatic* ElasticityApp::LoadRigidStatic( tinyxml2::XMLElement* root )
     if (root->FirstChildElement( "Transform" ) != nullptr)
     {
         rigid_static->mTransform = LoadTransform( root->FirstChildElement( "Transform" ) );
+        rigid_static->UpdateTransPos();
     }
 
     return rigid_static;

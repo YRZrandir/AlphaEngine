@@ -26,7 +26,7 @@ void Scene::Draw()
 {
     SetUniformBuffers();
 
-    DrawShadowDepthBuffer();
+    //DrawShadowDepthBuffer();
 
     FrameBuffer::Unbind();
 

@@ -83,7 +83,6 @@ PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHa
         glm::vec3( 248, 203, 127 ),
         glm::vec3( 248, 149, 136 ),
         glm::vec3( 124, 214, 207 ),
-        glm::vec3( 145, 146, 171 ),
         glm::vec3( 120, 152, 225 ),
         glm::vec3( 239, 166, 102 ),
         glm::vec3( 237, 221, 134 ),
@@ -164,11 +163,11 @@ void PD::PDMetaballModelFC::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, k, _x0, _mesh.get(), &_x0 ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, k, _x0, _mesh.get(), &_x0 ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle>>( indices, _cfg._k_stiff, _x0, _mesh.get(), &_x0 ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff, _x0, _mesh.get(), &_x0 ) );
             }
         }
     }
@@ -186,7 +185,7 @@ void PD::PDMetaballModelFC::Init()
         }
         for (const IndexPair& pair : edges)
         {
-            _constraints.push_back( std::make_unique<PD::EdgeConstraint>( pair.i0, pair.i1, _cfg._k_stiff, _x0 ) );
+            _constraints.push_back( std::make_unique<PD::EdgeConstraint<Real>>( pair.i0, pair.i1, _cfg._k_stiff, _x0 ) );
         }
     }
     if (_cfg._attach_filter != nullptr)
@@ -195,13 +194,13 @@ void PD::PDMetaballModelFC::Init()
         {
             if (_cfg._attach_filter( _mesh->Ball( i ).x0 ))
             {
-                _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
+                _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
             }
         }
     }
     for (int i : _select_balls)
     {
-        _constraints.push_back( std::make_unique<AttachConstraint>( i, _cfg._k_attach, _x0.col( i ) ) );
+        _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
     }
     _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
     _select_balls.clear();
@@ -539,13 +538,13 @@ void PDMetaballModelFC::PDSolve()
 {
     for (int i = 0; i < _cfg._nb_solve; i++)
     {
-        //#pragma omp parallel for
+#pragma omp parallel for
         for (int j = 0; j < _constraints.size(); j++)
         {
             _constraints[j]->Project( _x, _p );
         }
 
-        //#pragma omp parallel for
+#pragma omp parallel for
         for (int r = 0; r < 3; r++)
         {
             VectorX bn = _cfg._dt * _cfg._dt * _StAt * _p.row( r ).transpose() + _M * _momentum.row( r ).transpose();
@@ -554,7 +553,7 @@ void PDMetaballModelFC::PDSolve()
             _ksi.row( r ).setZero();
         }
 
-        //#pragma omp parallel for
+#pragma omp parallel for
         for (int c = 0; c < _contacts.size(); c++)
         {
             const Contact& contact = _contacts[c];
@@ -567,13 +566,13 @@ void PDMetaballModelFC::PDSolve()
                 if (djn < 0)
                 {
                     rj.y() = -djn;
-                    if (djt.norm() <= -djn * 0.6f)
+                    if (djt.norm() <= -djn * 0.1f)
                     {
                         rj += -djt;
                     }
                     else
                     {
-                        rj += -0.6f * (-djn) * djt.normalized();
+                        rj += -0.1f * (-djn) * djt.normalized();
                     }
                 }
                 _ksi.col( contact.id ) += contact.R * rj;
@@ -612,7 +611,7 @@ void PDMetaballModelFC::PDSolve()
         //                _ksi.col( i ) /= _contact_counter[i];
         //            }
         //        }
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int r = 0; r < 3; r++)
         {
             _v.row( r ) = _llt.solve( _bn_tilde.row( r ).transpose() + _ksi.row( r ).transpose() );
@@ -641,24 +640,24 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
     std::vector<RigidBall*> rigid_balls = Scene::active->GetAllChildOfType<RigidBall>();
 
     _contacts.clear();
-    std::fill( _contact_counter.begin(), _contact_counter.end(), 0 );
 
-    for (int i = 0; i < _mesh->BallsNum(); i++)
-    {
-        Vector3 p = _x.col( i );
-        float r = _mesh->Ball( i ).r;
+    //for (int i = 0; i < _mesh->BallsNum(); i++)
+    //{
+    //    Vector3 p = _x.col( i );
+    //    float r = _mesh->Ball( i ).r;
 
-        Vector3 plane( 0, -1.0, 0 );
-        Vector3 plane_n( 0.0, 1, 0 );
-        plane_n.normalize();
+    //    Vector3 plane( 0, -1.0, 0 );
+    //    Vector3 plane_n( 0.0, 1, 0 );
+    //    plane_n.normalize();
 
-        float test = (p - plane).dot( plane_n );
-        if (test < r)
-        {
-            //_contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
-            //_contacts.back().p = p + plane_n * (r - test);
-        }
-    }
+    //    float test = (p - plane).dot( plane_n );
+    //    if (test < r)
+    //    {
+    //        _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
+    //        _contacts.back().p = p + plane_n * (r - test);
+    //    }
+    //}
+
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
@@ -681,9 +680,22 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             }
         }
     }
-    return;
+    if (_show_contacts)
+    {
+        _contacts_vis->Clear();
+        for (const auto& c : _contacts)
+        {
+            _contacts_vis->AddPoint( ToGLM( c.p ), glm::RED );
+            _contacts_vis->AddPoint( ToGLM( c.p + c.n * 0.05f ), glm::RED );
+            _contacts_vis->AddPoint( ToGLM( c.p ), glm::GREEN );
+            _contacts_vis->AddPoint( ToGLM( c.p + c.t1 * 0.05f ), glm::GREEN );
+            _contacts_vis->AddPoint( ToGLM( c.p ), glm::BLUE );
+            _contacts_vis->AddPoint( ToGLM( c.p + c.t2 * 0.05f ), glm::BLUE );
+        }
+        _contacts_vis->UpdateMem();
+    }
 
-#pragma omp parallel for
+
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
         Vector3 p = _x.col( i );
@@ -810,26 +822,11 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
         }
     }
 
-
-
     //for (const auto& c : _contacts)
     //{
     //    _contact_counter[c.id]++;
     //}
-    if (_show_contacts)
-    {
-        _contacts_vis->Clear();
-        for (const auto& c : _contacts)
-        {
-            _contacts_vis->AddPoint( ToGLM( c.p ), glm::RED );
-            _contacts_vis->AddPoint( ToGLM( c.p + c.n * 0.05f ), glm::RED );
-            _contacts_vis->AddPoint( ToGLM( c.p ), glm::GREEN );
-            _contacts_vis->AddPoint( ToGLM( c.p + c.t1 * 0.05f ), glm::GREEN );
-            _contacts_vis->AddPoint( ToGLM( c.p ), glm::BLUE );
-            _contacts_vis->AddPoint( ToGLM( c.p + c.t2 * 0.05f ), glm::BLUE );
-        }
-        _contacts_vis->UpdateMem();
-    }
+
 }
 
 void PDMetaballModelFC::PostPhysicalUpdate()

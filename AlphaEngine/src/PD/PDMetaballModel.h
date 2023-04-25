@@ -34,12 +34,25 @@ struct PDMetaballModelConfig
     std::function<bool( glm::vec3 )> _attach_filter = nullptr;
     int _const_type = 0; //0=meshless, 1=edge
     glm::vec3 _displacement = glm::vec3( 0.f );
+    bool _newton = false;
 };
 
 class PDMetaballModel :
     public SceneObject
 {
 public:
+    using Real = double;
+    using Vector2 = Eigen::Vector2<Real>;
+    using Vector3 = Eigen::Vector3<Real>;
+    using Vector4 = Eigen::Vector4<Real>;
+    using Matrix3 = Eigen::Matrix3<Real>;
+    using Matrix4 = Eigen::Matrix4<Real>;
+    using VectorX = Eigen::VectorX<Real>;
+    using MatrixX = Eigen::MatrixX<Real>;
+    using Matrix3X = Eigen::Matrix3X<Real>;
+    using MatrixX3 = Eigen::MatrixX3<Real>;
+    using SparseMatrix = Eigen::SparseMatrix<Real>;
+
     class Particle : public SphereBase
     {
     public:
@@ -81,6 +94,7 @@ public:
     };
 
     PDMetaballModel( const PDMetaballModelConfig& cfg, PDMetaballHalfEdgeMesh* mesh );
+    PDMetaballModel( const PDMetaballModelConfig& cfg, const SphereMesh<Particle>& balls, PDMetaballHalfEdgeMesh* mesh );
     virtual ~PDMetaballModel() override;
     void Init();
 
@@ -128,14 +142,18 @@ private:
     SparseMatrix _P;
     Matrix3X _p;
 
-    bool _newton;
+    SparseMatrix _StAtAS;
     SparseMatrix _J;
     Matrix3X _g;
+    std::vector<SparseMatrix> _CStAtAS;
+    std::vector<SparseMatrix> _CStAt;
+    std::vector<SparseMatrix> _CAS;
+    Eigen::SimplicialLDLT<SparseMatrix> _newtonllt;
 
 
     Eigen::Vector3f _err = Eigen::Vector3f( -1.f, -1.f, -1.f );
 
-    std::vector<std::unique_ptr<Constraint>> _constraints;
+    std::vector<std::unique_ptr<Constraint<double>>> _constraints;
     std::vector<Matrix3> _Ainv_for_edge_consts;
     std::vector<std::vector<float>> _weights_for_edge_consts;
 
@@ -144,7 +162,7 @@ private:
     std::unordered_map<int, Vector3> _ext_forces;
     std::unordered_set<int> _select_balls;
     std::vector<int> _attached_balls;
-    std::vector<std::pair<int, Vector3>> _array_ext_forces;
+    std::vector<std::pair<int, Eigen::Vector3<float>>> _array_ext_forces;
     std::unique_ptr<HalfEdgeMesh> _simple_ball;
     std::unique_ptr<HalfEdgeMesh> _simple_cylin;
 

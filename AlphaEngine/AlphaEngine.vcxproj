@@ -203,6 +203,7 @@
     <ClCompile Include="src\model\Terrain.cpp" />
     <ClCompile Include="src\model\TetraMesh.cpp" />
     <ClCompile Include="src\model\Transform.cpp" />
+    <ClCompile Include="src\model\CHalfEdgeMesh.cpp" />
     <ClCompile Include="src\PBD\CutManager.cpp" />
     <ClCompile Include="src\PBD\Hand.cpp" />
     <ClCompile Include="src\PBD\MetaballCutter.cpp" />
@@ -334,6 +335,7 @@
     <CudaCompile Include="src\PD\CudaPDSolver.cu" />
     <CudaCompile Include="src\util\CudaMatrixHelpers.cu" />
     <CudaCompile Include="src\util\CudaVecHelper.cu" />
+    <None Include="..\..\QtCuttingSimulation\QtCuttingSimulation\res\shaders\line_segments.glsl" />
     <None Include="res\shaders\common\Material.glsl" />
     <None Include="res\shaders\common\Shadow.glsl" />
     <None Include="res\shaders\depth_pd.glsl" />

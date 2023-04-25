@@ -8,6 +8,18 @@ class SpatialHash;
 class PDMetaballModelFC : public SceneObject
 {
 public:
+    using Real = float;
+    using Vector2 = Eigen::Vector2<Real>;
+    using Vector3 = Eigen::Vector3<Real>;
+    using Vector4 = Eigen::Vector4<Real>;
+    using Matrix3 = Eigen::Matrix3<Real>;
+    using Matrix4 = Eigen::Matrix4<Real>;
+    using VectorX = Eigen::VectorX<Real>;
+    using MatrixX = Eigen::MatrixX<Real>;
+    using Matrix3X = Eigen::Matrix3X<Real>;
+    using MatrixX3 = Eigen::MatrixX3<Real>;
+    using SparseMatrix = Eigen::SparseMatrix<Real>;
+
     class Particle : public SphereBase
     {
     public:
@@ -143,7 +155,7 @@ protected:
     std::unique_ptr<ShaderStorageBuffer> _skin_vtx_buffer;
     std::unique_ptr<ShaderStorageBuffer> _skin_ball_buffer;
 
-    std::vector<std::unique_ptr<Constraint>> _constraints;
+    std::vector<std::unique_ptr<Constraint<Real>>> _constraints;
     std::vector<Matrix3> _Ainv_for_edge_consts;
     std::vector<std::vector<float>> _weights_for_edge_consts;
 

@@ -118,12 +118,60 @@ std::ostream& operator<<( std::ostream& os, const glm::vec<size, T, Q> vec )
 
 std::string RelPathToAbsPath( const std::string& relpath );
 
-Matrix3 EigenSafeInverse( const Matrix3& m );
+template <typename T>
+Eigen::Matrix3<T> EigenSafeInverse( const Eigen::Matrix3<T>& m )
+{
+    Eigen::JacobiSVD<Eigen::Matrix3<T>, Eigen::ComputeFullU | Eigen::ComputeFullV> svd;
+    svd.compute( m, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    Eigen::Vector3<T> Sv = svd.singularValues();
+    Eigen::Matrix3<T> S;
 
-void SVD( Matrix3* U, Vector3* S, Matrix3* V, const Matrix3& A );
+    S.setZero();
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::abs( Sv( i ) ) > 1e-11)
+        {
+            S( i, i ) = 1.f / Sv( i );
+        }
+        else
+        {
+            S( i, i ) = 0.f;
+        }
+    }
+
+    Eigen::Matrix3<T> V = svd.matrixV();
+    Eigen::Matrix3<T> U = svd.matrixU();
+
+    return V * S * U.transpose();
+}
+
+template <typename T>
+void SVD( Eigen::Matrix3<T>* U, Eigen::Vector3<T>* S, Eigen::Matrix3<T>* V, const Eigen::Matrix3<T>& A )
+{
+    Eigen::JacobiSVD<Eigen::Matrix3<T>> svd;
+    svd.compute( A, Eigen::ComputeFullU | Eigen::ComputeFullV );
+
+    *U = svd.matrixU();
+    *V = svd.matrixV();
+    *S = svd.singularValues();
+
+    float detU = U->determinant();
+    float detV = V->determinant();
+
+    if (detU < 0)
+    {
+        U->block<3, 1>( 0, 2 ) *= -1;
+        (*S)[2] *= -1;
+    }
+    if (detV < 0)
+    {
+        V->block<3, 1>( 0, 2 ) *= -1;
+        (*S)[2] *= -1;
+    }
+}
 
 template<typename T>
-void PolarDecomposition( const Eigen::Matrix<T, 3, 3>& A, Eigen::Matrix<T, 3, 3>* R, Eigen::Matrix<T, 3, 3>* S )
+void PolarDecomposition( const Eigen::Matrix3<T>& A, Eigen::Matrix3<T>* R, Eigen::Matrix3<T>* S )
 {
     Polar_decomposition<true> pd;
     Mat3 m;

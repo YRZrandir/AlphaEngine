@@ -228,6 +228,9 @@
     <ClCompile Include="src\model\SphereMesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\CHalfEdgeMesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\acceleration\AABB.h">
@@ -503,6 +506,7 @@
     <None Include="res\shaders\common\Material.glsl" />
     <None Include="res\shaders\common\Shadow.glsl" />
     <None Include="res\shaders\depth_pd.glsl" />
+    <None Include="..\..\QtCuttingSimulation\QtCuttingSimulation\res\shaders\line_segments.glsl" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\PBD\CudaPbdSolver.cu" />

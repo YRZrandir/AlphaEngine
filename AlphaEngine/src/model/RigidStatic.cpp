@@ -1,8 +1,8 @@
 ﻿#include "RigidStatic.h"
-#include "../acceleration/BVH.h"
+#include "acceleration/BVH.h"
 #include "ModelLoader.h"
-#include "../util/Intersection.h"
-#include "../input/Input.h"
+#include "util/Intersection.h"
+#include "input/Input.h"
 #include "util/util.h"
 
 
@@ -33,6 +33,7 @@ void RigidStatic::Update()
 void RigidStatic::Draw()
 {
     _surface->Draw();
+    //_bvh->Draw();
 }
 
 HalfEdgeMesh& RigidStatic::Surface()
@@ -169,6 +170,7 @@ std::optional<MovingSphereTriIntersectInfo> RigidStatic::CheckMovingBall( glm::v
     {
         return *std::min_element( infos.begin(), infos.end(), []( const auto& info1, const auto& info2 ) { return info1.t < info2.t; } );
     }
+    return std::optional<MovingSphereTriIntersectInfo>();
 }
 
 void RigidStatic::UpdateTransPos()

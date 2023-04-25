@@ -120,6 +120,7 @@ public:
                     intersect = true;
                 }
             }
+
             return intersect;
         }
     };

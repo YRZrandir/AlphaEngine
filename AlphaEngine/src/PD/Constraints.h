@@ -1,87 +1,269 @@
 ﻿#pragma once
-#include "util/Math.h"
-#include "glm/glm.hpp"
-#include "glm/ext/scalar_constants.hpp"
+#include <concepts>
 #include "model/SphereMesh.h"
 
 namespace PD
 {
 
-class PDMetaballModel;
-class PDGPUMetaballModel;
-
+template <std::floating_point T = float>
 class Constraint
 {
 public:
-    Constraint( const std::vector<int>& indices, float weight )
+    Constraint( const std::vector<int>& indices, T weight )
         :_indices( indices ), _weight( weight )
     {
 
     }
-    virtual void Project( const Matrix3X& pos, Matrix3X& proj ) const = 0;
-    virtual void AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const = 0;
-    virtual SparseMatrix GetS( int nb_points ) const
+    virtual void Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const = 0;
+    virtual void AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w = 0.5 ) const = 0;
+    virtual Eigen::SparseMatrix<T> GetS( int nb_points ) const
     {
-        std::vector<SparseMatrixTriplet> triplets;
+        std::vector<Eigen::Triplet<T, int>> triplets;
         for (int nc = 0; nc < _indices.size(); nc++)
         {
             triplets.emplace_back( nc, _indices[nc], 1.0 );
         }
-        SparseMatrix m( _indices.size(), nb_points );
+        Eigen::SparseMatrix<T> m( _indices.size(), nb_points );
         m.setFromTriplets( triplets.begin(), triplets.end() );
         return m;
     }
-    virtual SparseMatrix GetA() const = 0;
+    virtual Eigen::SparseMatrix<T> GetA() const = 0;
+    virtual Eigen::Matrix3X<T> GetP( const Eigen::Matrix3X<T>& pos ) const = 0;
 
     std::vector<int> _indices;
     mutable int _loc{ -1 };
 
-    float _weight;
+    T _weight;
 };
 
-class EdgeConstraint : public Constraint
+template <std::floating_point T = float>
+class EdgeConstraint : public Constraint<T>
 {
 public:
-    EdgeConstraint( int i0, int i1, float weight, const Matrix3X& pos );
-    virtual void AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const override;
-    virtual void Project( const Matrix3X& pos, Matrix3X& proj ) const override;
-    virtual SparseMatrix GetA() const override;
+    EdgeConstraint( int i0, int i1, float weight, const Eigen::Matrix3X<T>& pos );
+    virtual void AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w = 0.5 ) const override;
+    virtual void Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const override;
+    virtual Eigen::SparseMatrix<T> GetA() const override;
+    virtual Eigen::Matrix3X<T> GetP( const Eigen::Matrix3X<T>& pos ) const override;
 
     float _rest = 0.f;
 };
 
-template <SphereType Sphere>
-class MeshlessStrainConstraint : public Constraint
+template <std::floating_point T>
+PD::EdgeConstraint<T>::EdgeConstraint( int i0, int i1, float weight, const Eigen::Matrix3X<T>& pos )
+    :Constraint<T>( std::vector<int>{i0, i1}, weight )
+{
+    float len = (pos.col( i0 ) - pos.col( i1 )).norm();
+    _rest = 1.f / len;
+    this->_weight *= std::sqrt( len );
+}
+
+template <std::floating_point T>
+void PD::EdgeConstraint<T>::AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w ) const
+{
+    this->_loc = total_id;
+    triplets.push_back( Eigen::Triplet<T, int>( this->_loc, this->_indices[0], -this->_weight * _rest ) );
+    triplets.push_back( Eigen::Triplet<T, int>( this->_loc, this->_indices[1], this->_weight * _rest ) );
+    total_id += 1;
+}
+
+template <std::floating_point T>
+void PD::EdgeConstraint<T>::Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const
+{
+    Eigen::Vector3<T> edge = pos.col( this->_indices[1] ) - pos.col( this->_indices[0] );
+    edge.normalize();
+    proj.col( this->_loc ) = this->_weight * edge;
+}
+
+template <std::floating_point T>
+Eigen::SparseMatrix<T> PD::EdgeConstraint<T>::GetA() const
+{
+    std::vector<Eigen::Triplet<T, int>> triplets;
+    Eigen::SparseMatrix<T> m( 1, this->_indices.size() );
+    triplets.emplace_back( 0, 0, -this->_weight * _rest );
+    triplets.emplace_back( 0, 1, this->_weight * _rest );
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
+}
+
+template <std::floating_point T>
+Eigen::Matrix3X<T> PD::EdgeConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos ) const
+{
+    Eigen::Vector3<T> edge = pos.col( this->_indices[1] ) - pos.col( this->_indices[0] );
+    edge.normalize();
+    return this->_weight * edge;
+}
+
+template <std::floating_point T = float>
+class AttachConstraint : public Constraint<T>
 {
 public:
-    MeshlessStrainConstraint( const std::vector<int>& indices, float weight, const Matrix3X& positions, SphereMesh<Sphere>* sphere_mesh, Matrix3X* x0 );
-    virtual void AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const override;
-    virtual void Project( const Matrix3X& pos, Matrix3X& proj ) const override;
-    virtual SparseMatrix GetA() const override;
+    AttachConstraint( int id, float weight, Eigen::Vector3<T> fixed_pos )
+        : Constraint<T>( std::vector<int>{id}, weight ), _fixed_pos( fixed_pos )
+    {};
 
-    Matrix3 _invA;
+    virtual void AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w = 0.5 ) const override;
+    virtual void Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const override;
+    virtual Eigen::SparseMatrix<T> GetA() const override;
+    virtual Eigen::Matrix3X<T> GetP( const Eigen::Matrix3X<T>& pos ) const override;
+    Eigen::Vector3<T> _fixed_pos;
+};
+
+template <std::floating_point T>
+void PD::AttachConstraint<T>::AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w ) const
+{
+    this->_loc = total_id;
+    triplets.push_back( Eigen::Triplet<T, int>( total_id, this->_indices[0], std::pow( this->_weight, w ) ) );
+    total_id += 1;
+}
+
+template <std::floating_point T>
+void PD::AttachConstraint<T>::Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const
+{
+    proj.col( this->_loc ) = _fixed_pos;
+}
+
+template <std::floating_point T>
+Eigen::SparseMatrix<T> PD::AttachConstraint<T>::GetA() const
+{
+    std::vector<Eigen::Triplet<T, int>> triplets;
+    Eigen::SparseMatrix<T> m( 1, 1 );
+    triplets.emplace_back( 0, 0, 1 );
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
+}
+
+template <std::floating_point T>
+Eigen::Matrix3X<T> PD::AttachConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos ) const
+{
+    return _fixed_pos;
+}
+
+template <std::floating_point T = float>
+class TetraStrainConstraint : public Constraint<T>
+{
+public:
+    TetraStrainConstraint( const std::vector<int>& indices, T weight, const Eigen::Matrix3X<T>& positions );
+
+    virtual void AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w = 0.5 ) const override;
+    virtual void Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const override;
+    virtual Eigen::SparseMatrix<T> GetA() const override;
+    virtual Eigen::Matrix3X<T> GetP( const Eigen::Matrix3X<T>& pos ) const override;
+
+    Eigen::Matrix3<T> _rest;
+};
+
+template <std::floating_point T>
+PD::TetraStrainConstraint<T>::TetraStrainConstraint( const std::vector<int>& indices, T weight, const Eigen::Matrix3X<T>& positions )
+    :Constraint<T>( indices, weight )
+{
+    Matrix3 edges;
+    for (int i = 0; i < 3; i++)
+        edges.col( i ) = positions.col( indices[i + 1] ) - positions.col( indices[0] );
+    _rest = edges.inverse();
+
+    float v = edges.determinant() / 6.f;
+    this->_weight *= std::sqrt( std::abs( v ) );
+}
+
+template <std::floating_point T>
+void PD::TetraStrainConstraint<T>::AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w ) const
+{
+    this->_loc = total_id;
+    int n = 3;
+    for (int i = 0; i < n; ++i) {
+        triplets.emplace_back( this->_loc + i, this->_indices[0], -this->_weight * (_rest( 0, i ) + _rest( 1, i ) + _rest( 2, i )) );
+        triplets.emplace_back( this->_loc + i, this->_indices[1], this->_weight * _rest( 0, i ) );
+        triplets.emplace_back( this->_loc + i, this->_indices[2], this->_weight * _rest( 1, i ) );
+        triplets.emplace_back( this->_loc + i, this->_indices[3], this->_weight * _rest( 2, i ) );
+    }
+    total_id += n;
+}
+
+template <std::floating_point T>
+void PD::TetraStrainConstraint<T>::Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const
+{
+    Matrix3 edges;
+    for (int i = 0; i < 3; ++i)
+        edges.col( i ) = pos.col( this->_indices[i + 1] ) - pos.col( this->_indices[0] );
+    Matrix3 F = edges * _rest;
+    Eigen::JacobiSVD<Matrix3> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    Eigen::Vector3<T> S = svd.singularValues();
+    S( 0 ) = std::clamp( S( 0 ), 1.f, 1.f );
+    S( 1 ) = std::clamp( S( 1 ), 1.f, 1.f );
+    S( 2 ) = std::clamp( S( 2 ), 1.f, 1.f );
+    if (svd.matrixU().determinant() * svd.matrixV().determinant() < 0.0f) S( 2 ) = -S( 2 );
+    F = svd.matrixU() * S.asDiagonal() * svd.matrixV().transpose();
+    proj.block<3, 3>( 0, this->_loc ) = this->_weight * F;
+}
+
+template <std::floating_point T>
+Eigen::SparseMatrix<T> PD::TetraStrainConstraint<T>::GetA() const
+{
+    std::vector<Eigen::Triplet<T, int>> triplets;
+    Eigen::SparseMatrix<T> m( 3, this->_indices.size() );
+    for (int i = 0; i < 3; i++)
+    {
+        triplets.emplace_back( i, 0, -this->_weight * (_rest( 0, i ) + _rest( 1, i ) + _rest( 2, i )) );
+        triplets.emplace_back( i, 1, this->_weight * _rest( 0, i ) );
+        triplets.emplace_back( i, 2, this->_weight * _rest( 1, i ) );
+        triplets.emplace_back( i, 3, this->_weight * _rest( 2, i ) );
+    }
+    m.setFromTriplets( triplets.begin(), triplets.end() );
+    return m;
+}
+
+template <std::floating_point T>
+Eigen::Matrix3X<T> PD::TetraStrainConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos ) const
+{
+    Matrix3 edges;
+    for (int i = 0; i < 3; ++i)
+        edges.col( i ) = pos.col( this->_indices[i + 1] ) - pos.col( this->_indices[0] );
+    Matrix3 F = edges * _rest;
+    Eigen::JacobiSVD<Matrix3> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    Eigen::Vector3<T> S = svd.singularValues();
+    S( 0 ) = std::clamp( S( 0 ), 1.f, 1.f );
+    S( 1 ) = std::clamp( S( 1 ), 1.f, 1.f );
+    S( 2 ) = std::clamp( S( 2 ), 1.f, 1.f );
+    if (svd.matrixU().determinant() * svd.matrixV().determinant() < 0.0f) S( 2 ) = -S( 2 );
+    F = svd.matrixU() * S.asDiagonal() * svd.matrixV().transpose();
+
+    return this->_weight * F;
+}
+
+template <SphereType Sphere, std::floating_point T = float>
+class MeshlessStrainConstraint : public Constraint<T>
+{
+public:
+    MeshlessStrainConstraint( const std::vector<int>& indices, T weight, const Eigen::Matrix3X<T>& positions, SphereMesh<Sphere>* sphere_mesh, Eigen::Matrix3X<T>* x0 );
+    virtual void AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w = 0.5 ) const override;
+    virtual void Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const override;
+    virtual Eigen::SparseMatrix<T> GetA() const override;
+    virtual Eigen::Matrix3X<T> GetP( const Eigen::Matrix3X<T>& pos ) const override;
+
+    Eigen::Matrix3<T> _invA;
     SphereMesh<Sphere>* _sphere_mesh;
-    Matrix3X* _x0;
+    Eigen::Matrix3X<T>* _x0;
     float _avg_dist;
     std::vector<float> _w;
 private:
     float ComputeW( float r, float h ) const
     {
         if (r < h)
-            return 315.f * glm::pow( h * h - r * r, 3 ) / (64.f * glm::pi<float>() * glm::pow( h, 9 ));
+            return 315.f * std::pow( h * h - r * r, 3.0 ) / (64.f * 3.1415926 * std::pow( h, 9.0 ));
         else
             return 0.0001f;
     }
 
-    Matrix3 ComputeF( const Matrix3X& pos ) const;
+    Eigen::Matrix3<T> ComputeF( const Eigen::Matrix3X<T>& pos ) const;
 };
 
-template <SphereType Sphere>
-PD::MeshlessStrainConstraint<Sphere>::MeshlessStrainConstraint( const std::vector<int>& indices,
-    float weight, const Matrix3X& positions, SphereMesh<Sphere>* sphere_mesh, Matrix3X* x0 )
-    :Constraint( indices, weight ), _sphere_mesh( sphere_mesh ), _x0( x0 )
+template <SphereType Sphere, std::floating_point T>
+PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::vector<int>& indices,
+    T weight, const Eigen::Matrix3X<T>& positions, SphereMesh<Sphere>* sphere_mesh, Eigen::Matrix3X<T>* x0 )
+    :Constraint<T>( indices, weight ), _sphere_mesh( sphere_mesh ), _x0( x0 )
 {
-    Matrix3 A;
+    Eigen::Matrix3<T> A;
     A.setZero();
 
     _avg_dist = 0.f;
@@ -89,7 +271,7 @@ PD::MeshlessStrainConstraint<Sphere>::MeshlessStrainConstraint( const std::vecto
     {
         if (j == indices[0])
             continue;
-        Vector3 d = positions.col( indices[0] ) - positions.col( j );
+        Eigen::Vector3<T> d = positions.col( indices[0] ) - positions.col( j );
         _avg_dist += d.norm();
     }
     _avg_dist /= (indices.size() - 1);
@@ -102,7 +284,7 @@ PD::MeshlessStrainConstraint<Sphere>::MeshlessStrainConstraint( const std::vecto
     {
         if (j == indices[0])
             continue;
-        Vector3 xij = positions.col( j ) - positions.col( indices[0] );
+        Eigen::Vector3<T> xij = positions.col( j ) - positions.col( indices[0] );
 
         float wij = 0.f;
         float r = xij.norm();
@@ -127,78 +309,75 @@ PD::MeshlessStrainConstraint<Sphere>::MeshlessStrainConstraint( const std::vecto
     {
         _invA = A.inverse();
     }
-
-    _weight *= std::sqrt( std::powf( _sphere_mesh->Ball( _indices[0] ).r, 3.f ) );
 }
 
-template <SphereType Sphere>
-void PD::MeshlessStrainConstraint<Sphere>::AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const
+template <SphereType Sphere, std::floating_point T>
+void PD::MeshlessStrainConstraint<Sphere, T>::AddConstraint( std::vector<Eigen::Triplet<T, int>>& triplets, int& total_id, float w ) const
 {
-    _loc = total_id;
-    float v1 = ((float)(_indices.size() - 1) / _indices.size());
-    float v2 = -(1.0f / _indices.size());
+    this->_loc = total_id;
+    float v1 = ((float)(this->_indices.size() - 1) / this->_indices.size());
+    float v2 = -(1.0f / this->_indices.size());
 
-    for (int i = 0; i < _indices.size(); i++)
+    for (int i = 0; i < this->_indices.size(); i++)
     {
-        for (int j = 0; j < _indices.size(); j++)
+        for (int j = 0; j < this->_indices.size(); j++)
         {
             float v = 0;
             if (i == j)
                 v += 1;
             if (j == 0)
                 v -= 1;
-            triplets.push_back( SparseMatrixTriplet( total_id + i, _indices[j], _weight * v ) );
+            triplets.push_back( Eigen::Triplet<T, int>( total_id + i, this->_indices[j], std::pow( this->_weight, w ) * v ) );
         }
     }
-    total_id += _indices.size();
+    total_id += this->_indices.size();
 }
 
-template <SphereType Sphere>
-void PD::MeshlessStrainConstraint<Sphere>::Project( const Matrix3X& pos, Matrix3X& proj ) const
+template <SphereType Sphere, std::floating_point T>
+void PD::MeshlessStrainConstraint<Sphere, T>::Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const
 {
-    Matrix3 F = ComputeF( pos );
+    Eigen::Matrix3<T> F = ComputeF( pos );
 
-    Sphere& pi = _sphere_mesh->Ball( _indices[0] );
+    Sphere& pi = _sphere_mesh->Ball( this->_indices[0] );
     pi.gu = F;
 
-    Matrix3 U, V;
-    Vector3 S;
+    Eigen::Matrix3<T> U, V;
+    Eigen::Vector3<T> S;
     SVD( &U, &S, &V, F );
 
-    Matrix3 T = U * V.transpose();
-    pi.R = T;
+    Eigen::Matrix3<T> t = U * V.transpose();
+    pi.R = t;
 
-    proj.col( _loc ) = Vector3( 0.f, 0.f, 0.f );
-    for (int j = 1; j < _indices.size(); j++)
+    proj.col( this->_loc ) = Eigen::Vector3<T>( 0.f, 0.f, 0.f );
+    for (int j = 1; j < this->_indices.size(); j++)
     {
-        auto x0ij = _x0->col( _indices[j] ) - _x0->col( _indices[0] );
-        Vector3 after_rot = T * x0ij;
-        proj.col( _loc + j ) = _weight * after_rot;
+        proj.col( this->_loc + j ) = t * (_x0->col( this->_indices[j] ) - _x0->col( this->_indices[0] ));
     }
 }
 
-template <SphereType Sphere>
-Matrix3 PD::MeshlessStrainConstraint<Sphere>::ComputeF( const Matrix3X& pos ) const
+template <SphereType Sphere, std::floating_point T>
+Eigen::Matrix3<T> PD::MeshlessStrainConstraint<Sphere, T>::ComputeF( const Eigen::Matrix3X<T>& pos ) const
 {
-    Vector3 ui = pos.col( _indices[0] ) - _x0->col( _indices[0] );
+    Eigen::Vector3<T> ui = pos.col( this->_indices[0] ) - _x0->col( this->_indices[0] );
 
-    Vector3 sx( 0.f, 0.f, 0.f );
-    Vector3 sy( 0.f, 0.f, 0.f );
-    Vector3 sz( 0.f, 0.f, 0.f );
+    Eigen::Vector3<T> sx( 0.f, 0.f, 0.f );
+    Eigen::Vector3<T> sy( 0.f, 0.f, 0.f );
+    Eigen::Vector3<T> sz( 0.f, 0.f, 0.f );
 
     float wsum = 0.f;
 
     int cnt = 0;
-    for (int j : _indices)
+    //Eigen::Matrix3<T> S;
+    for (int j : this->_indices)
     {
         if (cnt == 0)
         {
             cnt++;
             continue;
         }
-        Vector3 uj = pos.col( j ) - _x0->col( j );
+        Eigen::Vector3<T> uj = pos.col( j ) - _x0->col( j );
 
-        Vector3 xij = _x0->col( j ) - _x0->col( _indices[0] );
+        Eigen::Vector3<T> xij = _x0->col( j ) - _x0->col( this->_indices[0] );
 
         float wij = _w[cnt];
         cnt++;
@@ -207,17 +386,21 @@ Matrix3 PD::MeshlessStrainConstraint<Sphere>::ComputeF( const Matrix3X& pos ) co
         sx += (uj[0] - ui[0]) * xij * wij;
         sy += (uj[1] - ui[1]) * xij * wij;
         sz += (uj[2] - ui[2]) * xij * wij;
+        //S += wij * (uj - ui) * xij.transpose();
     }
 
     sx /= wsum;
     sy /= wsum;
     sz /= wsum;
+    //S /= wsum;
+    //S.row( 0 ) = sx.transpose();
+    //S.row( 1 ) = sx.transpose();
+    //S.row( 2 ) = sx.transpose();
+    Eigen::Vector3<T> dux = _invA * sx;
+    Eigen::Vector3<T> duy = _invA * sy;
+    Eigen::Vector3<T> duz = _invA * sz;
 
-    Vector3 dux = _invA * sx;
-    Vector3 duy = _invA * sy;
-    Vector3 duz = _invA * sz;
-
-    Matrix3 F;
+    Eigen::Matrix3<T> F;
     F.col( 0 ) = dux;
     F.col( 1 ) = duy;
     F.col( 2 ) = duz;
@@ -231,22 +414,22 @@ Matrix3 PD::MeshlessStrainConstraint<Sphere>::ComputeF( const Matrix3X& pos ) co
     return F;
 }
 
-template <SphereType Sphere>
-SparseMatrix PD::MeshlessStrainConstraint<Sphere>::GetA() const
+template <SphereType Sphere, std::floating_point T>
+Eigen::SparseMatrix<T> PD::MeshlessStrainConstraint<Sphere, T>::GetA() const
 {
-    std::vector<SparseMatrixTriplet> triplets;
-    SparseMatrix m( _indices.size(), _indices.size() );
+    std::vector<Eigen::Triplet<T, int>> triplets;
+    Eigen::SparseMatrix<T> m( this->_indices.size(), this->_indices.size() );
 
-    for (int i = 0; i < _indices.size(); i++)
+    for (int i = 0; i < this->_indices.size(); i++)
     {
-        for (int j = 0; j < _indices.size(); j++)
+        for (int j = 0; j < this->_indices.size(); j++)
         {
             float v = 0;
             if (i == j)
                 v += 1;
             if (j == 0)
                 v -= 1;
-            triplets.emplace_back( i, j, _weight * v );
+            triplets.emplace_back( i, j, v );
         }
     }
 
@@ -254,31 +437,30 @@ SparseMatrix PD::MeshlessStrainConstraint<Sphere>::GetA() const
     return m;
 }
 
-class AttachConstraint : public Constraint
+template <SphereType Sphere, std::floating_point T>
+Eigen::Matrix3X<T> PD::MeshlessStrainConstraint<Sphere, T>::GetP( const Eigen::Matrix3X<T>& pos ) const
 {
-public:
-    AttachConstraint( int id, float weight, Vector3 fixed_pos )
-        : Constraint( std::vector<int>{id}, weight ), _fixed_pos( fixed_pos )
-    {};
+    Eigen::Matrix3<T> F = ComputeF( pos );
 
-    virtual void AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const override;
-    virtual void Project( const Matrix3X& pos, Matrix3X& proj ) const override;
-    virtual SparseMatrix GetA() const override;
+    Sphere& pi = _sphere_mesh->Ball( this->_indices[0] );
+    pi.gu = F;
 
-    Vector3 _fixed_pos;
-};
+    Eigen::Matrix3<T> U, V;
+    Eigen::Vector3<T> S;
+    SVD( &U, &S, &V, F );
 
-class TetraStrainConstraint : public Constraint
-{
-public:
-    TetraStrainConstraint( const std::vector<int>& indices, float weight, const Matrix3X& positions );
+    Eigen::Matrix3<T> t = U * V.transpose();
+    pi.R = t;
 
-    virtual void AddConstraint( std::vector<SparseMatrixTriplet>& triplets, int& total_id ) const override;
-    virtual void Project( const Matrix3X& pos, Matrix3X& proj ) const override;
-    virtual SparseMatrix GetA() const override;
+    Eigen::Matrix3X<T> p;
+    p.resize( 3, this->_indices.size() );
 
-    Matrix3 _rest;
-};
+    p.col( 0 ) = Eigen::Vector3<T>( 0.f, 0.f, 0.f );
+    for (int j = 1; j < this->_indices.size(); j++)
+    {
+        p.col( j ) = t * (_x0->col( this->_indices[j] ) - _x0->col( this->_indices[0] ));
+    }
 
-
+    return p;
+}
 }

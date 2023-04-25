@@ -93,7 +93,7 @@ inline void PolyhedronObjBulider<HDS, Item, Kernel>::operator()( HDS& hds )
         vh->index = i / 3;
     }
 
-    for (int f = 0, size = shape.mesh.num_face_vertices.size(); f < size; ++f)
+    for (size_t f = 0, size = shape.mesh.num_face_vertices.size(); f < size; ++f)
     {
         const tinyobj::index_t& i0 = shape.mesh.indices[f * 3 + 0];
         const tinyobj::index_t& i1 = shape.mesh.indices[f * 3 + 1];
@@ -524,9 +524,9 @@ CGAL::Vector_3<Kernel> CHalfEdgeMesh<Item, Kernel>::FaceNormal( hFacet hf ) cons
     return CGAL::unit_normal( p0, p1, p2 );
 }
 
-
-#define CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME CHalfEdgeMesh<ItemBase>
-#define CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME::Polyhedron
+#define CGAL_GRAPH_TRAITS_INHERITANCE_TEMPLATE_PARAMS ItemType Item, typename Kernel
+#define CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME CHalfEdgeMesh<Item, Kernel>
+#define CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME typename CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME::Polyhedron
 #include <CGAL/boost/graph/graph_traits_inheritance_macros.h>
 
 template <typename Kernel = CGAL::Simple_cartesian<float>>

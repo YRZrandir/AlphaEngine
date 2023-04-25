@@ -38,9 +38,9 @@ void BVHNode::Draw( int level ) const
     {
         return;
     }
-    if (level == 0)
+    if (level <= 8)
     {
-        auto shader = Shader::Find( "line" );
+        auto shader = Shader::Find( "bvh" );
         shader->use();
         sVAO->Bind();
         glm::mat4 model = glm::translate( glm::mat4( 1.0f ), mBoundingBox.GetCenter() );
@@ -50,7 +50,6 @@ void BVHNode::Draw( int level ) const
         shader->setMat( "uProjectionMat", Camera::current->GetProjectionMatrix() );
         shader->setVec( "uColor", mColor * ((float)level / 4.0f) );
         glDrawElements( GL_LINES, sIBO->GetCount(), GL_UNSIGNED_INT, nullptr );
-
     }
     if (mLeft)
     {
@@ -210,6 +209,8 @@ void BVHNode_HalfEdgeMesh::Refit()
     for (const auto& i : mIndices)
     {
         auto indices = _mesh->GetFaceIndices( i );
+        mBoundingBox.max_corner = glm::vec3( -FLT_MAX );
+        mBoundingBox.min_corner = glm::vec3( FLT_MAX );
         mBoundingBox.Expand( _mesh->_vertices[std::get<0>( indices )].pos );
         mBoundingBox.Expand( _mesh->_vertices[std::get<1>( indices )].pos );
         mBoundingBox.Expand( _mesh->_vertices[std::get<2>( indices )].pos );

@@ -112,13 +112,13 @@ void PD::PDTetraModel::Init()
         indices.push_back( _mesh->mTetras[t].b );
         indices.push_back( _mesh->mTetras[t].c );
         indices.push_back( _mesh->mTetras[t].d );
-        _constraints.push_back( std::make_unique<TetraStrainConstraint>( indices, _stiffness, _current_pos ) );
+        _constraints.push_back( std::make_unique<TetraStrainConstraint<Real>>( indices, _stiffness, _current_pos ) );
     }
     for (int i = 0; i < _mesh->GetPointNum(); ++i)
     {
         if (_attach_filter( _mesh->mRestPos[i] ))
         {
-            _constraints.push_back( std::make_unique<AttachConstraint>( i, _att_stiffness, _rest_pos.col( i ) ) );
+            _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _att_stiffness, _rest_pos.col( i ) ) );
         }
     }
 
@@ -349,9 +349,9 @@ void PD::PDTetraModel::PhysicalUpdate()
             Eigen::Matrix3f m = q.toRotationMatrix();
             for (int i = 0; i < _constraints.size(); i++)
             {
-                if (typeid(*_constraints[i]) == typeid(AttachConstraint))
+                if (typeid(*_constraints[i]) == typeid(AttachConstraint<Real>))
                 {
-                    AttachConstraint* c = dynamic_cast<AttachConstraint*>(_constraints[i].get());
+                    AttachConstraint<Real>* c = dynamic_cast<AttachConstraint<Real>*>(_constraints[i].get());
                     int id = c->_indices[0];
                     if (_rest_pos.col( id ).x() > 0.3f)
                     {
