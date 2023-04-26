@@ -33,7 +33,7 @@ public:
     class Hash
     {
     public:
-        unsigned operator()( const IndexPair& pair ) const
+        size_t operator()( const IndexPair& pair ) const
         {
             return pair.i0 > pair.i1 ?
                 boost::hash<std::pair<int, int>>()({ pair.i0, pair.i1 }) :
@@ -166,22 +166,18 @@ template <SphereType Sphere>
 class SphereMesh :
     public SceneObject
 {
-    /* Constructor & Assignment */
 public:
     SphereMesh();
     SphereMesh( const std::vector<Sphere>& balls );
     SphereMesh( std::vector<Sphere>&& balls );
     SphereMesh( const std::vector<std::pair<glm::vec3, float>>& balls );
     ~SphereMesh() = default;
-protected:
     SphereMesh( const SphereMesh<Sphere>& rh );
     SphereMesh( SphereMesh<Sphere>&& rh );
     SphereMesh<Sphere>& operator=( const SphereMesh<Sphere>& rh );
     SphereMesh<Sphere>& operator=( SphereMesh<Sphere>&& rh );
 
-    /* Member Function */
 public:
-    // Inherited via SceneObject
     virtual void Update() override;
     virtual void Draw() override;
 
@@ -190,7 +186,7 @@ public:
     void LoadFromSphereTreeFile( const std::string& path );
     void CreateFromSurfaceVoroOptimize( HalfEdgeMesh* mesh, std::string mesh_path, int nb_ball, int nb_lloyd, float step_len, int min_nb_neighbors = 8 );
     void CreateFromSurfaceUniform( HalfEdgeMesh* mesh, float steplen, int min_nb_neighbors = 8 );
-    int BallsNum() const;
+    size_t BallsNum() const;
     void MakeConnections();
     void MakeConnections2();
     void ConnectionReduction();
@@ -205,9 +201,6 @@ public:
     float Distance( const SphereMesh<Sphere2>& other );
     Sphere& operator[]( unsigned int id );
     const Sphere& operator[]( unsigned int id ) const;
-
-private:
-    //virtual SceneObject* virtual_clone() const override;
 
 private:
     std::vector<Sphere> _balls;
@@ -267,6 +260,9 @@ inline SphereMesh<Sphere>::SphereMesh( const SphereMesh<Sphere>& rh )
     : SphereMesh()
 {
     _balls = rh._balls;
+    _show_edges = rh._show_edges;
+    _show_ball = rh._show_ball;
+    _show_orit = rh._show_orit;
 }
 
 template<SphereType Sphere>
@@ -274,6 +270,9 @@ inline SphereMesh<Sphere>::SphereMesh( SphereMesh<Sphere>&& rh )
     :SphereMesh()
 {
     _balls = std::move( rh._balls );
+    _show_edges = rh._show_edges;
+    _show_ball = rh._show_ball;
+    _show_orit = rh._show_orit;
 }
 
 template<SphereType Sphere>
@@ -298,9 +297,6 @@ inline void SphereMesh<Sphere>::Update()
 template<SphereType Sphere>
 inline void SphereMesh<Sphere>::Draw()
 {
-    static bool temp2 = false;
-    if (Input::IsKeyDown( Input::Key::H ))
-        temp2 = !temp2;
     if (_show_ball)
     {
         //TODO: Add a instanced drawing class for this.
@@ -418,32 +414,29 @@ inline void SphereMesh<Sphere>::CreateFromSurfaceVoroOptimize( HalfEdgeMesh* mes
         _ball_orit_lines->AddPoint( pts[i] + Ball( BallsNum() - 1 ).outside * 0.1f, glm::vec3( 1.f ) );
     }
     _ball_orit_lines->UpdateMem();
-    HalfEdgeSurfaceTester tester( mesh );
-#pragma omp parallel for
-    for (int i = 0; i < BallsNum(); i++)
-    {
-        auto& ball = Ball( i );
-        int face_id = -1;
-        float dist = tester.MinDistToSurface( ball.x, &face_id );
-        bool in_surface = tester.PointIsInSurface( ball.x );
-        if (face_id >= 0)
-        {
-            glm::vec3 normal = mesh->GetFaceNormal( face_id );
-            if (in_surface)
-            {
-                if (ball.r > dist)
-                    ball.x -= normal * (ball.r - dist);
-            }
-            else if (!in_surface)
-            {
-                ball.x -= normal * (ball.r + dist);
-            }
-            ball.x0 = ball.x;
-        }
-    }
-
-    //_mesh->Optimize();
-    //_mesh->MakeConnections2();
+    //    HalfEdgeSurfaceTester tester( mesh );
+    //#pragma omp parallel for
+    //    for (int i = 0; i < BallsNum(); i++)
+    //    {
+    //        auto& ball = Ball( i );
+    //        int face_id = -1;
+    //        float dist = tester.MinDistToSurface( ball.x, &face_id );
+    //        bool in_surface = tester.PointIsInSurface( ball.x );
+    //        if (face_id >= 0)
+    //        {
+    //            glm::vec3 normal = mesh->GetFaceNormal( face_id );
+    //            if (in_surface)
+    //            {
+    //                if (ball.r > dist)
+    //                    ball.x -= normal * (ball.r - dist);
+    //            }
+    //            else if (!in_surface)
+    //            {
+    //                ball.x -= normal * (ball.r + dist);
+    //            }
+    //            ball.x0 = ball.x;
+    //        }
+    //    }
 
     ConnectionReduction();
 
@@ -466,7 +459,7 @@ inline void SphereMesh<Sphere>::CreateFromSurfaceVoroOptimize( HalfEdgeMesh* mes
             min_heap.insert( { dist, j } );
         }
 
-        int counter = min_nb_neighbors - neighbors.size();
+        int counter = min_nb_neighbors - static_cast<int>(neighbors.size());
         for (auto& pair : min_heap)
         {
             if (counter <= 0)
@@ -559,7 +552,7 @@ inline void SphereMesh<Sphere>::CreateFromSurfaceUniform( HalfEdgeMesh* mesh, fl
 }
 
 template<SphereType Sphere>
-inline int SphereMesh<Sphere>::BallsNum() const
+inline size_t SphereMesh<Sphere>::BallsNum() const
 {
     return _balls.size();
 }

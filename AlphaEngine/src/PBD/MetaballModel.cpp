@@ -573,15 +573,7 @@ void MetaballModel::PhysicalUpdate( float dt )
             if (!_metaballs[i].valid)
                 continue;
             auto& ball = _metaballs[i];
-            glm::vec3 p0 = ball.x;
-            glm::vec3 p1 = ball.x_pred;
-            float y0 = p0.y;
-            float y1 = p1.y;
-            float r = ball.r;
-            float len = glm::distance( p0, p1 );
 
-            IntersectionRec rec;
-            int id;
             auto result = rigid->CheckBall( ball.x_pred, ball.r, i );
             _colli_consts.insert( _colli_consts.end(), result.begin(), result.end() );
         }
@@ -613,7 +605,7 @@ void MetaballModel::PhysicalUpdate( float dt )
             glm::vec3 dP2 = w2 * s * n;
             _metaballs[i1].x_pred += dP1 * (float)(1 - glm::pow( 1 - _stretch_stiffness, solver_it + 1 ));
             _metaballs[i2].x_pred += dP2 * (float)(1 - glm::pow( 1 - _stretch_stiffness, solver_it + 1 ));
-        }
+    }
 
 
         //std::vector<glm::vec3> temp( _metaballs.size() );
@@ -732,7 +724,7 @@ void MetaballModel::PhysicalUpdate( float dt )
                 ball.x_pred -= dx;
             }
         }
-    }
+}
 
     for (Metaball& ball : _metaballs)
     {
@@ -1346,7 +1338,7 @@ void MetaballModel::PBDSolveConstraints( float dt )
 
             _metaballs[i1].x_pred += dP1 * (float)(1 - glm::pow( 1 - _stretch_stiffness, solver_it + 1 ));
             _metaballs[i2].x_pred += dP2 * (float)(1 - glm::pow( 1 - _stretch_stiffness, solver_it + 1 ));
-        }
+    }
 
         //std::vector<glm::vec3> temp( _metaballs.size() );
         //for (const auto& C : _laplacian_consts)
@@ -1539,7 +1531,7 @@ void MetaballModel::PBDSolveConstraints( float dt )
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_t);
             std::cout << duration.count() << std::endl;
         }
-    }
+}
 
     for (Metaball& ball : _metaballs)
     {

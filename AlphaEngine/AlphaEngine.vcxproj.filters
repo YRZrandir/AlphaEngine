@@ -365,9 +365,6 @@
     <ClInclude Include="src\PD\Constraints.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\PD\PDMetaballModel.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="src\PD\PDTetraModel.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -492,6 +489,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\dirent\dirent.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PD\PDMetaballModel.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

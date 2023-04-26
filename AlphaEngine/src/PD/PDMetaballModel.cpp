@@ -119,6 +119,64 @@ PD::PDMetaballModel::PDMetaballModel( const PDMetaballModelConfig& cfg, PDMetaba
     //}
 }
 
+PD::PDMetaballModel::PDMetaballModel( const PDMetaballModelConfig& cfg, const SphereMesh<Particle>& balls, PDMetaballHalfEdgeMesh* mesh )
+    :_cfg( cfg ), _surface( mesh )
+{
+    _mesh = std::make_unique<SphereMesh<Particle>>( balls );
+    _line_segments = std::make_unique<GLLineSegment>();
+
+    _simple_ball = std::make_unique<HalfEdgeMesh>( "res/models/ball960.obj" );
+    _simple_ball->_material_main->SetDiffuseColor( 0.8f, 0.f, 0.f );
+    _simple_ball->mTransform.SetScale( glm::vec3( 0.02f ) );
+    _simple_cylin = std::make_unique<HalfEdgeMesh>( "res/models/cylinder.obj" );
+    _simple_cylin->_material_main->SetDiffuseColor( 0.f, 0.f, 0.f );
+
+    const static glm::vec3 COLORS[] = {
+        glm::vec3( 99, 178, 238 ),
+        glm::vec3( 118, 218, 145 ),
+        glm::vec3( 248, 203, 127 ),
+        glm::vec3( 248, 149, 136 ),
+        glm::vec3( 124, 214, 207 ),
+        glm::vec3( 145, 146, 171 ),
+        glm::vec3( 120, 152, 225 ),
+        glm::vec3( 239, 166, 102 ),
+        glm::vec3( 237, 221, 134 ),
+        glm::vec3( 153, 135, 206 ),
+        glm::vec3( 99, 178, 238 ),
+        glm::vec3( 118, 218, 145 )
+    };
+    std::srand( std::time( 0 ) );
+    _color = COLORS[rand() % _countof( COLORS )] / 255.f;
+
+    _coarse_surface = std::make_unique<HalfEdgeMesh>( cfg._coarse_surface );
+    _surface_path = cfg._coarse_surface;
+
+    _skin_ball_buffer = std::make_unique<ShaderStorageBuffer>( nullptr, 0 );
+    _skin_vtx_buffer = std::make_unique<ShaderStorageBuffer>( nullptr, 0 );
+    CreateSurfaceMapping();
+    UpdateSkinInfoBuffer();
+
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        _mesh->Ball( i ).x += _cfg._displacement;
+        _mesh->Ball( i ).x0 = _mesh->Ball( i ).x;
+    }
+
+    float m_max = 0.f;
+    for (int i = 0; i < _mesh->BallsNum(); ++i)
+    {
+        auto& ball = _mesh->Ball( i );
+        float r = ball.r;
+        ball.m = 4.f / 3.f * 3.14f * r * r * r * cfg._density;
+        m_max = std::max( m_max, ball.m );
+    }
+    for (int i = 0; i < _mesh->BallsNum(); ++i)
+    {
+        _mesh->Ball( i ).m_rel = _mesh->Ball( i ).m / m_max;
+    }
+    Init();
+}
+
 PD::PDMetaballModel::~PDMetaballModel()
 {
     Instrumentor::Get().EndSession();

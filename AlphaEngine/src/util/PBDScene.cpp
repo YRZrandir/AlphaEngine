@@ -223,7 +223,7 @@ void PBDScene::Update()
             {
                 if (model->_simulate)
                 {
-                    model->CollisionDetection();
+                    //model->CollisionDetection();
                 }
             }
             for (auto model : gpupdmodels)

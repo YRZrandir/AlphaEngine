@@ -98,18 +98,17 @@ private:
     SparseMatrix _mass_matrix_inv; //3n*3n
     Matrix3X _last_pos;
     Matrix3X _last_pos1;
-    Matrix3X _current_pos;       //3*n
-    Matrix3X _current_vel;       //3*n
+    Matrix3X _x;       //3*n
+    Matrix3X _v;       //3*n
     Matrix3X _pene;
     Matrix3X _friction;
     Matrix3X _momentum;         //3*n
-    Matrix3X _external_force;    //3*n
+    Matrix3X _f_ext;    //3*n
     std::vector<std::unique_ptr<Constraint<Real>>> _constraints;
     SparseMatrix _AS;
     SparseMatrix _StAt;
-    SparseMatrix _At;
     SparseMatrix _N;
-    Matrix3X _projections;
+    Matrix3X _p;
     Eigen::SimplicialLDLT<SparseMatrix> _llt;
 
     SparseMatrix _StAtAS;

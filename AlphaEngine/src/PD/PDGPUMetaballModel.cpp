@@ -145,16 +145,16 @@ void PD::PDGPUMetaballModel::Init()
     int nb_points = _mesh->BallsNum();
     std::vector<SparseMatrixTriplet> m_triplets;
     std::vector<SparseMatrixTriplet> m_inv_triplets;
-    _current_pos.resize( 3, nb_points );
+    _x.resize( 3, nb_points );
     _rest_pos.resize( 3, nb_points );
-    _current_vel.resize( 3, nb_points );
+    _v.resize( 3, nb_points );
     _pene.resize( 3, nb_points );
-    _external_force.resize( 3, nb_points );
+    _f_ext.resize( 3, nb_points );
     _last_pos.resize( 3, nb_points );
     _last_pos1.resize( 3, nb_points );
     _momentum.resize( 3, nb_points );
-    _current_vel.setZero();
-    _external_force.setZero();
+    _v.setZero();
+    _f_ext.setZero();
     std::vector<float> host_m_vector;
 
     for (int i = 0; i < nb_points; ++i)
@@ -162,10 +162,10 @@ void PD::PDGPUMetaballModel::Init()
         m_triplets.push_back( { i, i, _mesh->Ball( i ).m } );
         m_inv_triplets.push_back( { i, i, 1.f / _mesh->Ball( i ).m } );
         host_m_vector.push_back( _mesh->Ball( i ).m );
-        _current_pos.col( i ) = Vector3( _mesh->Ball( i ).x0.x, _mesh->Ball( i ).x0.y, _mesh->Ball( i ).x0.z );
-        _rest_pos.col( i ) = _current_pos.col( i );
-        _last_pos.col( i ) = _current_pos.col( i );
-        _last_pos1.col( i ) = _current_pos.col( i );
+        _x.col( i ) = Vector3( _mesh->Ball( i ).x0.x, _mesh->Ball( i ).x0.y, _mesh->Ball( i ).x0.z );
+        _rest_pos.col( i ) = _x.col( i );
+        _last_pos.col( i ) = _x.col( i );
+        _last_pos1.col( i ) = _x.col( i );
     }
     _mass_matrix.resize( nb_points, nb_points );
     _mass_matrix_inv.resize( nb_points, nb_points );
@@ -209,11 +209,11 @@ void PD::PDGPUMetaballModel::Init()
                 {
                     k = _cfg._k_stiff * 0.01f;
                 }
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, k, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, k, _x, _mesh.get(), &_rest_pos ) );
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff, _current_pos, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff * _mesh->Ball( i ).m, _x, _mesh.get(), &_rest_pos ) );
             }
         }
     }
@@ -230,7 +230,7 @@ void PD::PDGPUMetaballModel::Init()
         }
         for (const IndexPair& pair : edges)
         {
-            _constraints.push_back( std::make_unique<PD::EdgeConstraint<Real>>( pair.i0, pair.i1, _cfg._k_stiff, _current_pos ) );
+            _constraints.push_back( std::make_unique<PD::EdgeConstraint<Real>>( pair.i0, pair.i1, _cfg._k_stiff, _x ) );
         }
         ComputeAinvForEdgeConsts();
     }
@@ -255,31 +255,31 @@ void PD::PDGPUMetaballModel::Init()
     cudaMemcpy( _cudapd.q0, _rest_pos.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.q, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.q, _current_pos.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.q, _x.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.v, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.v, _current_vel.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.v, _v.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.qlast, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.qlast, _current_pos.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.qlast, _x.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.qlast1, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.qlast1, _current_pos.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.qlast1, _x.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.qlast2, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.qlast2, _current_pos.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.qlast2, _x.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.f_ext, sizeof( float3 ) * nb_points );
-    cudaMemcpy( _cudapd.f_ext, _external_force.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.f_ext, _f_ext.data(), sizeof( float3 ) * nb_points, cudaMemcpyHostToDevice );
 
     cudaMalloc( (void**)&_cudapd.momentum, sizeof( float3 ) * nb_points );
 
     cudaMalloc( (void**)&_cudapd.m, sizeof( float ) * nb_points );
     cudaMemcpy( _cudapd.m, host_m_vector.data(), sizeof( float ) * nb_points, cudaMemcpyHostToDevice );
 
-    Eigen::VectorXf host_qx = _current_pos.row( 0 ).transpose();
-    Eigen::VectorXf host_qy = _current_pos.row( 1 ).transpose();
-    Eigen::VectorXf host_qz = _current_pos.row( 2 ).transpose();
+    Eigen::VectorXf host_qx = _x.row( 0 ).transpose();
+    Eigen::VectorXf host_qy = _x.row( 1 ).transpose();
+    Eigen::VectorXf host_qz = _x.row( 2 ).transpose();
     _d_q[0].UpdateBuffer( host_qx.rows(), host_qx.data() );
     _d_q[1].UpdateBuffer( host_qy.rows(), host_qy.data() );
     _d_q[2].UpdateBuffer( host_qz.rows(), host_qz.data() );
@@ -297,7 +297,7 @@ void PD::PDGPUMetaballModel::Init()
     {
         c->AddConstraint( triplets, total_id, 0.0f );
     }
-    _projections.setZero( 3, total_id );
+    _p.setZero( 3, total_id );
 
     _AS.resize( total_id, nb_points );
     _AS.setFromTriplets( triplets.cbegin(), triplets.cend() );
@@ -337,8 +337,8 @@ void PD::PDGPUMetaballModel::Init()
 
     cudaMalloc( (void**)&_cudapd.p, sizeof( float3 ) * total_id );
 
-    _At.makeCompressed();
-    _d_At = CreateCUDASparseMatrix( _At );
+    _StAt.makeCompressed();
+    _d_At = CreateCUDASparseMatrix( _StAt );
 
     _LU = SparseMatrix( _N.cols(), _N.cols() );
     _Dinv = SparseMatrix( _N.cols(), _N.cols() );
@@ -394,9 +394,9 @@ void PD::PDGPUMetaballModel::Init()
             PD::AttachConstraint<Real>* C = dynamic_cast<PD::AttachConstraint<Real>*>(_constraints[i].get());
             _host_attach_consts.push_back( CudaAttachConst{ C->_indices[0], C->_loc, {(float)C->_fixed_pos.x(), (float)C->_fixed_pos.y(), (float)C->_fixed_pos.z()} } );
         }
-        else if (typeid(*_constraints[i]) == typeid(PD::MeshlessStrainConstraint<Particle>))
+        else if (typeid(*_constraints[i]) == typeid(PD::MeshlessStrainConstraint<Particle, Real>))
         {
-            auto* C = dynamic_cast<PD::MeshlessStrainConstraint<Particle>*>(_constraints[i].get());
+            auto* C = dynamic_cast<PD::MeshlessStrainConstraint<Particle, Real>*>(_constraints[i].get());
             CudaMetaballConst c;
             c.id = C->_indices[0];
             c.loc = C->_loc;
@@ -538,7 +538,7 @@ void PD::PDGPUMetaballModel::Update()
 
     for (int i = 0; i < _mesh->BallsNum(); ++i)
     {
-        Vector3 p = _current_pos.col( i );
+        Vector3 p = _x.col( i );
         _mesh->Ball( i ).x = glm::vec3( p[0], p[1], p[2] );
     }
     if (_cfg._method == 2 || _cfg._const_type == 1)
@@ -575,7 +575,7 @@ void PD::PDGPUMetaballModel::Draw()
             cudaDeviceSynchronize();
             for (int i = 0; i < _mesh->BallsNum(); i++)
             {
-                _mesh->Ball( i ).x = ToGLM( _current_pos.col( i ).eval() );
+                _mesh->Ball( i ).x = ToGLM( _x.col( i ).eval() );
                 _mesh->Ball( i ).R = ToEigen( glm::mat3( _ball_skinning_infos[i].R ) ).transpose();
             }
             InstrumentationTimer timer( "Render" );
@@ -587,8 +587,8 @@ void PD::PDGPUMetaballModel::Draw()
 
     for (auto& pair : _array_ext_forces)
     {
-        glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ) );
-        glm::vec3 end_pos = ToGLM( (_current_pos.col( pair.first ).cast<float>() + pair.second.normalized() * 0.2f).eval() );
+        glm::vec3 start_pos = ToGLM( _x.col( pair.first ) );
+        glm::vec3 end_pos = ToGLM( (_x.col( pair.first ).cast<float>() + pair.second.normalized() * 0.2f).eval() );
         start_pos = start_pos + 0.05f * (end_pos - start_pos);
         //_simple_ball->mTransform.SetPos( start_pos );
         //_simple_ball->Draw();
@@ -650,24 +650,24 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
     //External force
     for (int i = 0; i < _mesh->BallsNum(); ++i)
     {
-        _external_force.col( i ).y() -= 9.8f;
+        _f_ext.col( i ).y() -= 9.8f;
     }
     for (auto& pair : _ext_forces)
     {
-        _external_force.col( pair.first ) += pair.second;
+        _f_ext.col( pair.first ) += pair.second;
     }
     for (auto& pair : _array_ext_forces)
     {
-        _external_force.col( pair.first ) += pair.second;
+        _f_ext.col( pair.first ) += pair.second;
     }
 
 #pragma omp parallel for
     for (int c = 0; c < _mesh->BallsNum(); c++)
     {
-        _momentum.col( c ) = _current_pos.col( c ) + _current_vel.col( c ) * _cfg._dt;
-        _momentum.col( c ) += _cfg._dt * _cfg._dt * _external_force.col( c );
-        _last_pos.col( c ) = _current_pos.col( c );
-        _current_pos.col( c ) = _momentum.col( c );
+        _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
+        _momentum.col( c ) += _cfg._dt * _cfg._dt * _f_ext.col( c );
+        _last_pos.col( c ) = _x.col( c );
+        _x.col( c ) = _momentum.col( c );
     }
 
     for (int i = 0; i < _cfg._nb_solve; i++)
@@ -677,16 +677,14 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
 #pragma omp for 
             for (int j = 0; j < _constraints.size(); j++)
             {
-                _constraints[j]->Project( _current_pos, _projections );
+                _constraints[j]->Project( _x, _p );
             }
-            auto start_t = std::chrono::high_resolution_clock::now();
 #pragma omp for
             for (int r = 0; r < 3; r++)
             {
-                auto rh_vec = _At * _projections.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-                _current_pos.row( r ) = _llt.solve( rh_vec ).transpose();
+                auto rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                _x.row( r ) = _llt.solve( rh_vec ).transpose();
             }
-            //std::cout << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_t).count() << std::endl;
         }
     }
 
@@ -695,7 +693,7 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
 #pragma omp for
         for (int c = 0; c < _mesh->BallsNum(); c++)
         {
-            _current_vel.col( c ) = 0.983f / _cfg._dt * (_current_pos.col( c ) - _last_pos.col( c ));
+            _v.col( c ) = 1.0f / _cfg._dt * (_x.col( c ) - _last_pos.col( c ));
         }
     }
 
@@ -703,11 +701,11 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
     _aabb.min_corner = glm::vec3( FLT_MAX );
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        _aabb.Expand( glm::vec3( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
-        _aabb.Expand( glm::vec3( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( glm::vec3( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) ) - glm::vec3( _mesh->Ball( i ).r ) );
     }
 
-    _external_force.setZero();
+    _f_ext.setZero();
 }
 
 void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
@@ -738,13 +736,141 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     }
     for (auto& pair : _ext_forces)
     {
-        _external_force.col( pair.first ) += pair.second;
+        _f_ext.col( pair.first ) += pair.second;
     }
     for (auto& pair : _array_ext_forces)
     {
-        _external_force.col( pair.first ) += pair.second;
+        _f_ext.col( pair.first ) += pair.second;
     }
-    cudaMemcpy( _cudapd.f_ext, _external_force.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.f_ext, _f_ext.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
+
+    if (Input::IsKeyDown( Input::Key::M ))
+    {
+#pragma omp parallel for
+        for (int c = 0; c < _mesh->BallsNum(); c++)
+        {
+            _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
+            _momentum.col( c ) += _cfg._dt * _cfg._dt * _f_ext.col( c );
+            _last_pos.col( c ) = _x.col( c );
+        }
+
+        Matrix3X xacc = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * xacc.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+            }
+
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                auto p = _constraints[j]->GetP( xacc );
+                _g.row( 0 ) += (_CStAtAS[j] * xacc.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+                _g.row( 1 ) += (_CStAtAS[j] * xacc.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+                _g.row( 2 ) += (_CStAtAS[j] * xacc.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+            }
+
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+                xacc.row( r ) += d.transpose();
+            }
+        }
+
+        Matrix3X x2 = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+            std::cout << i << " " << (x2 - xacc).norm() << std::endl;
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * x2.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+            }
+
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                auto p = _constraints[j]->GetP( x2 );
+                _g.row( 0 ) += (_CStAtAS[j] * x2.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+                _g.row( 1 ) += (_CStAtAS[j] * x2.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+                _g.row( 2 ) += (_CStAtAS[j] * x2.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+            }
+
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+                x2.row( r ) += d.transpose();
+            }
+        }
+
+        Matrix3X x3 = _momentum;
+        for (int i = 0; i < 100; i++)
+        {
+            std::cout << i << " " << (x3 - xacc).norm() << std::endl;
+#pragma omp parallel for
+            for (int j = 0; j < _constraints.size(); j++)
+            {
+                _constraints[j]->Project( x3, _p );
+            }
+#pragma omp parallel for
+            for (int r = 0; r < 3; r++)
+            {
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                x3.row( r ) = _llt.solve( rh_vec ).transpose();
+            }
+        }
+
+        int len = 1024;
+        dim3 blocksize( len, 1, 1 );
+        dim3 gridsize( (_cudapd.nb_points + len - 1) / len );
+        dim3 gridsize_attach( (_host_attach_consts.size() + len - 1) / len );
+        dim3 gridsize_edge( (_host_edge_consts.size() + len - 1) / len );
+        PDPred( gridsize, blocksize, _cudapd );
+        float omega = 1.f;
+        PDProcessPos( gridsize, blocksize, _cudapd );
+        for (int i = 0; i < 100; i++)
+        {
+            cudaMemcpy( _x.data(), _cudapd.q, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
+            std::cout << "GPU: " << i << " " << (_x - xacc).norm() << std::endl;
+            if (i == 5)
+            {
+                omega = 2.f / (2.f - _rho * _rho);
+            }
+            else if (i > 5)
+            {
+                omega = 4.f / (4.f - _rho * _rho * omega);
+            }
+            {
+                InstrumentationTimer timer( "Local Solve" );
+                PDProjectAttachConstraint( gridsize_attach, blocksize, _cudapd );
+                if (_cfg._const_type == 0)
+                {
+                    PDProjectMetaballConstraint( gridsize, blocksize, _cudapd );
+                }
+                if (_cfg._const_type == 1)
+                {
+                    PDProjectEdgeConstraint( gridsize_edge, blocksize, _cudapd );
+                }
+            }
+            for (int r = 0; r < 3; r++)
+            {
+                CUDASpmv( _d_At, _d_proj[r], _d_rhvec[r], _Spmv_buf[r].Data() );
+                PDComputeRhvec( gridsize, blocksize, _d_rhvec_buf[r].Data(), _Jacobi_b_buf[r].Data(), r, _cudapd );
+                CUDASpmv( _Jacobi_Dinv, _Jacobi_b[r], _Jacobi_Dinvb[r], _Spmv_buf[r].Data() );
+                for (int j = 0; j < 5; j++)
+                {
+                    CUDASpmv( _Jacobi_B, _Jacobi_x[r], _Jacobi_y[r], _Spmv_buf[r].Data() );
+                    CUDAvplusv( _Jacobi_y_buf[r], 1.0f, _Jacobi_Dinvb_buf[r], 1.0f, _d_q[r], gridsize, blocksize );
+                }
+                PDChebyshev( gridsize, blocksize, _cudapd, _d_q[r].Data(), r, omega );
+            }
+        }
+
+        _x = _last_pos;
+        cudaMemcpy( _cudapd.q, _x.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
+    }
 
     int len = 1024;
     dim3 blocksize( len, 1, 1 );
@@ -801,8 +927,8 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     }
 
     PDUpdateVel( gridsize, blocksize, _cudapd );
-    cudaMemcpy( _current_pos.data(), _cudapd.q, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
-    cudaMemcpy( _current_vel.data(), _cudapd.v, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
+    cudaMemcpy( _x.data(), _cudapd.q, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
+    cudaMemcpy( _v.data(), _cudapd.v, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
     cudaMemcpy( _last_pos.data(), _cudapd.qlast, _cudapd.nb_points * sizeof( float3 ), cudaMemcpyDeviceToHost );
     if (_cfg._const_type == 0)
     {
@@ -813,8 +939,8 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     _aabb.min_corner = glm::vec3( FLT_MAX );
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        _aabb.Expand( ToGLM( _current_pos.col( i ).cast<float>() ) + glm::vec3( _mesh->Ball( i ).r ) );
-        _aabb.Expand( ToGLM( _current_pos.col( i ).cast<float>() ) - glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( ToGLM( _x.col( i ).cast<float>() ) + glm::vec3( _mesh->Ball( i ).r ) );
+        _aabb.Expand( ToGLM( _x.col( i ).cast<float>() ) - glm::vec3( _mesh->Ball( i ).r ) );
     }
     //if (Input::IsKeyHeld( Input::Key::R ))
     //{
@@ -831,7 +957,7 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     //    }
     //    cudaMemcpy( _cudapd.q, _current_pos.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
     //}
-    _external_force.setZero();
+    _f_ext.setZero();
 }
 
 void PD::PDGPUMetaballModel::CollisionDetection()
@@ -856,7 +982,7 @@ void PD::PDGPUMetaballModel::CollisionDetection()
                 continue;
 
             HalfEdgeMesh& sur = rigid->Surface();
-            glm::vec3 pos( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) );
+            glm::vec3 pos( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) );
             glm::vec3 last_pos( _last_pos.col( i )(0), _last_pos.col( i )(1), _last_pos.col( i )(2) );
             Vector3 dist( 0.f, 0.f, 0.f );
             for (int j = 0; j < sur.GetFaceNumber(); j++)
@@ -890,9 +1016,9 @@ void PD::PDGPUMetaballModel::CollisionDetection()
                         norm_dx = glm::normalize( norm_dx );
 
                     Vector3 n = ToEigen( info.nc );
-                    Vector3 v = _current_vel.col( i );
+                    Vector3 v = _v.col( i );
                     Vector3 newpos = ToEigen( last_pos + dx * info.t );
-                    Vector3 pene = _current_pos.col( i ) - newpos;
+                    Vector3 pene = _x.col( i ) - newpos;
                     Vector3 pene_n = n * pene.dot( n );
                     Vector3 pene_t = pene - pene_n;
                     Vector3 dxn = n * ToEigen( dx ).cast<Real>().dot( n );
@@ -900,9 +1026,9 @@ void PD::PDGPUMetaballModel::CollisionDetection()
 
                     Vector3 vn = n * v.dot( n );
                     Vector3 vt = v - vn;
-                    _current_vel.col( i ) = -vn + vt;
-                    _current_pos.col( i ) = newpos + 0.01f * (-dxn + 0.5f * dxt) * (1.0f - info.t);
-                    pos = ToGLM( _current_pos.col( i ).eval() );
+                    _v.col( i ) = -vn + vt;
+                    _x.col( i ) = newpos + 0.01f * (-dxn + 0.5f * dxt) * (1.0f - info.t);
+                    pos = ToGLM( _x.col( i ).eval() );
                 }
             }
 
@@ -911,18 +1037,18 @@ void PD::PDGPUMetaballModel::CollisionDetection()
 
         for (RigidBall* rigid : rigid_balls)
         {
-            glm::vec3 pos = ToGLM( _current_pos.col( i ).eval() );
+            glm::vec3 pos = ToGLM( _x.col( i ).eval() );
             glm::vec3 last_pos = ToGLM( _last_pos.col( i ).eval() );
             auto info = BallBallIntersect( pos, pi.r, rigid->GetPos(), rigid->GetRadius() );
             if (info.has_value())
             {
                 glm::vec3 newpos = pos - info->d * info->c1toc2;
-                _current_pos.col( i ) = ToEigen( newpos );
-                Vector3 v = _current_vel.col( i );
+                _x.col( i ) = ToEigen( newpos );
+                Vector3 v = _v.col( i );
                 Vector3 n = ToEigen( info->c1toc2 );
                 Vector3 vn = n * v.dot( n );
                 Vector3 vt = v - vn;
-                _current_vel.col( i ) = -vn + vt;
+                _v.col( i ) = -vn + vt;
             }
         }
 
@@ -930,23 +1056,23 @@ void PD::PDGPUMetaballModel::CollisionDetection()
         {
             glm::vec3 normal;
             float depth;
-            glm::vec3 pos( _current_pos.col( i )(0), _current_pos.col( i )(1), _current_pos.col( i )(2) );
+            glm::vec3 pos( _x.col( i )(0), _x.col( i )(1), _x.col( i )(2) );
 
             if (rigid_sdf->CheckBall( pos, pi.r, &normal, &depth ))
             {
                 Vector3 n( normal.x, normal.y, normal.z );
-                Vector3 dx = _current_pos.col( i ) - _last_pos.col( i );
+                Vector3 dx = _x.col( i ) - _last_pos.col( i );
                 Vector3 dx_n = n * dx.dot( n );
                 Vector3 dx_t = dx - dx_n;
                 float s = std::min( 1000 * depth, 1.0f );
                 Vector3 fric = -s * dx_t;
 
-                Vector3 v = _current_vel.col( i );
+                Vector3 v = _v.col( i );
                 Vector3 vn = n * v.dot( n );
                 Vector3 vt = v - vn;
 
-                _current_pos.col( i ) += n * depth - s * dx_t;
-                _current_vel.col( i ) = -1.0 * vn + (1.f - s) * vt;
+                _x.col( i ) += n * depth - s * dx_t;
+                _v.col( i ) = -1.0 * vn + (1.f - s) * vt;
             }
         }
 
@@ -1027,24 +1153,24 @@ void PD::PDGPUMetaballModel::CollisionDetection()
         //    }
         //}
 
-        glm::vec3 pos = ToGLM( _current_pos.col( i ).eval() );
+        glm::vec3 pos = ToGLM( _x.col( i ).eval() );
         if (pos.y < -2.f)
         {
             Vector3 n( 0.f, 1.f, 0.f );
-            Vector3 dx = _current_pos.col( i ) - _last_pos.col( i );
+            Vector3 dx = _x.col( i ) - _last_pos.col( i );
             Vector3 dxn = n * dx.dot( n );
             Vector3 dxt = dx - dxn;
-            _current_pos.col( i ) -= dxt * 0.9f;
-            _current_pos.col( i ).y() = -2.f;
-            Vector3 v = _current_vel.col( i );
+            _x.col( i ) -= dxt * 0.9f;
+            _x.col( i ).y() = -2.f;
+            Vector3 v = _v.col( i );
             Vector3 vn = n * v.dot( n );
             Vector3 vt = v - vn;
-            _current_vel.col( i ) = -vn + 0.01 * vt;
+            _v.col( i ) = -vn + 0.01 * vt;
         }
     }
 
-    cudaMemcpy( _cudapd.q, _current_pos.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
-    cudaMemcpy( _cudapd.v, _current_vel.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.q, _x.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
+    cudaMemcpy( _cudapd.v, _v.data(), _cudapd.nb_points * sizeof( float3 ), cudaMemcpyHostToDevice );
 }
 
 void PD::PDGPUMetaballModel::PostPhysicalUpdate()
@@ -1368,7 +1494,7 @@ void PD::PDGPUMetaballModel::ComputeBallOrit2()
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
-        Vector3 ui = _current_pos.col( i ) - _rest_pos.col( i );
+        Vector3 ui = _x.col( i ) - _rest_pos.col( i );
         Vector3 sx = Vector3::Zero();
         Vector3 sy = Vector3::Zero();
         Vector3 sz = Vector3::Zero();
@@ -1376,7 +1502,7 @@ void PD::PDGPUMetaballModel::ComputeBallOrit2()
         int cnt = 0;
         for (int j : _mesh->Ball( i ).neighbors)
         {
-            Vector3 uj = _current_pos.col( j ) - _rest_pos.col( j );
+            Vector3 uj = _x.col( j ) - _rest_pos.col( j );
             Vector3 xij = _rest_pos.col( j ) - _rest_pos.col( i );
             float wij = _weights_for_edge_consts[i][cnt++];
             wsum += wij;
@@ -1488,5 +1614,5 @@ float PD::PDGPUMetaballModel::Compare( const PDGPUMetaballModel* other )
     {
         return std::numeric_limits<float>::infinity();
     }
-    return (_current_pos - other->_current_pos).norm();
+    return (_x - other->_x).norm();
 }

@@ -96,13 +96,12 @@ __global__ void cudaPDProjectAttachConstraint( CudaPDSystem sys )
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= sys.nb_attach)
         return;
-    int id = sys.attach_consts[i].id;
     int loc = sys.attach_consts[i].loc;
     float3 p = sys.attach_consts[i].p;
 
-    sys.projx[loc] = sys.k_attach * p.x;
-    sys.projy[loc] = sys.k_attach * p.y;
-    sys.projz[loc] = sys.k_attach * p.z;
+    sys.projx[loc] = p.x;
+    sys.projy[loc] = p.y;
+    sys.projz[loc] = p.z;
 }
 
 __global__ void cudaPDProjectMetaballConstraint( CudaPDSystem sys )
@@ -171,10 +170,7 @@ __global__ void cudaPDProjectMetaballConstraint( CudaPDSystem sys )
     sys.p[loc] = make_float3( 0, 0, 0 );
     for (int j = 1; j < C.nei_count; j++)
     {
-        float3 x0ij = sys.q0[neighbors[j].id] - sys.q0[id0];
-        float3 after_rot = MulMv3x3( T, x0ij );
-        float3 proj = C.weight * after_rot;
-        sys.p[loc + j] = proj;
+        sys.p[loc + j] = MulMv3x3( T, sys.q0[neighbors[j].id] - sys.q0[id0] );
     }
 
     for (int j = 0; j < C.nei_count; j++)

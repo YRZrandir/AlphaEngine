@@ -134,7 +134,7 @@ class MeshlessPoint
 {
 public:
     glm::vec3 p;
-    float type = 0;   //0=normal, 1=border, 2=sweepface
+    int type = 0;   //0=normal, 1=border, 2=sweepface
     glm::vec3 normal = glm::vec3( 0.f );
     glm::vec3 v = glm::vec3( 0.f );
     float m = 0.f;

@@ -114,8 +114,8 @@ public:
     void SetSubMaterial( const std::shared_ptr<Material>& mat );
 
     inline bool         TriangleIsValid( int f ) const;
-    inline int          GetVertexNumber() const;
-    inline int          GetFaceNumber() const;
+    inline size_t       GetVertexNumber() const;
+    inline size_t       GetFaceNumber() const;
     inline glm::vec3	GetPosition( unsigned vtx ) const;
     inline glm::vec3    GetRestPos( unsigned vtx ) const;
     inline glm::vec3	GetNormal( unsigned edge ) const;
@@ -214,12 +214,12 @@ bool HalfEdgeMesh::TriangleIsValid( int f ) const
     return _faces[f].edge != -1;
 }
 
-int HalfEdgeMesh::GetVertexNumber() const
+size_t HalfEdgeMesh::GetVertexNumber() const
 {
     return _vertices.size();
 }
 
-int HalfEdgeMesh::GetFaceNumber() const
+size_t HalfEdgeMesh::GetFaceNumber() const
 {
     return _faces.size();
 }

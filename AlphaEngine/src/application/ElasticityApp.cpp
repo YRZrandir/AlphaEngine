@@ -193,6 +193,32 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
+#define EXAMPLE_COMPARE
+#ifdef EXAMPLE_COMPARE
+    PD::PDMetaballModelConfig cfg{};
+    cfg._method = 0;
+    cfg._coarse_surface = "D:/models/cube2.obj";
+    cfg._fine_surface = "D:/models/cube2.obj";
+    cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
+    cfg._density = 1.0f;
+    cfg._sample_dx = 0.06f;
+    cfg._nb_lloyd = 20;
+    cfg._k_attach = 1000.0f;
+    cfg._k_stiff = 100.0f;
+    cfg._nb_points = 300;
+    cfg._dt = 0.01f;
+    cfg._nb_solve = 10;
+    cfg._physical_step = 1;
+    cfg._const_type = 0;
+    cfg._newton = false;
+    cfg._attach_filter = []( glm::vec3 v )->bool { return v[1] > 0.3f && v[0] > 0.3f; };
+    cfg._displacement = glm::vec3( 0, 0, 0 );
+    auto surface = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( cfg._fine_surface ) );
+    surface->mLayer = -1;
+    auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
+    pdmetaball->mName = "armadillo1";
+#endif
+
 #ifdef EXAMPLE_ARMA
     cam->mTransform.SetPos( glm::vec3( 1.4, 0.550, 0.530 ) );
     cam->_yaw = 250.0f;

@@ -99,7 +99,7 @@ bool AllFloatNumValid( const glm::vec<L, T, Q>& vec )
 class Vec3Hash
 {
 public:
-    unsigned operator()( glm::vec3 vec ) const
+    size_t operator()( glm::vec3 vec ) const
     {
         return std::hash<float>()(vec.x) ^ std::hash<float>()(vec.y) ^ std::hash<float>()(vec.z);
     }

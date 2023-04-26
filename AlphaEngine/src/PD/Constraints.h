@@ -5,7 +5,7 @@
 namespace PD
 {
 
-template <std::floating_point T = float>
+template <std::floating_point T>
 class Constraint
 {
 public:
@@ -36,7 +36,7 @@ public:
     T _weight;
 };
 
-template <std::floating_point T = float>
+template <std::floating_point T>
 class EdgeConstraint : public Constraint<T>
 {
 public:
@@ -94,7 +94,7 @@ Eigen::Matrix3X<T> PD::EdgeConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos ) 
     return this->_weight * edge;
 }
 
-template <std::floating_point T = float>
+template <std::floating_point T>
 class AttachConstraint : public Constraint<T>
 {
 public:
@@ -139,7 +139,7 @@ Eigen::Matrix3X<T> PD::AttachConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos 
     return _fixed_pos;
 }
 
-template <std::floating_point T = float>
+template <std::floating_point T>
 class TetraStrainConstraint : public Constraint<T>
 {
 public:
@@ -231,7 +231,7 @@ Eigen::Matrix3X<T> PD::TetraStrainConstraint<T>::GetP( const Eigen::Matrix3X<T>&
     return this->_weight * F;
 }
 
-template <SphereType Sphere, std::floating_point T = float>
+template <SphereType Sphere, std::floating_point T>
 class MeshlessStrainConstraint : public Constraint<T>
 {
 public:
