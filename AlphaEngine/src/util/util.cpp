@@ -289,7 +289,7 @@ glm::mat3 glm::TensorProduct( const glm::vec3& v, const glm::vec3& vT )
 
 glm::mat3 glm::SafeInverse( glm::mat3 M )
 {
-    Matrix3 eigenM;
+    Eigen::Matrix3f eigenM;
     for (int i = 0; i < 3; i++)
     {
         eigenM( i, 0 ) = M[0][i];

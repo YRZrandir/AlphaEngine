@@ -165,9 +165,6 @@
     <ClCompile Include="src\util\Intersection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\util\Math.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\util\PBDScene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -231,6 +228,7 @@
     <ClCompile Include="src\model\CHalfEdgeMesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\CudaMatrixHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\acceleration\AABB.h">
@@ -413,9 +411,6 @@
     <ClInclude Include="src\util\Intersection.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\math.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="src\util\PBDScene.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -455,7 +450,7 @@
     <ClInclude Include="src\PD\PDGPUMetaballModel.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\CudaMatrixHelpers.cuh" />
+    <ClInclude Include="src\util\CudaMatrixHelpers.h" />
     <ClInclude Include="src\PD\CudaPDSolver.cuh" />
     <ClInclude Include="src\FEM\FEMSolver.h">
       <Filter>头文件</Filter>
@@ -494,6 +489,7 @@
     <ClInclude Include="src\PD\PDMetaballModel.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\CudaMathTypes.cuh" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\polar_decom\polar_decomposition_3x3.inl">
@@ -510,7 +506,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\PBD\CudaPbdSolver.cu" />
-    <CudaCompile Include="src\util\CudaMatrixHelpers.cu" />
     <CudaCompile Include="src\PD\CudaPDSolver.cu" />
     <CudaCompile Include="src\util\CudaVecHelper.cu" />
   </ItemGroup>

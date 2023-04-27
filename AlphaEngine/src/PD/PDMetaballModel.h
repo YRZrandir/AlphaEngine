@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "util/Math.h"
 #include "util/SceneObject.h"
 #include "util/Intersection.h"
 #include "model/HalfEdgeMesh.h"
@@ -9,8 +8,7 @@
 #include "model/GLLineSegment.h"
 #include "Constraints.h"
 #include "acceleration/AABB.h"
-#include "util/CudaMatrixHelpers.cuh"
-#include "CudaPDSolver.cuh"
+
 
 namespace PD
 {

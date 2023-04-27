@@ -4,12 +4,13 @@
 #include <Eigen/Eigen>
 #include <Eigen/Dense>
 
-#include "../util/Intersection.h"
-#include "../input/Input.h"
-#include "../util/util.h"
-#include "../util/Camera.h"
-#include "../util/Shader.h"
-#include "../util/GlobalTimer.h"
+#include "util/Intersection.h"
+#include "input/Input.h"
+#include "util/util.h"
+#include "util/Camera.h"
+#include "util/Shader.h"
+#include "util/GlobalTimer.h"
+#include "util/MathTypeConverter.h"
 #include "model/HalfEdgeSurfaceTester.h"
 
 PBD::PBDTetraModel::PBDTetraModel( const std::string& path, const std::string& surface, float density )

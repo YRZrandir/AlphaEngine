@@ -97,8 +97,8 @@ PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHa
 void PD::PDMetaballModelFC::Init()
 {
     int nb_points = _mesh->BallsNum();
-    std::vector<SparseMatrixTriplet> m_triplets;
-    std::vector<SparseMatrixTriplet> m_inv_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_inv_triplets;
     _x.resize( 3, nb_points );
     _x0.resize( 3, nb_points );
     _v.resize( 3, nb_points );
@@ -205,7 +205,7 @@ void PD::PDMetaballModelFC::Init()
     _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
     _select_balls.clear();
 
-    std::vector<SparseMatrixTriplet> triplets;
+    std::vector<Eigen::Triplet<Real, int>> triplets;
     int total_id = 0;
     for (auto& c : _constraints)
     {
@@ -986,8 +986,8 @@ SpatialHash::SpatialHash( float dx )
 
 void SpatialHash::Insert( Sphere* s )
 {
-    Vector3 aabb_min( std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() );
-    Vector3 aabb_max = -aabb_min;
+    Eigen::Vector3f aabb_min( std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() );
+    Eigen::Vector3f aabb_max = -aabb_min;
     for (int i = 0; i < 3; i++)
     {
         aabb_max[i] = std::max( aabb_max[i], s->x[i] + s->r * 1.1f );
@@ -1022,8 +1022,8 @@ void SpatialHash::Clear()
 
 std::vector<SpatialHash::Sphere*> SpatialHash::CheckIntersection( Sphere* s ) const
 {
-    Vector3 aabb_min( std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() );
-    Vector3 aabb_max = -aabb_min;
+    Eigen::Vector3f aabb_min( std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() );
+    Eigen::Vector3f aabb_max = -aabb_min;
     for (int i = 0; i < 3; i++)
     {
         aabb_max[i] = std::max( aabb_max[i], s->x[i] + s->r * 1.1f );

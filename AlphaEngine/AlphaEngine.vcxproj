@@ -134,6 +134,9 @@
     <PostBuildEvent>
       <Command>xcopy /EY "$(ProjectDir)dll\debug\*" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <CudaCompile>
+      <CodeGeneration>compute_60,sm_60</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -162,6 +165,9 @@
     <PostBuildEvent>
       <Command>xcopy /EY "$(ProjectDir)dll\release\*" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <CudaCompile>
+      <CodeGeneration>compute_60,sm_60</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\acceleration\AABB.cpp" />
@@ -229,7 +235,6 @@
     <ClCompile Include="src\util\GlobalTimer.cpp" />
     <ClCompile Include="src\util\GridDownSampler.cpp" />
     <ClCompile Include="src\util\Intersection.cpp" />
-    <ClCompile Include="src\util\Math.cpp" />
     <ClCompile Include="src\util\PBDScene.cpp" />
     <ClCompile Include="src\util\Scene.cpp" />
     <ClCompile Include="src\util\SceneObject.cpp" />
@@ -311,14 +316,14 @@
     <ClInclude Include="src\util\Array3D.h" />
     <ClInclude Include="src\util\Camera.h" />
     <ClInclude Include="src\util\CudaBuffer.h" />
-    <ClInclude Include="src\util\CudaMatrixHelpers.cuh" />
+    <ClInclude Include="src\util\CudaMathTypes.cuh" />
+    <ClInclude Include="src\util\CudaMatrixHelpers.h" />
     <ClInclude Include="src\util\CudaVecHelper.cuh" />
     <ClInclude Include="src\util\Fade.h" />
     <ClInclude Include="src\util\GlobalTimer.h" />
     <ClInclude Include="src\util\GridDownSampler.h" />
     <ClInclude Include="src\util\Instrumentor.h" />
     <ClInclude Include="src\util\Intersection.h" />
-    <ClInclude Include="src\util\math.h" />
     <ClInclude Include="src\util\MathTypeConverter.h" />
     <ClInclude Include="src\util\PBDScene.h" />
     <ClInclude Include="src\util\RenderConfig.h" />
@@ -333,7 +338,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="src\PD\CudaPDSolver.cu" />
-    <CudaCompile Include="src\util\CudaMatrixHelpers.cu" />
+    <ClCompile Include="src\util\CudaMatrixHelpers.cpp" />
     <CudaCompile Include="src\util\CudaVecHelper.cu" />
     <None Include="..\..\QtCuttingSimulation\QtCuttingSimulation\res\shaders\line_segments.glsl" />
     <None Include="res\shaders\common\Material.glsl" />

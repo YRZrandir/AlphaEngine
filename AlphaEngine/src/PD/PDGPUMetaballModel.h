@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "PDMetaballModel.h"
+#include "util/CudaMatrixHelpers.h"
+#include "CudaPDSolver.cuh"
 
 namespace PD
 {
@@ -8,7 +10,7 @@ class PDGPUMetaballModel :
     public SceneObject
 {
 public:
-    using Real = float;
+    using Real = double;
     using Vector2 = Eigen::Vector2<Real>;
     using Vector3 = Eigen::Vector3<Real>;
     using Vector4 = Eigen::Vector4<Real>;
@@ -98,6 +100,7 @@ private:
     SparseMatrix _mass_matrix_inv; //3n*3n
     Matrix3X _last_pos;
     Matrix3X _last_pos1;
+    Matrix3X _last_pos2;
     Matrix3X _x;       //3*n
     Matrix3X _v;       //3*n
     Matrix3X _pene;
@@ -121,13 +124,14 @@ private:
 
     SparseMatrix _Dinv;
     SparseMatrix _LU;
+    SparseMatrix _B;
     CudaPDSystem _cudapd;
     cusparseSpMatDescr_t _d_At;
-    std::array<CudaBuffer<float>, 3> _d_q;
+    std::array<CudaBuffer<Real>, 3> _d_q;
     std::array<cusparseDnVecDescr_t, 3> _d_proj;
-    std::array<CudaBuffer<float>, 3> _d_proj_buf;
+    std::array<CudaBuffer<Real>, 3> _d_proj_buf;
     std::array<cusparseDnVecDescr_t, 3> _d_rhvec;
-    std::array<CudaBuffer<float>, 3> _d_rhvec_buf;
+    std::array<CudaBuffer<Real>, 3> _d_rhvec_buf;
     std::vector<CudaAttachConst> _host_attach_consts;
     CudaBuffer<CudaAttachConst> _cuda_attach_consts;
     std::vector<CudaMetaballConst> _host_metaball_consts;
@@ -143,13 +147,13 @@ private:
     cusparseSpMatDescr_t _Jacobi_Dinv;
     std::array<CudaBuffer<unsigned char>, 3> _Spmv_buf;
     std::array<cusparseDnVecDescr_t, 3> _Jacobi_x;
-    std::array<CudaBuffer<float>, 3>    _Jacobi_x_buf;
+    std::array<CudaBuffer<Real>, 3>    _Jacobi_x_buf;
     std::array<cusparseDnVecDescr_t, 3> _Jacobi_y;
-    std::array<CudaBuffer<float>, 3>    _Jacobi_y_buf;
+    std::array<CudaBuffer<Real>, 3>    _Jacobi_y_buf;
     std::array<cusparseDnVecDescr_t, 3> _Jacobi_Dinvb;
-    std::array<CudaBuffer<float>, 3>    _Jacobi_Dinvb_buf;
+    std::array<CudaBuffer<Real>, 3>    _Jacobi_Dinvb_buf;
     std::array<cusparseDnVecDescr_t, 3> _Jacobi_b;
-    std::array<CudaBuffer<float>, 3>    _Jacobi_b_buf;
+    std::array<CudaBuffer<Real>, 3>    _Jacobi_b_buf;
 
     std::vector<Matrix3> _Ainv_for_edge_consts;
     std::vector<std::vector<float>> _weights_for_edge_consts;

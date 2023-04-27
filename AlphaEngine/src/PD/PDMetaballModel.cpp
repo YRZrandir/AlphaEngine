@@ -251,7 +251,7 @@ void PD::PDMetaballModel::Init()
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff * _mesh->Ball( i ).m, _x, _mesh.get(), &_x0 ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff, _x, _mesh.get(), &_x0 ) );
             }
         }
     }

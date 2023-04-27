@@ -16,7 +16,6 @@
 #include "lighting/Light.h"
 #include "gl/VertexArray.h"
 #include "gl/VertexBuffer.h"
-#include "util/Math.h"
 #include "util/SceneObject.h"
 #include "util/MathTypeConverter.h"
 #include "tinyobjloader/tiny_obj_loader.h"
@@ -164,11 +163,11 @@ protected:
     std::unique_ptr<VertexBuffer> _tangent_vbo{ nullptr };
     std::unique_ptr<VertexBuffer> _texcoord_vbo{ nullptr };
     std::unique_ptr<VertexBuffer> _index_vbo{ nullptr };
-    std::vector<Vector3> _pos_buffer;
-    std::vector<Vector3> _normal_buffer;
-    std::vector<Vector3> _color_buffer;
-    std::vector<Vector3> _tangent_buffer;
-    std::vector<Vector2> _texcoord_buffer;
+    std::vector<Eigen::Vector3<float>> _pos_buffer;
+    std::vector<Eigen::Vector3<float>> _normal_buffer;
+    std::vector<Eigen::Vector3<float>> _color_buffer;
+    std::vector<Eigen::Vector3<float>> _tangent_buffer;
+    std::vector<Eigen::Vector2<float>> _texcoord_buffer;
     std::vector<int> _index_buffer;
 };
 

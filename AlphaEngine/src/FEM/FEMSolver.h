@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include "../util/Math.h"
 #include "../util/SceneObject.h"
 #include "../util/Intersection.h"
 #include "../model/HalfEdgeMesh.h"

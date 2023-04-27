@@ -2,38 +2,39 @@
 #include "device_launch_parameters.h";
 #include "util/CudaBuffer.h"
 #include "util/CudaVecHelper.cuh"
+#include "util/CudaMathTypes.cuh"
 
 struct CudaAttachConst
 {
+    vec3 p;
     int id;
     int loc;
-    float3 p;
 };
 
 struct CudaMetaballConstNeiInfo
 {
+    Real w;
     int id;
-    float w;
 };
 
 struct CudaMetaballConst
 {
+    vec3 invA[3];
+    vec3 F[3];
+    Real weight;
     int id;
     int loc;
     int nei_base;
     int nei_count;
-    float weight;
-    float3 invA[3];
-    float3 F[3];
 };
 
 struct CudaEdgeConst
 {
+    Real weight;
+    Real restlen;
     int id0;
     int id1;
     int loc;
-    float weight;
-    float restlen;
 };
 
 struct CudaSkinningInfo
@@ -65,26 +66,26 @@ struct CudaSkinningInfo
 
 struct CudaPDSystem
 {
-    float dt;
+    Real dt;
     int nb_points;
-    float gravity = 9.8f;
+    float gravity = 9.8;
 
-    float* m;
-    float3* q0;
-    float3* q;
-    float* qx;
-    float* qy;
-    float* qz;
-    float3* qlast;
-    float3* qlast1;
-    float3* qlast2;
-    float3* v;
-    float3* momentum;
-    float3* f_ext;
-    float3* p;
-    float* projx;
-    float* projy;
-    float* projz;
+    Real* m;
+    vec3* q0;
+    vec3* q;
+    Real* qx;
+    Real* qy;
+    Real* qz;
+    vec3* qlast;
+    vec3* qlast1;
+    vec3* qlast2;
+    vec3* v;
+    vec3* momentum;
+    vec3* f_ext;
+    vec3* p;
+    Real* projx;
+    Real* projy;
+    Real* projz;
 
     CudaAttachConst* attach_consts;
     int nb_attach;
@@ -94,17 +95,17 @@ struct CudaPDSystem
     int nb_edges;
 
     CudaSkinningInfo* _skin_info;
-    float3 displacement;
+    vec3 displacement;
 
-    float k_stretch;
-    float k_attach;
+    Real k_stretch;
+    Real k_attach;
 };
 
 void PDPred( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
 
 void PDProcessPos( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
 
-void PDComputeRhvec( dim3 gridsize, dim3 blocksize, float* Atp, float* result, int id, CudaPDSystem sys );
+void PDComputeRhvec( dim3 gridsize, dim3 blocksize, Real* Atp, Real* result, int id, CudaPDSystem sys );
 
 void PDProjectAttachConstraint( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
 
@@ -112,8 +113,11 @@ void PDProjectMetaballConstraint( dim3 gridsize, dim3 blocksize, CudaPDSystem sy
 
 void PDProjectEdgeConstraint( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
 
-void PDChebyshev( dim3 gridsize, dim3 blocksize, CudaPDSystem sys, float* v, int r, float omega );
+void PDChebyshev( dim3 gridsize, dim3 blocksize, CudaPDSystem sys, Real* v, int r, Real omega );
 
 void PDUpdateVel( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
 
 void PDUpdateSkinningInfo( dim3 gridsize, dim3 blocksize, CudaPDSystem sys );
+
+void CUDAvplusv( CudaBuffer<float>& a, float sa, CudaBuffer<float>& b, float sb, CudaBuffer<float>& dst, dim3 gridsize, dim3 blocksize );
+void CUDAvplusv( CudaBuffer<double>& a, double sa, CudaBuffer<double>& b, double sb, CudaBuffer<double>& dst, dim3 gridsize, dim3 blocksize );

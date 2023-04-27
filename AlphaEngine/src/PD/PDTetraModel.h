@@ -2,14 +2,13 @@
 #include <glm/glm.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include "../util/Math.h"
-#include "../util/SceneObject.h"
-#include "../util/Intersection.h"
-#include "../model/HalfEdgeMesh.h"
-#include "../model/CHalfEdgeMesh.h"
-#include "../model/TetraMesh.h"
+#include "util/SceneObject.h"
+#include "util/Intersection.h"
+#include "model/HalfEdgeMesh.h"
+#include "model/CHalfEdgeMesh.h"
+#include "model/TetraMesh.h"
 #include "Constraints.h"
-#include "../util/util.h"
+#include "util/util.h"
 
 namespace PD
 {

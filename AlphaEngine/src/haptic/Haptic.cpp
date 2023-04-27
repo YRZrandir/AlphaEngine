@@ -71,14 +71,14 @@ bool Haptic::IsOpen()
     return _device != nullptr;
 }
 
-Vector3 Haptic::GetPos()
+Eigen::Vector3f Haptic::GetPos()
 {
     chai3d::cVector3d vec;
     _device->getPosition( vec );
-    return Vector3( vec.x(), vec.y(), vec.z() );
+    return Eigen::Vector3f( vec.x(), vec.y(), vec.z() );
 }
 
-void Haptic::AddForce( Vector3 f )
+void Haptic::AddForce( Eigen::Vector3f f )
 {
     _device->setForce( chai3d::cVector3d( f.x(), f.y(), f.z() ) );
 }

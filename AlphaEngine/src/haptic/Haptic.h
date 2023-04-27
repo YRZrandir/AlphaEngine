@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include "chai3d.h"
-#include "util/math.h"
+#include <Eigen/Eigen>
 
 class Haptic
 {
@@ -10,8 +10,8 @@ public:
     static void Disconnect();
     static Haptic& Get();
     bool IsOpen();
-    Vector3 GetPos();
-    void AddForce( Vector3 f );
+    Eigen::Vector3f GetPos();
+    void AddForce( Eigen::Vector3f f );
     const chai3d::cHapticDeviceInfo& GetInfo() const;
 
 private:

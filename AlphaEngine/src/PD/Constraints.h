@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <concepts>
+#include <Eigen/Eigen>
 #include "model/SphereMesh.h"
 
 namespace PD
@@ -157,7 +158,7 @@ template <std::floating_point T>
 PD::TetraStrainConstraint<T>::TetraStrainConstraint( const std::vector<int>& indices, T weight, const Eigen::Matrix3X<T>& positions )
     :Constraint<T>( indices, weight )
 {
-    Matrix3 edges;
+    Eigen::Matrix3<T> edges;
     for (int i = 0; i < 3; i++)
         edges.col( i ) = positions.col( indices[i + 1] ) - positions.col( indices[0] );
     _rest = edges.inverse();
@@ -183,11 +184,11 @@ void PD::TetraStrainConstraint<T>::AddConstraint( std::vector<Eigen::Triplet<T, 
 template <std::floating_point T>
 void PD::TetraStrainConstraint<T>::Project( const Eigen::Matrix3X<T>& pos, Eigen::Matrix3X<T>& proj ) const
 {
-    Matrix3 edges;
+    Eigen::Matrix3<T> edges;
     for (int i = 0; i < 3; ++i)
         edges.col( i ) = pos.col( this->_indices[i + 1] ) - pos.col( this->_indices[0] );
-    Matrix3 F = edges * _rest;
-    Eigen::JacobiSVD<Matrix3> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    Eigen::Matrix3<T> F = edges * _rest;
+    Eigen::JacobiSVD<Eigen::Matrix3<T>> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
     Eigen::Vector3<T> S = svd.singularValues();
     S( 0 ) = std::clamp( S( 0 ), 1.f, 1.f );
     S( 1 ) = std::clamp( S( 1 ), 1.f, 1.f );
@@ -216,11 +217,11 @@ Eigen::SparseMatrix<T> PD::TetraStrainConstraint<T>::GetA() const
 template <std::floating_point T>
 Eigen::Matrix3X<T> PD::TetraStrainConstraint<T>::GetP( const Eigen::Matrix3X<T>& pos ) const
 {
-    Matrix3 edges;
+    Eigen::Matrix3<T> edges;
     for (int i = 0; i < 3; ++i)
         edges.col( i ) = pos.col( this->_indices[i + 1] ) - pos.col( this->_indices[0] );
-    Matrix3 F = edges * _rest;
-    Eigen::JacobiSVD<Matrix3> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    Eigen::Matrix3<T> F = edges * _rest;
+    Eigen::JacobiSVD<Eigen::Matrix3<T>> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
     Eigen::Vector3<T> S = svd.singularValues();
     S( 0 ) = std::clamp( S( 0 ), 1.f, 1.f );
     S( 1 ) = std::clamp( S( 1 ), 1.f, 1.f );
@@ -244,15 +245,15 @@ public:
     Eigen::Matrix3<T> _invA;
     SphereMesh<Sphere>* _sphere_mesh;
     Eigen::Matrix3X<T>* _x0;
-    float _avg_dist;
-    std::vector<float> _w;
+    T _avg_dist;
+    std::vector<T> _w;
 private:
-    float ComputeW( float r, float h ) const
+    T ComputeW( T r, T h ) const
     {
         if (r < h)
-            return 315.f * std::pow( h * h - r * r, 3.0 ) / (64.f * 3.1415926 * std::pow( h, 9.0 ));
+            return 315.0 * std::pow( h * h - r * r, 3.0 ) / (64.0 * 3.1415926 * std::pow( h, 9.0 ));
         else
-            return 0.0001f;
+            return 0.0001;
     }
 
     Eigen::Matrix3<T> ComputeF( const Eigen::Matrix3X<T>& pos ) const;
@@ -301,7 +302,7 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
 
     double detA = A.determinant();
 
-    if (std::abs( detA ) < 1e-8f)
+    if (std::abs( detA ) < 1e-8)
     {
         _invA = EigenSafeInverse( A );
     }
@@ -360,57 +361,20 @@ Eigen::Matrix3<T> PD::MeshlessStrainConstraint<Sphere, T>::ComputeF( const Eigen
 {
     Eigen::Vector3<T> ui = pos.col( this->_indices[0] ) - _x0->col( this->_indices[0] );
 
-    Eigen::Vector3<T> sx( 0.f, 0.f, 0.f );
-    Eigen::Vector3<T> sy( 0.f, 0.f, 0.f );
-    Eigen::Vector3<T> sz( 0.f, 0.f, 0.f );
-
     float wsum = 0.f;
-
-    int cnt = 0;
-    //Eigen::Matrix3<T> S;
-    for (int j : this->_indices)
+    Eigen::Matrix3<T> S;
+    S.setZero();
+    for (int i = 1; i < this->_indices.size(); i++)
     {
-        if (cnt == 0)
-        {
-            cnt++;
-            continue;
-        }
+        int j = this->_indices[i];
         Eigen::Vector3<T> uj = pos.col( j ) - _x0->col( j );
-
         Eigen::Vector3<T> xij = _x0->col( j ) - _x0->col( this->_indices[0] );
-
-        float wij = _w[cnt];
-        cnt++;
-
+        float wij = _w[i];
         wsum += wij;
-        sx += (uj[0] - ui[0]) * xij * wij;
-        sy += (uj[1] - ui[1]) * xij * wij;
-        sz += (uj[2] - ui[2]) * xij * wij;
-        //S += wij * (uj - ui) * xij.transpose();
+        S += wij * (uj - ui) * xij.transpose();
     }
-
-    sx /= wsum;
-    sy /= wsum;
-    sz /= wsum;
-    //S /= wsum;
-    //S.row( 0 ) = sx.transpose();
-    //S.row( 1 ) = sx.transpose();
-    //S.row( 2 ) = sx.transpose();
-    Eigen::Vector3<T> dux = _invA * sx;
-    Eigen::Vector3<T> duy = _invA * sy;
-    Eigen::Vector3<T> duz = _invA * sz;
-
-    Eigen::Matrix3<T> F;
-    F.col( 0 ) = dux;
-    F.col( 1 ) = duy;
-    F.col( 2 ) = duz;
-
-    F.transposeInPlace();
-
-    F( 0, 0 ) += 1.f;
-    F( 1, 1 ) += 1.f;
-    F( 2, 2 ) += 1.f;
-
+    S /= wsum;
+    Eigen::Matrix3<T> F = S * _invA.transpose() + Eigen::Matrix3<T>::Identity();
     return F;
 }
 

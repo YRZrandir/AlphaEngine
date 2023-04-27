@@ -3,7 +3,7 @@
 #include "input/Input.h"
 #include <tinycolormap.hpp>
 #include <imgui/imgui.h>
-#include "util/math.h"
+#include "util/MathTypeConverter.h"
 #include "util/Camera.h"
 
 FEMSolver::FEMSolver( FEMConfig config )

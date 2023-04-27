@@ -12,7 +12,6 @@
 #include "model/TetraMesh.h"
 #include "model/HalfEdgeMesh.h"
 #include "model/ModelLoader.h"
-#include "model/Terrain.h"
 #include "model/RigidStatic.h"
 #include "model/RigidSDF.h"
 #include "model/SphereMesh.h"
@@ -76,7 +75,7 @@ void UpdateHaptics()
         }
     }
 
-    haptic.AddForce( Vector3( force.z, force.x, force.y ) );
+    haptic.AddForce( Eigen::Vector3f( force.z, force.x, force.y ) );
 }
 
 void UpdateHaptics2()
@@ -120,7 +119,7 @@ void UpdateHaptics2()
     }
 
     force = glm::min( 5.f * max_d, 1.f ) * (float)haptic.GetInfo().m_maxLinearForce * glm::normalize( force );
-    haptic.AddForce( Vector3( force.z, force.x, force.y ) );
+    haptic.AddForce( Eigen::Vector3f( force.z, force.x, force.y ) );
 }
 }
 
@@ -197,25 +196,25 @@ void ElasticityApp::Init()
 #ifdef EXAMPLE_COMPARE
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;
-    cfg._coarse_surface = "D:/models/cube2.obj";
-    cfg._fine_surface = "D:/models/cube2.obj";
+    cfg._coarse_surface = "D:/models/bar.obj";
+    cfg._fine_surface = "D:/models/bar.obj";
     cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
     cfg._density = 1.0f;
-    cfg._sample_dx = 0.06f;
-    cfg._nb_lloyd = 20;
+    cfg._sample_dx = 0.15f;
+    cfg._nb_lloyd = 5;
     cfg._k_attach = 1000.0f;
-    cfg._k_stiff = 100.0f;
-    cfg._nb_points = 300;
+    cfg._k_stiff = 200.0f;
+    cfg._nb_points = 1000;
     cfg._dt = 0.01f;
-    cfg._nb_solve = 10;
+    cfg._nb_solve = 20;
     cfg._physical_step = 1;
     cfg._const_type = 0;
     cfg._newton = false;
-    cfg._attach_filter = []( glm::vec3 v )->bool { return v[1] > 0.3f && v[0] > 0.3f; };
+    cfg._attach_filter = []( glm::vec3 v )->bool { return  v[0] > 0.3; };
     cfg._displacement = glm::vec3( 0, 0, 0 );
     auto surface = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( cfg._fine_surface ) );
     surface->mLayer = -1;
-    auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
+    auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDMetaballModel>( cfg, surface ) );
     pdmetaball->mName = "armadillo1";
 #endif
 

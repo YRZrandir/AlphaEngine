@@ -91,8 +91,8 @@ void PD::PDTetraModel::Init()
         m_tot += m * 4;
     }
     std::cout << "total mass: " << m_tot << std::endl;
-    std::vector<SparseMatrixTriplet> m_triplets;
-    std::vector<SparseMatrixTriplet> m_inv_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_triplets;
+    std::vector<Eigen::Triplet<Real, int>> m_inv_triplets;
     for (int i = 0; i < _mesh->GetPointNum(); i++)
     {
         m_triplets.push_back( { i, i, mass_of_vertices[i] } );
@@ -122,7 +122,7 @@ void PD::PDTetraModel::Init()
         }
     }
 
-    std::vector<SparseMatrixTriplet> triplets;
+    std::vector<Eigen::Triplet<Real, int>> triplets;
     int total_id = 0;
     for (auto& c : _constraints)
     {
@@ -399,7 +399,7 @@ void PD::PDTetraModel::PhysicalUpdate()
     //_current_pos -= pene;
 }
 
-Matrix3X PD::PDTetraModel::CollisionDetection( const Matrix3X& x )
+PD::PDTetraModel::Matrix3X PD::PDTetraModel::CollisionDetection( const Matrix3X& x )
 {
     std::vector<RigidSDF*> rigid_sdfs = Scene::active->GetAllChildOfType<RigidSDF>();
     for (RigidSDF* rigid_sdf : rigid_sdfs)
