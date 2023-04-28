@@ -101,6 +101,19 @@ __device__ __forceinline__ float3 MulMv3x3( float3* m, const float3& v )
     return result;
 }
 
+__device__ __forceinline__ void MulVVT( float3 v1, float3 v2, float3* m )
+{
+    m[0].x = v1.x * v2.x;
+    m[1].x = v1.x * v2.y;
+    m[2].x = v1.x * v2.z;
+    m[0].y = v1.y * v2.x;
+    m[1].y = v1.y * v2.y;
+    m[2].y = v1.y * v2.z;
+    m[0].z = v1.z * v2.x;
+    m[1].z = v1.z * v2.y;
+    m[2].z = v1.z * v2.z;
+}
+
 __device__ __forceinline__ void TransposeInplace3x3( float3* m )
 {
     float temp = 0.f;
@@ -215,6 +228,19 @@ __device__ __forceinline__ double3 MulMv3x3( double3* m, const double3& v )
     result.y = m[0].y * v.x + m[1].y * v.y + m[2].y * v.z;
     result.z = m[0].z * v.x + m[1].z * v.y + m[2].z * v.z;
     return result;
+}
+
+__device__ __forceinline__ void MulVVT( double3 v1, double3 v2, double3* m )
+{
+    m[0].x = v1.x * v2.x;
+    m[1].x = v1.x * v2.y;
+    m[2].x = v1.x * v2.z;
+    m[0].y = v1.y * v2.x;
+    m[1].y = v1.y * v2.y;
+    m[2].y = v1.y * v2.z;
+    m[0].z = v1.z * v2.x;
+    m[1].z = v1.z * v2.y;
+    m[2].z = v1.z * v2.z;
 }
 
 __device__ __forceinline__ void TransposeInplace3x3( double3* m )

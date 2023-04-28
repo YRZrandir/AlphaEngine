@@ -34,6 +34,8 @@ __device__ void atomicFlt3Add( float3* dst, const float3& value );
 //col major
 __device__ float3 MulMv3x3( float3* m, const float3& v );
 
+__device__ void MulVVT( float3 v1, float3 v2, float3* m );
+
 __device__ void TransposeInplace3x3( float3* m );
 
 __device__ __forceinline__ float4 make_float4( float3 v3, float w );
@@ -69,6 +71,8 @@ __device__ void atomicFlt3Add( double3* dst, const double3& value );
 
 //col major
 __device__ double3 MulMv3x3( double3* m, const double3& v );
+
+__device__ void MulVVT( double3 v1, double3 v2, double3* m );
 
 __device__ void TransposeInplace3x3( double3* m );
 

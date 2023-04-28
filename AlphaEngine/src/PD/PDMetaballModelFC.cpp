@@ -209,13 +209,24 @@ void PD::PDMetaballModelFC::Init()
     int total_id = 0;
     for (auto& c : _constraints)
     {
-        c->AddConstraint( triplets, total_id );
+        c->AddConstraint( triplets, total_id, 0.0f );
     }
     _p.setZero( 3, total_id );
 
     _AS.resize( total_id, nb_points );
     _AS.setFromTriplets( triplets.begin(), triplets.end() );
-    _StAt = _AS.transpose();
+    triplets.clear();
+    Eigen::SparseMatrix<Real> temp_StAt;
+    temp_StAt.resize( total_id, nb_points );
+    total_id = 0;
+    for (auto& c : _constraints)
+    {
+        c->AddConstraint( triplets, total_id, 1.0f );
+    }
+    temp_StAt.setFromTriplets( triplets.begin(), triplets.end() );
+    _StAt.resize( nb_points, total_id );
+    _StAt = temp_StAt.transpose();
+
     _C = _cfg._dt * _cfg._dt * _StAt * _AS;
     _P = _M + _C;
 
@@ -424,7 +435,6 @@ void PDMetaballModelFC::DrawGUI()
 
 void PDMetaballModelFC::PhysicalUpdate()
 {
-    InstrumentationTimer timer( "PhysicalUpdate" );
     //External force
     for (int i = 0; i < _mesh->BallsNum(); ++i)
         _fext.col( i ).y() -= 9.8f;

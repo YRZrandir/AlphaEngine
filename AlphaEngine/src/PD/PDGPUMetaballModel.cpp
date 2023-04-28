@@ -211,7 +211,7 @@ void PD::PDGPUMetaballModel::Init()
             }
             else
             {
-                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff * _mesh->Ball( i ).m, _x, _mesh.get(), &_rest_pos ) );
+                _constraints.push_back( std::make_unique<PD::MeshlessStrainConstraint<Particle, Real>>( indices, _cfg._k_stiff, _x, _mesh.get(), &_rest_pos ) );
             }
         }
     }
@@ -311,9 +311,6 @@ void PD::PDGPUMetaballModel::Init()
     temp_StAt.setFromTriplets( triplets.cbegin(), triplets.cend() );
     _StAt = temp_StAt.transpose();
 
-    _StAtAS = _StAt * _AS;
-
-
 
     _CStAt.clear();
     _CStAtAS.clear();
@@ -329,6 +326,7 @@ void PD::PDGPUMetaballModel::Init()
         _CStAt.push_back( c->_weight * S.transpose() * A.transpose() );
         _CStAtAS.push_back( _CStAt.back() * _CAS.back() );
     }
+
     _N = _StAtAS + _mass_matrix / _cfg._dt / _cfg._dt;
     _llt.compute( _N );
     if (_llt.info() != Eigen::ComputationInfo::Success)
@@ -367,12 +365,13 @@ void PD::PDGPUMetaballModel::Init()
 
     for (int i = 0; i < 3; i++)
     {
-        _d_proj_buf[i].UpdateBuffer( total_id, nullptr );
-        _d_rhvec_buf[i].UpdateBuffer( nb_points, nullptr );
-        _Jacobi_x_buf[i].UpdateBuffer( nb_points, nullptr );
-        _Jacobi_y_buf[i].UpdateBuffer( nb_points, nullptr );
-        _Jacobi_b_buf[i].UpdateBuffer( nb_points, nullptr );
-        _Jacobi_Dinvb_buf[i].UpdateBuffer( nb_points, nullptr );
+        _d_proj_buf[i].UpdateBuffer( total_id, _p.data() );
+
+        _d_rhvec_buf[i].UpdateBuffer( nb_points, _p.data() );
+        _Jacobi_x_buf[i].UpdateBuffer( nb_points, _p.data() );
+        _Jacobi_y_buf[i].UpdateBuffer( nb_points, _p.data() );
+        _Jacobi_b_buf[i].UpdateBuffer( nb_points, _p.data() );
+        _Jacobi_Dinvb_buf[i].UpdateBuffer( nb_points, _p.data() );
         _d_proj[i] = CreateCUDAVector( _d_proj_buf[i] );
         _d_rhvec[i] = CreateCUDAVector( _d_rhvec_buf[i] );
         _Jacobi_x[i] = CreateCUDAVector( _d_q[i] );
@@ -380,7 +379,6 @@ void PD::PDGPUMetaballModel::Init()
         _Jacobi_Dinvb[i] = CreateCUDAVector( _Jacobi_Dinvb_buf[i] );
         _Jacobi_b[i] = CreateCUDAVector( _Jacobi_b_buf[i] );
     }
-
     _cudapd.projx = _d_proj_buf[0].Data();
     _cudapd.projy = _d_proj_buf[1].Data();
     _cudapd.projz = _d_proj_buf[2].Data();
@@ -727,6 +725,9 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 {
     InstrumentationTimer timer( "PhysicalUpdate" );
 
+    static int framecount = 0;
+    framecount++;
+
     //External force
     if (Input::IsKeyHeld( Input::Key::R ))
     {
@@ -759,15 +760,17 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     }
     cudaMemcpy( _cudapd.f_ext, _f_ext.data(), _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyHostToDevice );
 
-    if (Input::IsKeyDown( Input::Key::M ))
+    if (framecount == 100)
     {
 #pragma omp parallel for
         for (int c = 0; c < _mesh->BallsNum(); c++)
         {
+            _f_ext.col( c ) = Vector3( 0, 0, 0 );
             _f_ext.col( c ).y() -= 9.8;
-            _momentum.col( c ) = _x.col( c ) + _v.col( c ) * _cfg._dt;
-            _momentum.col( c ) += _cfg._dt * _cfg._dt * _f_ext.col( c );
+            _momentum.col( c ) = _x.col( c ) + _v.col( c ) * (double)_cfg._dt;
+            _momentum.col( c ) += (double)_cfg._dt * (double)_cfg._dt * _f_ext.col( c );
             _last_pos.col( c ) = _x.col( c );
+            _x.col( c ) = _momentum.col( c );
         }
 
         SparseMatrix sqrtM = _mass_matrix.cwiseSqrt();
@@ -792,8 +795,6 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
             return W;
         };
 
-        double W0 = calc_W( _momentum );
-        double Wmin = FLT_MAX;
         //        for (int i = 0; i < 100; i++)
         //        {
         //            double W = calc_W( xacc );
@@ -849,10 +850,8 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 
         std::cout << "acc" << std::endl;
         Matrix3X xacc = _momentum;
-        for (int i = 0; i < 200; i++)
+        for (int i = 0; i < 2000; i++)
         {
-            double W = calc_W( xacc );
-            Wmin = std::min( W, Wmin );
 #pragma omp parallel for
             for (int j = 0; j < _constraints.size(); j++)
             {
@@ -861,17 +860,20 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 #pragma omp parallel for
             for (int r = 0; r < 3; r++)
             {
-                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
                 xacc.row( r ) = _llt.solve( rh_vec ).transpose();
             }
         }
 
+        double momentum_err = (_momentum - xacc).norm();
+
         std::cout << "PD" << std::endl;
         Matrix3X x3 = _momentum;
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 2000; i++)
         {
-            std::cout << i << " " << (calc_W( x3 ) - Wmin) / (W0 - Wmin) << std::endl;
+            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+            std::cout << i << "," << (x3 - xacc).norm() / momentum_err << "," << time << std::endl;
 #pragma omp parallel for
             for (int j = 0; j < _constraints.size(); j++)
             {
@@ -880,96 +882,127 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 #pragma omp parallel for
             for (int r = 0; r < 3; r++)
             {
-                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
                 x3.row( r ) = _llt.solve( rh_vec ).transpose();
             }
         }
 
-        {
-            std::cout << "Cheby" << std::endl;
-            Matrix3X x4 = _momentum;
-            float omega = 1.f;
-            _last_pos1 = x4;
-            _last_pos2 = x4;
-            for (int i = 0; i < 100; i++)
-            {
-                std::cout << i << " " << (x4 - xacc).norm() / (_momentum - xacc).norm() << std::endl;
-                if (i == 5)
-                    omega = 2.f / (2.f - _rho * _rho);
-                else if (i > 5)
-                    omega = 4.f / (4.f - _rho * _rho * omega);
-#pragma omp parallel for
-                for (int j = 0; j < _constraints.size(); j++)
-                {
-                    _constraints[j]->Project( x4, _p );
-                }
-#pragma omp parallel for
-                for (int r = 0; r < 3; r++)
-                {
-                    VectorX b = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-                    VectorX Dinvb = _Dinv * b;
-                    for (int j = 0; j < 1; j++)
-                    {
-                        x4.row( r ) = (_B * x4.row( r ).transpose() + Dinvb).transpose();
-                    }
-                    x4.row( r ) = omega * (0.9 * (x4.row( r ) - _last_pos1.row( r )) + _last_pos1.row( r ) - _last_pos2.row( r )) + _last_pos2.row( r );
-                    _last_pos2.row( r ) = _last_pos1.row( r );
-                    _last_pos1.row( r ) = x4.row( r );
-                }
-            }
-        }
+        //        {
+        //            std::cout << "Cheby" << std::endl;
+        //            Matrix3X x4 = _momentum;
+        //            float omega = 1.f;
+        //            _last_pos1 = x4;
+        //            _last_pos2 = x4;
+        //            for (int i = 0; i < 100; i++)
+        //            {
+        //                std::cout << i << "," << (x4 - xacc).norm() / momentum_err << std::endl;
+        //                if (i == 5)
+        //                    omega = 2.f / (2.f - _rho * _rho);
+        //                else if (i > 5)
+        //                    omega = 4.f / (4.f - _rho * _rho * omega);
+        //#pragma omp parallel for
+        //                for (int j = 0; j < _constraints.size(); j++)
+        //                {
+        //                    _constraints[j]->Project( x4, _p );
+        //                }
+        //#pragma omp parallel for
+        //                for (int r = 0; r < 3; r++)
+        //                {
+        //                    VectorX b = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+        //                    VectorX Dinvb = _Dinv * b;
+        //                    for (int j = 0; j < 1; j++)
+        //                    {
+        //                        x4.row( r ) = (_B * x4.row( r ).transpose() + Dinvb).transpose();
+        //                    }
+        //                    x4.row( r ) = omega * (0.9 * (x4.row( r ) - _last_pos1.row( r )) + _last_pos1.row( r ) - _last_pos2.row( r )) + _last_pos2.row( r );
+        //                    _last_pos2.row( r ) = _last_pos1.row( r );
+        //                    _last_pos1.row( r ) = x4.row( r );
+        //                }
+        //            }
+        //        }
 
         {
             std::cout << "GPU" << std::endl;
-            int len = 256;
+            int len = 128;
             dim3 blocksize( len, 1, 1 );
-            dim3 gridsize( (_cudapd.nb_points + len - 1) / len );
-            dim3 gridsize_attach( (_host_attach_consts.size() + len - 1) / len );
-            dim3 gridsize_edge( (_host_edge_consts.size() + len - 1) / len );
+            dim3 gridsize( (_cudapd.nb_points + len - 1) / len, 1, 1 );
+            dim3 gridsize_ball( (_host_metaball_consts.size() + len - 1) / len, 1, 1 );
+            dim3 gridsize_attach( (_host_attach_consts.size() + len - 1) / len, 1, 1 );
+            dim3 gridsize_edge( (_host_edge_consts.size() + len - 1) / len, 1, 1 );
+            cudaMemcpy( _cudapd.v, _v.data(), _v.size() * sizeof( Real ), cudaMemcpyHostToDevice );
             PDPred( gridsize, blocksize, _cudapd );
-            float omega = 1.f;
+
+            cudaMemcpy( _cudapd.q, _x.data(), _x.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+            VectorX q0 = _x.row( 0 ).transpose();
+            VectorX q1 = _x.row( 1 ).transpose();
+            VectorX q2 = _x.row( 2 ).transpose();
+            cudaMemcpy( _cudapd.qx, q0.data(), q0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+            cudaMemcpy( _cudapd.qy, q1.data(), q1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+            cudaMemcpy( _cudapd.qz, q2.data(), q2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+
+            double omega = 1.f;
             PDProcessPos( gridsize, blocksize, _cudapd );
-            cudaMemcpy( _x.data(), _cudapd.q, _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyDeviceToHost );
-            std::cout << "test momentum " << (_x - _momentum).norm() << std::endl;
-            for (int i = 0; i < 20; i++)
+            start_time = std::chrono::high_resolution_clock::now();
+            long long total_time = 0;
+            auto last_time = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < 2000; i++)
             {
-                cudaMemcpy( _x.data(), _cudapd.q, _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyDeviceToHost );
-                std::cout << i << " " << (calc_W( _x ) - Wmin) / (W0 - Wmin) << std::endl;
-                if (i == 5)
+                cudaMemcpy( _x.data(), _cudapd.q, _x.size() * sizeof( Real ), cudaMemcpyDeviceToHost );
+                cudaDeviceSynchronize();
+                std::cout << i << "," << (_x - xacc).norm() / momentum_err << ", " << total_time / 1000 << std::endl;
+
+                last_time = std::chrono::high_resolution_clock::now();
+                if (i == 3)
+                    omega = 2.0 / (2.0 - _rho * _rho);
+                else if (i > 3)
+                    omega = 4.0 / (4.0 - _rho * _rho * omega);
+                if (_host_attach_consts.size() > 0)
                 {
-                    omega = 2.f / (2.f - _rho * _rho);
+                    PDProjectAttachConstraint( gridsize_attach, blocksize, _cudapd );
                 }
-                else if (i > 5)
+                if (_cfg._const_type == 0 && _host_metaball_consts.size() > 0)
                 {
-                    omega = 4.f / (4.f - _rho * _rho * omega);
+                    PDProjectMetaballConstraint( gridsize_ball, blocksize, _cudapd );
                 }
+                cudaDeviceSynchronize();
+                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+
+
+#pragma omp parallel for
+                for (int j = 0; j < _constraints.size(); j++)
                 {
-                    InstrumentationTimer timer( "Local Solve" );
-                    if (_host_attach_consts.size() > 0)
-                    {
-                        PDProjectAttachConstraint( gridsize_attach, blocksize, _cudapd );
-                    }
-                    if (_cfg._const_type == 0 && _host_metaball_consts.size() > 0)
-                    {
-                        PDProjectMetaballConstraint( gridsize, blocksize, _cudapd );
-                    }
-                    if (_cfg._const_type == 1 && _host_edge_consts.size() > 0)
-                    {
-                        PDProjectEdgeConstraint( gridsize_edge, blocksize, _cudapd );
-                    }
+                    _constraints[j]->Project( _x, _p );
                 }
+                cudaMemcpy( _cudapd.p, _p.data(), _p.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+                VectorX p0 = _p.row( 0 ).transpose();
+                VectorX p1 = _p.row( 1 ).transpose();
+                VectorX p2 = _p.row( 2 ).transpose();
+                cudaMemcpy( _cudapd.projx, p0.data(), p0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+                cudaMemcpy( _cudapd.projy, p1.data(), p1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+                cudaMemcpy( _cudapd.projz, p2.data(), p2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+                cudaDeviceSynchronize();
+
+                last_time = std::chrono::high_resolution_clock::now();
                 for (int r = 0; r < 3; r++)
                 {
                     CUDASpmv<Real>( _d_At, _d_proj[r], _d_rhvec[r], _Spmv_buf[r].Data() );
                     PDComputeRhvec( gridsize, blocksize, _d_rhvec_buf[r].Data(), _Jacobi_b_buf[r].Data(), r, _cudapd );
                     CUDASpmv<Real>( _Jacobi_Dinv, _Jacobi_b[r], _Jacobi_Dinvb[r], _Spmv_buf[r].Data() );
-                    for (int j = 0; j < 5; j++)
+                    for (int j = 0; j < 1; j++)
                     {
                         CUDASpmv<Real>( _Jacobi_B, _Jacobi_x[r], _Jacobi_y[r], _Spmv_buf[r].Data() );
                         CUDAvplusv( _Jacobi_y_buf[r], 1.0, _Jacobi_Dinvb_buf[r], 1.0, _d_q[r], gridsize, blocksize );
                     }
                     PDChebyshev( gridsize, blocksize, _cudapd, _d_q[r].Data(), r, omega );
                 }
+                cudaDeviceSynchronize();
+                //#pragma omp parallel for
+                //                for (int r = 0; r < 3; r++)
+                //                {
+                //                    VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+                //                    _x.row( r ) = _llt.solve( rh_vec ).transpose();
+                //                }
+                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
             }
 
             _x = _last_pos;

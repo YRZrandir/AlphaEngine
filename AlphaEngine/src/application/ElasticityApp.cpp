@@ -145,14 +145,14 @@ void ElasticityApp::Init()
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
-    Scene::active = std::make_unique<PBDScene>( false );
+    Scene::active = std::make_unique<PBDScene>( true );
 
     //Camera
     auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
     Camera::main = cam;
     Camera::current = Camera::main;
-    cam->mTransform.SetPos( glm::vec3( 0.0, 0.397, 4.0 ) );
-    cam->_yaw = -180.4f;
+    cam->mTransform.SetPos( glm::vec3( 0.0, 0.397, -1.0 ) );
+    cam->_yaw = 0.0f;
     cam->_pitch = 35.4f;
     //cam->mTransform.SetPos( glm::vec3( 0.582, -1.04, -3.09 ) );
     //cam->_yaw = -12.6;
@@ -171,7 +171,7 @@ void ElasticityApp::Init()
     //    70.0f,
     //    1.0f, 0.2f, 0.1f ) );
 
-    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, -0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
+    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, 0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
 
     //Shaders
     const std::string SHADER_PATH = "res/shaders/";
@@ -192,21 +192,20 @@ void ElasticityApp::Init()
 
     Shader::Find( "model" )->BuildShaderInfo();
 
-#define EXAMPLE_COMPARE
 #ifdef EXAMPLE_COMPARE
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;
-    cfg._coarse_surface = "D:/models/bar.obj";
-    cfg._fine_surface = "D:/models/bar.obj";
+    cfg._coarse_surface = "D:/models/arma/armadillo_coarse.obj";
+    cfg._fine_surface = "D:/models/arma/armadillo_coarse.obj";
     cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
-    cfg._density = 1.0f;
-    cfg._sample_dx = 0.15f;
+    cfg._density = 100.0f;
+    cfg._sample_dx = 0.1f;
     cfg._nb_lloyd = 5;
-    cfg._k_attach = 1000.0f;
-    cfg._k_stiff = 200.0f;
-    cfg._nb_points = 1000;
+    cfg._k_attach = 100.0f;
+    cfg._k_stiff = 80.f;
+    cfg._nb_points = 5000;
     cfg._dt = 0.01f;
-    cfg._nb_solve = 20;
+    cfg._nb_solve = 5;
     cfg._physical_step = 1;
     cfg._const_type = 0;
     cfg._newton = false;
@@ -214,7 +213,7 @@ void ElasticityApp::Init()
     cfg._displacement = glm::vec3( 0, 0, 0 );
     auto surface = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( cfg._fine_surface ) );
     surface->mLayer = -1;
-    auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDMetaballModel>( cfg, surface ) );
+    auto pdmetaball = Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
     pdmetaball->mName = "armadillo1";
 #endif
 
@@ -449,6 +448,7 @@ void ElasticityApp::Init()
     pdmetaball->mName = "model0";
 #endif
 
+#define EXAMPLE_BUNNYS
 #ifdef EXAMPLE_BUNNYS
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;

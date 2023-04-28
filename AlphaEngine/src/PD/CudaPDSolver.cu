@@ -100,8 +100,8 @@ __global__ void cudaPDPred( CudaPDSystem sys )
         return;
 
     sys.f_ext[i] = make_vec3( 0.0, 0.0, 0.0 );
-    sys.f_ext[i].y -= sys.gravity;
-    sys.momentum[i] = sys.q[i] + sys.v[i] * sys.dt + sys.f_ext[i] * sys.dt * sys.dt;
+    sys.f_ext[i].y -= 9.8;
+    sys.momentum[i] = sys.q[i] + sys.dt * sys.v[i] + (sys.dt * sys.dt) * sys.f_ext[i];
     sys.qlast[i] = sys.q[i];
     sys.q[i] = sys.momentum[i];
     sys.qx[i] = sys.q[i].x;
@@ -208,7 +208,8 @@ __global__ void cudaPDProjectMetaballConstraint( CudaPDSystem sys )
     sys.p[loc] = make_vec3( 0, 0, 0 );
     for (int j = 1; j < C.nei_count; j++)
     {
-        sys.p[loc + j] = MulMv3x3( T, sys.q0[neighbors[j].id] - sys.q0[id0] );
+        vec3 r = sys.q0[neighbors[j].id] - sys.q0[id0];
+        sys.p[loc + j] = MulMv3x3( T, r );
     }
 
     for (int j = 0; j < C.nei_count; j++)
@@ -248,6 +249,7 @@ __global__ void cudaPDChebyshev( CudaPDSystem sys, Real* v, int r, Real omega )
     Real last = ((Real*)&sys.qlast1[i])[r];
     Real last1 = ((Real*)&sys.qlast2[i])[r];
     v[i] = omega * (0.9f * (v[i] - last) + last - last1) + last1;
+    //v[i] = omega * (v[i] - last1) + last1;
     if (r == 0)
     {
         sys.qlast2[i].x = sys.qlast1[i].x;

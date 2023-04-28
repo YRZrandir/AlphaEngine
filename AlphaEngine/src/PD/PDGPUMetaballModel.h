@@ -142,7 +142,7 @@ private:
     CudaBuffer<CudaMetaballConstNeiInfo> _cuda_metaball_neiinfos;
     CudaBuffer<CudaSkinningInfo> _cuda_skinning_info;
 
-    float _rho = 0.98f;
+    float _rho = 0.99;
     cusparseSpMatDescr_t _Jacobi_B;
     cusparseSpMatDescr_t _Jacobi_Dinv;
     std::array<CudaBuffer<unsigned char>, 3> _Spmv_buf;

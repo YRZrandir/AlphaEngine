@@ -17,6 +17,8 @@ PBDScene::PBDScene( bool mt )
 
 void PBDScene::Update()
 {
+    using hrc = std::chrono::high_resolution_clock;
+
     if (_mt)
     {
         std::vector<PBD::MetaballModel*> models = GetAllChildOfType<PBD::MetaballModel>();
@@ -109,13 +111,16 @@ void PBDScene::Update()
         {
             for (int i = 0; i < 2; i++)
             {
+                auto t0 = hrc::now();
 #pragma omp parallel for
                 for (int j = 0; j < pdfcmodels.size(); j++)
                 {
                     if (pdfcmodels[j]->_simulate)
                         pdfcmodels[j]->UpdateSn();
                 }
+                auto d0 = hrc::now() - t0;
 
+                auto t1 = hrc::now();
                 _spatial_hash->Clear();
                 for (auto model : pdfcmodels)
                 {
@@ -127,13 +132,15 @@ void PBDScene::Update()
                         }
                     }
                 }
-
 #pragma omp parallel for
                 for (int j = 0; j < pdfcmodels.size(); j++)
                 {
                     if (pdfcmodels[j]->_simulate)
                         pdfcmodels[j]->CollisionDetection( _spatial_hash.get() );
                 }
+                auto d1 = hrc::now() - t1;
+
+                auto t2 = hrc::now();
 #pragma omp parallel for
                 for (int j = 0; j < pdfcmodels.size(); j++)
                     if (pdfcmodels[j]->_simulate)
@@ -144,6 +151,10 @@ void PBDScene::Update()
                     if (pdfcmodels[j]->_simulate)
                         pdfcmodels[j]->PostPhysicalUpdate();
                 }
+                auto d2 = hrc::now() - t2;
+
+                std::cout << "Simulation: " << (float)(std::chrono::duration_cast<std::chrono::microseconds>(d0).count() + std::chrono::duration_cast<std::chrono::microseconds>(d2).count()) / 1000.f << std::endl;
+                std::cout << "CD: " << (float)std::chrono::duration_cast<std::chrono::microseconds>(d1).count() / 1000.f << std::endl;
             }
         }
     }
@@ -182,6 +193,7 @@ void PBDScene::Update()
         std::vector<PD::PDMetaballModelFC*> pdfcmodels = GetAllChildOfType<PD::PDMetaballModelFC>();
         for (int i = 0; i < 1; i++)
         {
+
             for (auto model : pdfcmodels)
                 if (model->_simulate)
                     model->UpdateSn();
