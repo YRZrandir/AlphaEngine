@@ -301,7 +301,6 @@ void ElasticityApp::Init()
     Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
 #endif
 
-#define EXAMPLE_BAR_BALL
 #ifdef EXAMPLE_BAR_BALL
     cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
     cam->_yaw = 28.4;
@@ -342,15 +341,15 @@ void ElasticityApp::Init()
         []( glm::vec3 v )->bool { return v[0] > 0.3f || v[0] < -0.3f; } ) );
 #endif
 
-
+#define EXAMPLE_BAR_FEM
 #ifdef EXAMPLE_BAR_FEM
     cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
     cam->_yaw = 28.4;
     cam->_pitch = 35.4;
     FEMConfig femconfig;
-    femconfig.path = "D:/models/bars2.obj";
-    femconfig.surface_path = "D:/models/bars.obj";
-    Scene::active->AddChild( std::make_unique<FEMSolver>( femconfig ) );
+    femconfig.path = "D:/models/bar.obj";
+    femconfig.surface_path = "D:/models/bar.obj";
+    Scene::active->AddChild( std::make_unique<FEMSolver<double>>( femconfig ) );
 #endif
 
 #ifdef EXAMPLE_BAR_0
@@ -542,7 +541,7 @@ void ElasticityApp::PreDraw()
             Scene::active->GetChild<HalfEdgeMesh>( "cy2" )->mTransform.RotateAround( glm::vec3( 0.f ), glm::vec3( 0, 1, 0 ), -0.005 );
         }
         rad += 0.01f;
-}
+    }
 #endif
 #ifdef EXAMPLE_SPHERETREE
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -637,7 +636,7 @@ void ElasticityApp::DrawGUI()
         ImGuiFileDialog::Instance()->Close();
     }
 
-    auto fem = Scene::active->GetChild<FEMSolver>();
+    auto fem = Scene::active->GetChild<FEMSolver<double>>();
     if (fem)
     {
         fem->DrawGUI();

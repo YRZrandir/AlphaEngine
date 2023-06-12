@@ -2,16 +2,15 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <memory>
-#include "../model/Transform.h"
-#include "../util/SceneObject.h"
-#include "../gl/VertexArray.h"
-#include "../gl/VertexBuffer.h"
-#include "../gl/IndexBuffer.h"
-#include "../gl/ShaderStorageBuffer.h"
+#include "model/Transform.h"
+#include "util/SceneObject.h"
+#include "gl/VertexArray.h"
+#include "gl/VertexBuffer.h"
+#include "gl/IndexBuffer.h"
+#include "gl/ShaderStorageBuffer.h"
 
 class Shader;
 class Triangle;
-class RenderConfig;
 class Transform;
 
 class Tetrahedron

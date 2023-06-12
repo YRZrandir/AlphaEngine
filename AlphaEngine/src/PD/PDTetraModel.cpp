@@ -3,15 +3,15 @@
 #include <fstream>
 #include <omp.h>
 #include <imgui/imgui.h>
-#include "../model/ModelLoader.h"
-#include "../model/HalfEdgeSurfaceTester.h"
+#include "model/ModelLoader.h"
+#include "model/HalfEdgeSurfaceTester.h"
 #include "model/RigidSDF.h"
-#include "../util/Array3D.h"
-#include "../util/Camera.h"
-#include "../util/Intersection.h"
-#include "../util/util.h"
-#include "../input/Input.h"
-#include "../polar_decom/polar_decomposition_3x3.hpp"
+#include "util/Array3D.h"
+#include "util/Camera.h"
+#include "util/Intersection.h"
+#include "util/util.h"
+#include "input/Input.h"
+#include "polar_decom/polar_decomposition_3x3.hpp"
 
 PD::PDTetraModel::PDTetraModel( const std::string& sur_path, const std::string& coarse_path, float density, std::function<bool( glm::vec3 )> attach_filter )
     :_density( density ), _attach_filter( attach_filter )
