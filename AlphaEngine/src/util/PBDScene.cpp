@@ -109,7 +109,7 @@ void PBDScene::Update()
         std::vector<PD::PDMetaballModelFC*> pdfcmodels = GetAllChildOfType<PD::PDMetaballModelFC>();
         if (!pdfcmodels.empty())
         {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 1; i++)
             {
                 auto t0 = hrc::now();
 #pragma omp parallel for
@@ -138,9 +138,9 @@ void PBDScene::Update()
                     if (pdfcmodels[j]->_simulate)
                         pdfcmodels[j]->CollisionDetection( _spatial_hash.get() );
                 }
-                auto d1 = hrc::now() - t1;
+                //auto d1 = hrc::now() - t1;
 
-                auto t2 = hrc::now();
+                //auto t2 = hrc::now();
 #pragma omp parallel for
                 for (int j = 0; j < pdfcmodels.size(); j++)
                     if (pdfcmodels[j]->_simulate)
@@ -151,10 +151,10 @@ void PBDScene::Update()
                     if (pdfcmodels[j]->_simulate)
                         pdfcmodels[j]->PostPhysicalUpdate();
                 }
-                auto d2 = hrc::now() - t2;
+                //auto d2 = hrc::now() - t2;
 
-                std::cout << "Simulation: " << (float)(std::chrono::duration_cast<std::chrono::microseconds>(d0).count() + std::chrono::duration_cast<std::chrono::microseconds>(d2).count()) / 1000.f << std::endl;
-                std::cout << "CD: " << (float)std::chrono::duration_cast<std::chrono::microseconds>(d1).count() / 1000.f << std::endl;
+               //std::cout << "Simulation: " << (float)(std::chrono::duration_cast<std::chrono::microseconds>(d0).count() + std::chrono::duration_cast<std::chrono::microseconds>(d2).count()) / 1000.f << std::endl;
+               //std::cout << "CD: " << (float)std::chrono::duration_cast<std::chrono::microseconds>(d1).count() / 1000.f << std::endl;
             }
         }
     }

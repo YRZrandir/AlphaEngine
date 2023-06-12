@@ -726,7 +726,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             }
         }
     }
-
+    return;
     if (table != nullptr)
     {
 #pragma omp parallel for

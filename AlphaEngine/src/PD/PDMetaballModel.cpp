@@ -535,6 +535,7 @@ void PD::PDMetaballModel::DrawGUI()
 
 void PD::PDMetaballModel::PhysicalUpdate()
 {
+    auto starttime = std::chrono::high_resolution_clock::now();
     InstrumentationTimer timer( "PhysicalUpdate" );
     //External force
     for (int i = 0; i < _mesh->BallsNum(); ++i)
@@ -788,6 +789,9 @@ void PD::PDMetaballModel::PhysicalUpdate()
     }
 
     _external_force.setZero();
+
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - starttime).count() << std::endl;
+
 }
 
 //Matrix3X PD::PDMetaballModel::ProjectVolumeConst( int i, const Matrix3X& current_pos ) const

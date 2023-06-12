@@ -72,12 +72,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)GLFW\include;$(SolutionDir)Tetgen;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)GLFW\include;$(SolutionDir)Tetgen;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)GLAD\include;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
@@ -129,7 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2_d.lib;pcl_filtersd.lib;pcl_commond.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2_d.lib;pcl_filtersd.lib;pcl_commond.lib;shaderc_combinedd.lib;glfw3_d.lib;tetgen_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /EY "$(ProjectDir)dll\debug\*" "$(TargetDir)"</Command>
@@ -160,7 +160,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2.lib;pcl_filters.lib;pcl_common.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cublas.lib;cublasLt.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;cufft.lib;cufftw.lib;cufilt.lib;curand.lib;cusolver.lib;cusolverMg.lib;cusparse.lib;nppc.lib;nppial.lib;nppicc.lib;nppidei.lib;nppif.lib;nppig.lib;nppim.lib;nppist.lib;nppisu.lib;nppitc.lib;npps.lib;nvblas.lib;nvjpeg.lib;nvml.lib;nvptxcompiler_static.lib;nvrtc-builtins_static.lib;nvrtc.lib;nvrtc_static.lib;OpenCL.lib;opengl32.lib;openvr_api.lib;fade2D_x64_v142_Release.lib;tinyxml2.lib;pcl_filters.lib;pcl_common.lib;shaderc_combined.lib;glfw3.lib;tetgen.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /EY "$(ProjectDir)dll\release\*" "$(TargetDir)"</Command>
@@ -358,9 +358,6 @@
     <ProjectReference Include="..\GLAD\GLAD.vcxproj">
       <Project>{c52e0c9b-cb52-4b2e-9e87-376dc30ee9a7}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\GLFW\GLFW.vcxproj">
-      <Project>{35fffc23-37b3-47a2-bae7-61d93cb242b6}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Imgui\Imgui.vcxproj">
       <Project>{e7c3857c-6125-4ac3-a033-d94267be8df2}</Project>
     </ProjectReference>
@@ -369,9 +366,6 @@
     </ProjectReference>
     <ProjectReference Include="..\SphereTree\SphereTree.vcxproj">
       <Project>{ebf8a110-ed80-4dbb-a97e-22e98dc04086}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Tetgen\Tetgen.vcxproj">
-      <Project>{2f001499-8800-4d84-98a3-c9c7fdb70ab7}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

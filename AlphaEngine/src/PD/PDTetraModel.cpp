@@ -126,12 +126,22 @@ void PD::PDTetraModel::Init()
     int total_id = 0;
     for (auto& c : _constraints)
     {
-        c->AddConstraint( triplets, total_id );
+        c->AddConstraint( triplets, total_id, 0.5f );
     }
-    _projections.setZero( 3, total_id );
-
     SparseMatrix A( total_id, _mesh->GetPointNum() );
     A.setFromTriplets( triplets.begin(), triplets.end() );
+    _projections.setZero( 3, total_id );
+
+    //Eigen::SparseMatrix<Real> temp_StAt;
+    //triplets.clear();
+    //temp_StAt.resize( total_id, _mesh->GetPointNum() );
+    //total_id = 0;
+    //for (auto& c : _constraints)
+    //{
+    //    c->AddConstraint( triplets, total_id, 1.0f );
+    //}
+    //temp_StAt.setFromTriplets( triplets.begin(), triplets.end() );
+
     _At = A.transpose();
     _N = _At * A + _mass_matrix / _timestep / _timestep;
     _llt.compute( _N );
@@ -328,7 +338,7 @@ void PD::PDTetraModel::PhysicalUpdate()
     _external_force.setZero();
     for (int i = 0; i < _mesh->GetPointNum(); ++i)
     {
-        _external_force.col( i ).y() -= 9.8f;
+        //_external_force.col( i ).y() -= 9.8f;
     }
     _external_force = (_mass_matrix * _external_force.transpose()).transpose();
     for (auto& pair : _ext_forces)
@@ -393,7 +403,7 @@ void PD::PDTetraModel::PhysicalUpdate()
         }
     }
     _current_pos = qn1;
-    _current_vel = (_current_pos - qn) * (0.95 / _timestep);
+    _current_vel = (_current_pos - qn) * (0.3 / _timestep);
     CollisionDetection( _current_pos );
     //Matrix3X pene = CollisionDetection( _current_pos );
     //_current_pos -= pene;

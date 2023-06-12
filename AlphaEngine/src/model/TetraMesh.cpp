@@ -3,7 +3,7 @@
 #include "util/Shader.h"
 #include "model/Triangle.h"
 #include "util/Camera.h"
-#include "tetgen/tetgen.h"
+#include "tetgen.h"
 #include "acceleration/AABB.h"
 #include "model/HalfEdgeMesh.h"
 #include "lighting/Light.h"
@@ -89,9 +89,9 @@ void TetraMesh::CreateFromSurface( const std::vector<float>& points, const std::
     behavior.facesout = 1;
     behavior.edgesout = 1;
     behavior.neighout = 2;
-    //behavior.minratio = 1.4;
-    //behavior.quality = 1;
-    //behavior.nobisect = 1;
+    behavior.minratio = 1.4;
+    behavior.quality = 1;
+    behavior.nobisect = 1;
     tetrahedralize( &behavior, &in, &out );
 
     int pointNum = out.numberofpoints;

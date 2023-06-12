@@ -145,7 +145,7 @@ void ElasticityApp::Init()
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
-    Scene::active = std::make_unique<PBDScene>( true );
+    Scene::active = std::make_unique<PBDScene>( false );
 
     //Camera
     auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
@@ -301,6 +301,7 @@ void ElasticityApp::Init()
     Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
 #endif
 
+#define EXAMPLE_BAR_BALL
 #ifdef EXAMPLE_BAR_BALL
     cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
     cam->_yaw = 28.4;
@@ -322,16 +323,34 @@ void ElasticityApp::Init()
     cfg._const_type = 0;
     cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f || v[0] > 0.3f; };
     cfg._displacement = glm::vec3( 0, 0, 0 );
-    auto surface = Scene::active->AddChild( ModelLoader::LoadPDMetaballHalfEdgeMesh( "D:/models/bars.obj" ) );
-    Scene::active->AddChild( std::make_unique<PD::PDGPUMetaballModel>( cfg, surface ) );
+    auto surface = Scene::active->AddChild( std::make_unique<PDMetaballHalfEdgeMesh>( "D:/models/bars.obj" ) );
+    Scene::active->AddChild( std::make_unique<PD::PDMetaballModel>( cfg, surface ) );
 #endif
+
 #ifdef EXAMPLE_BAR_PBD
+    cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
+    cam->_yaw = 28.4;
+    cam->_pitch = 35.4;
     Scene::active->AddChild( std::make_unique<PBD::PBDTetraModel>( "D:/models/bar.obj", "D:/models/bars.obj", 100.f ) );
 #endif
 
 #ifdef EXAMPLE_BAR_PD
-    //Scene::active->AddChild( std::make_unique<PD::PDTetraModel>( "D:/models/bunny/bunnys.obj", "D:/models/bunny.obj", 1.f,
-    //    []( glm::vec3 v )->bool { return v[1] > 0.2f; } ) );
+    cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
+    cam->_yaw = 28.4;
+    cam->_pitch = 35.4;
+    Scene::active->AddChild( std::make_unique<PD::PDTetraModel>( "D:/models/bars.obj", "D:/models/bar.obj", 1.f,
+        []( glm::vec3 v )->bool { return v[0] > 0.3f || v[0] < -0.3f; } ) );
+#endif
+
+
+#ifdef EXAMPLE_BAR_FEM
+    cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
+    cam->_yaw = 28.4;
+    cam->_pitch = 35.4;
+    FEMConfig femconfig;
+    femconfig.path = "D:/models/bars2.obj";
+    femconfig.surface_path = "D:/models/bars.obj";
+    Scene::active->AddChild( std::make_unique<FEMSolver>( femconfig ) );
 #endif
 
 #ifdef EXAMPLE_BAR_0
@@ -448,7 +467,6 @@ void ElasticityApp::Init()
     pdmetaball->mName = "model0";
 #endif
 
-#define EXAMPLE_BUNNYS
 #ifdef EXAMPLE_BUNNYS
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;
@@ -506,7 +524,7 @@ void ElasticityApp::PreDraw()
     GlobalTimer::Update();
     //Scene::active->GetChild<PointLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
     Scene::active->GetChild<DirLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
-
+    //Scene::active->GetChild<DirLight>()->dir = -Camera::current->mTransform.GetPosition();
     if (Input::IsKeyDown( Input::Key::F ))
     {
         auto arma1 = Scene::active->GetChild<PD::PDMetaballModel>( "armadillo1" );
@@ -524,7 +542,7 @@ void ElasticityApp::PreDraw()
             Scene::active->GetChild<HalfEdgeMesh>( "cy2" )->mTransform.RotateAround( glm::vec3( 0.f ), glm::vec3( 0, 1, 0 ), -0.005 );
         }
         rad += 0.01f;
-    }
+}
 #endif
 #ifdef EXAMPLE_SPHERETREE
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -801,7 +819,7 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    //config._attach_filter = []( glm::vec3 v )->bool { return  v[0] < 0.3f && v[0] > -0.3f; };
+    config._attach_filter = []( glm::vec3 v )->bool { return  v[0] > 0.3f && v[1] > 0.3f; };
 
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;

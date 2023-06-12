@@ -247,6 +247,8 @@ public:
     Eigen::Matrix3X<T>* _x0;
     T _avg_dist;
     std::vector<T> _w;
+    Eigen::MatrixX3<T> _edges0;
+    T _wsum;
 private:
     T ComputeW( T r, T h ) const
     {
@@ -277,7 +279,7 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
     }
     _avg_dist /= (indices.size() - 1);
 
-    float wsum = 0.f;
+    _wsum = 0.f;
 
     int cnt = 1;
     _w.resize( indices.size(), 0.f );
@@ -294,11 +296,11 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
             wij = ComputeW( r, h ) * _sphere_mesh->Ball( j ).m;
 
         _w[cnt] = wij;
-        wsum += wij;
+        _wsum += wij;
         cnt++;
         A += wij * xij * xij.transpose();
     }
-    A /= wsum;
+    A /= _wsum;
 
     double detA = A.determinant();
 
@@ -310,6 +312,14 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
     {
         _invA = A.inverse();
     }
+
+    _edges0.resize( this->_indices.size() - 1, 3 );
+    for (int i = 0; i < this->_indices.size() - 1; i++)
+    {
+        int idx = this->_indices[i + 1];
+        _edges0.row( i ) = _w[i + 1] * (_x0->col( idx ) - _x0->col( this->_indices[0] )).transpose();
+    }
+    _edges0 = _edges0 * _invA.transpose();
 }
 
 template <SphereType Sphere, std::floating_point T>
@@ -359,22 +369,29 @@ void PD::MeshlessStrainConstraint<Sphere, T>::Project( const Eigen::Matrix3X<T>&
 template <SphereType Sphere, std::floating_point T>
 Eigen::Matrix3<T> PD::MeshlessStrainConstraint<Sphere, T>::ComputeF( const Eigen::Matrix3X<T>& pos ) const
 {
-    Eigen::Vector3<T> ui = pos.col( this->_indices[0] ) - _x0->col( this->_indices[0] );
 
-    float wsum = 0.f;
-    Eigen::Matrix3<T> S;
-    S.setZero();
-    for (int i = 1; i < this->_indices.size(); i++)
+    //Eigen::Vector3<T> ui = pos.col( this->_indices[0] ) - _x0->col( this->_indices[0] );
+    //Eigen::Matrix3<T> S;
+    //S.setZero();
+    //for (int i = 1; i < this->_indices.size(); i++)
+    //{
+    //    int j = this->_indices[i];
+    //    Eigen::Vector3<T> uj = pos.col( j ) - _x0->col( j );
+    //    Eigen::Vector3<T> xij = _x0->col( j ) - _x0->col( this->_indices[0] );
+    //    float wij = _w[i];
+    //    S += wij * (uj - ui) * xij.transpose();
+    //}
+    //S /= _wsum;
+    //Eigen::Matrix3<T> F = S * _invA.transpose() + Eigen::Matrix3<T>::Identity();
+
+    Eigen::Matrix3X<T> edges( 3, this->_indices.size() - 1 );
+    for (int i = 0; i < this->_indices.size() - 1; i++)
     {
-        int j = this->_indices[i];
-        Eigen::Vector3<T> uj = pos.col( j ) - _x0->col( j );
-        Eigen::Vector3<T> xij = _x0->col( j ) - _x0->col( this->_indices[0] );
-        float wij = _w[i];
-        wsum += wij;
-        S += wij * (uj - ui) * xij.transpose();
+        int idx = this->_indices[i + 1];
+        edges.col( i ) = pos.col( idx ) - pos.col( this->_indices[0] );
     }
-    S /= wsum;
-    Eigen::Matrix3<T> F = S * _invA.transpose() + Eigen::Matrix3<T>::Identity();
+    Eigen::Matrix3<T> F = (edges * _edges0) / _wsum + Eigen::Matrix3<T>::Identity();
+
     return F;
 }
 

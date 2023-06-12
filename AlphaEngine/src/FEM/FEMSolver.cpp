@@ -66,6 +66,7 @@ FEMSolver::FEMSolver( FEMConfig config )
 
 void FEMSolver::PhysicalUpdate()
 {
+    auto start = std::chrono::high_resolution_clock::now();
     for (auto& p : _mesh->mColors)
         p = glm::vec3( 0.f );
 
@@ -115,17 +116,39 @@ void FEMSolver::PhysicalUpdate()
 #pragma omp parallel for
     for (int i = 0; i < nb_points; i++)
     {
-        _f.col( i ) += Eigen::Vector3f( 0, -9.8f, 0 );
-        _v.col( i ) += _f.col( i ) * h;
-        _x.col( i ) += _v.col( i ) * h;
-        if (_x0( 0, i ) < -1.8f)
+        //_f.col( i ) += Eigen::Vector3f( 0, -9.8f, 0 );
+        if (!(_x0( 0, i ) > 0.3f))
+        {
+            _v.col( i ) += _f.col( i ) * h;
+            _x.col( i ) += _v.col( i ) * h;
+        }
+        if (_x0( 0, i ) < -0.3f)
         {
             _x.col( i ) = _x0.col( i );
             _v.col( i ) = Eigen::Vector3f( 0, 0, 0 );
+            _f.col( i ) = Eigen::Vector3f( 0, 0, 0 );
         }
         //_v.col( i ) *= 0.99f;
     }
     _f.setZero();
+
+    static float rad = 0.0f;
+    auto q = Eigen::Quaternionf( Eigen::AngleAxisf( std::min( 3.1415f * 1.5f, rad ), Eigen::Vector3f( 1, 0, 0 ) ) );
+    Eigen::Matrix3f m = q.toRotationMatrix();
+    for (int i = 0; i < nb_points; i++)
+    {
+        auto p0 = _x0.col( i );
+        if (p0.x() > 0.3)
+        {
+            _x.col( i ) = m * p0;
+            _v.col( i ) = Eigen::Vector3f( 0, 0, 0 );
+            _f.col( i ) = Eigen::Vector3f( 0, 0, 0 );
+        }
+    }
+    rad += _config.dt * 0.1;
+
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << "ms" << std::endl;
+
 }
 
 void FEMSolver::Update()
@@ -240,7 +263,7 @@ void FEMSolver::DrawGUI()
     ImGui::Checkbox( "show surface", &_config.show_surface );
     ImGui::DragFloat( "mu", &_config.mu, 1.f, 0.f, 50000.f );
     ImGui::DragFloat( "lambda", &_config.lambda, 1.f, 0.f, 3000.f );
-    ImGui::DragFloat( "dt", &_config.dt, 0.001f, 0.0f, 0.1f );
+    ImGui::DragFloat( "dt", &_config.dt, 0.001f, 0.0f, 0.1f, "%.6f" );
     ImGui::InputInt( "substep", &_config.substep );
     ImGui::Checkbox( "simulate", &_config.simulate );
     ImGui::End();

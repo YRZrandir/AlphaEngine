@@ -1,1 +1,0 @@
-./cloc.exe ./acceleration ./application ./CVT ./deform ./FEM ./free_cutting ./gl ./haptic ./input ./lighting ./material ./model ./PBD ./PD  ./util ./vr ../res/shaders
