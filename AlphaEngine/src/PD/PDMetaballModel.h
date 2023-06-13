@@ -30,6 +30,7 @@ struct PDMetaballModelConfig
     int _nb_points = 100; //only used when _method==0;
     int _nb_lloyd = 5; //only used when _method==0;
     std::function<bool( glm::vec3 )> _attach_filter = nullptr;
+    std::string _attach_points_filter;
     int _const_type = 0; //0=meshless, 1=edge
     glm::vec3 _displacement = glm::vec3( 0.f );
     bool _newton = false;

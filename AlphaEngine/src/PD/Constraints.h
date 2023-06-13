@@ -316,8 +316,7 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
     _edges0.resize( this->_indices.size() - 1, 3 );
     for (int i = 0; i < this->_indices.size() - 1; i++)
     {
-        int idx = this->_indices[i + 1];
-        _edges0.row( i ) = _w[i + 1] * (_x0->col( idx ) - _x0->col( this->_indices[0] )).transpose();
+        _edges0.row( i ) = (_x0->col( this->_indices[i + 1] ) - _x0->col( this->_indices[0] )).transpose();
     }
     _edges0 = _edges0 * _invA.transpose();
 }
@@ -369,7 +368,6 @@ void PD::MeshlessStrainConstraint<Sphere, T>::Project( const Eigen::Matrix3X<T>&
 template <SphereType Sphere, std::floating_point T>
 Eigen::Matrix3<T> PD::MeshlessStrainConstraint<Sphere, T>::ComputeF( const Eigen::Matrix3X<T>& pos ) const
 {
-
     //Eigen::Vector3<T> ui = pos.col( this->_indices[0] ) - _x0->col( this->_indices[0] );
     //Eigen::Matrix3<T> S;
     //S.setZero();
@@ -387,8 +385,7 @@ Eigen::Matrix3<T> PD::MeshlessStrainConstraint<Sphere, T>::ComputeF( const Eigen
     Eigen::Matrix3X<T> edges( 3, this->_indices.size() - 1 );
     for (int i = 0; i < this->_indices.size() - 1; i++)
     {
-        int idx = this->_indices[i + 1];
-        edges.col( i ) = pos.col( idx ) - pos.col( this->_indices[0] );
+        edges.col( i ) = _w[i + 1] * (pos.col( this->_indices[i + 1] ) - pos.col( this->_indices[0] ) - _x0->col( this->_indices[i + 1] ) + _x0->col( this->_indices[0] ));
     }
     Eigen::Matrix3<T> F = (edges * _edges0) / _wsum + Eigen::Matrix3<T>::Identity();
 

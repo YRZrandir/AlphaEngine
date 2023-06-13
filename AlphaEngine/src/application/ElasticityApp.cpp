@@ -3,6 +3,9 @@
 #include <fstream>
 #include <imgui/imgui.h>
 #include <tinyxml2.h>
+#include <locale>
+#include <codecvt>
+#include <string>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
 
@@ -341,7 +344,6 @@ void ElasticityApp::Init()
         []( glm::vec3 v )->bool { return v[0] > 0.3f || v[0] < -0.3f; } ) );
 #endif
 
-#define EXAMPLE_BAR_FEM
 #ifdef EXAMPLE_BAR_FEM
     cam->mTransform.SetPos( glm::vec3( -0.42, 0.397, -0.537 ) );
     cam->_yaw = 28.4;
@@ -756,7 +758,10 @@ PD::PDGPUMetaballModel* ElasticityApp::LoadPDGPUMetaballModel( tinyxml2::XMLElem
 PD::PDMetaballModel* ElasticityApp::LoadPDMetaballModel( tinyxml2::XMLElement* root )
 {
     auto get_elem_text = []( const tinyxml2::XMLElement* parent, const char* name ) {
-        return parent->FirstChildElement( name )->GetText();
+        const char* pc = parent->FirstChildElement( name )->GetText();
+        if (!pc)
+            return std::string{};
+        return std::string{ pc };
     };
 
     PD::PDMetaballModelConfig config;
@@ -774,11 +779,13 @@ PD::PDMetaballModel* ElasticityApp::LoadPDMetaballModel( tinyxml2::XMLElement* r
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
-
-    if (root->FirstChildElement( "Solve" ))
+    if (root->FirstChildElement( "AttachPointsFilter" ))
     {
-        int solve = std::stoi( get_elem_text( root, "Solve" ) );
+        config._attach_points_filter = get_elem_text( root, "AttachPointsFilter" );
+    }
+    if (root->FirstChildElement( "Solver" ))
+    {
+        int solve = std::stoi( get_elem_text( root, "Solver" ) );
         config._newton = solve == 1;
     }
 
@@ -818,8 +825,7 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    config._attach_filter = []( glm::vec3 v )->bool { return  v[0] > 0.3f && v[1] > 0.3f; };
-
+    config._attach_points_filter = std::string( get_elem_text( root, "AttachPointsFilter" ) );
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
 
