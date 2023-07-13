@@ -1,7 +1,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h";
 #include "util/CudaBuffer.h"
-#include "PBDTetraModel.h"
+#include "PBDConstraints.h"
 
 struct CudaPBDSystem
 {

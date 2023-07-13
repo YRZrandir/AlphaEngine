@@ -12,6 +12,7 @@
 #include "gl/VertexArray.h"
 #include "gl/VertexBuffer.h"
 #include "gl/IndexBuffer.h"
+#include "ECS/ECS.h"
 
 class VertexArray;
 class VertexBuffer;
@@ -20,7 +21,7 @@ class ShaderStorageBuffer;
 class Material;
 
 class HalfEdgeMesh :
-    public SceneObject
+    public SceneObject, public Component
 {
 public:
     class Vertex

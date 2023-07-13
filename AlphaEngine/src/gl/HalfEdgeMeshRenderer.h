@@ -6,10 +6,11 @@
 class HalfEdgeMeshRenderer : public SceneObjectRenderer
 {
 public:
-    HalfEdgeMeshRenderer( HalfEdgeMesh* mesh );
+    HalfEdgeMeshRenderer();
     virtual void Render() override;
     virtual void RenderShadowDepth() override;
 
 protected:
-    HalfEdgeMesh* _mesh;
+    virtual void Start() override;
+    HalfEdgeMesh* _mesh{ nullptr };
 };

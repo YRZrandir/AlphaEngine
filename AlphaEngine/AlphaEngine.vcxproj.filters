@@ -213,9 +213,6 @@
     <ClCompile Include="src\gl\HalfEdgeMeshRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\gl\SceneObjectRenderer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\PD\PDMetaballModelFC.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -229,6 +226,21 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\util\CudaMatrixHelpers.cpp" />
+    <ClCompile Include="src\ECS\PBDTetraModelSystem.h">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\PBDTetraModelSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\ECS.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\HalfEdgeMeshRendererSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\acceleration\AABB.h">
@@ -490,6 +502,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\util\CudaMathTypes.cuh" />
+    <ClInclude Include="src\ECS\ECS.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ECS\HalfEdgeMeshRendererSystem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PBD\PBDConstraints.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\polar_decom\polar_decomposition_3x3.inl">

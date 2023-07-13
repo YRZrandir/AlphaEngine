@@ -55,7 +55,7 @@ public:
     float	mAlpha = 1.0f;
     float	mMetallic = 0.01f;
     float	mRoughness = 0.25f;
-    std::string mShader;
+    std::string mShader = "model";
 private:
     std::string	mName;
     std::string	mDirectory;

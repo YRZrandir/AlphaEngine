@@ -1,12 +1,12 @@
 ﻿#pragma once
-#include "../util/SceneObject.h"
 #include <array>
 #include <iostream>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-#include "gl/UniformBuffer.h"
+#include "util/SceneObject.h"
+#include "gl/Renderer.h"
 
 class Scene
 {
@@ -89,14 +89,10 @@ protected:
     void SetUniformBuffers();
     void SetUniformBuffersForObject( const SceneObject& obj );
     void DrawChild( SceneObject& obj );
+
+    Renderer renderer;
+
 public:
-    //TODO This should not be public. Maybe move to a Renderer class.
-    CameraUniformBlock _camera_ubo_info;
-    LightUniformBlock _lights_ubo_info;
-    TransformUniformBlock _transform_ubo_info;
-    std::unique_ptr<UniformBuffer> _camera_ubo{ nullptr };
-    std::unique_ptr<UniformBuffer> _lights_ubo{ nullptr };
-    std::unique_ptr<UniformBuffer> _transform_ubo{ nullptr };
     std::vector<std::unique_ptr<SceneObject>> _children;
 };
 

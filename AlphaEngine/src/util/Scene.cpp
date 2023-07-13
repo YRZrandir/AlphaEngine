@@ -2,6 +2,7 @@
 #include "Camera.h"
 #include "lighting/Light.h"
 
+
 std::unique_ptr<Scene> Scene::active = nullptr;
 
 Scene::Scene()
@@ -30,8 +31,8 @@ void Scene::Draw()
 
     FrameBuffer::Unbind();
 
-    _camera_ubo_info.viewproj_mat = Camera::current->GetProjectionMatrix() * Camera::current->GetViewMatrix();
-    _camera_ubo->SetData( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
+    Renderer::Get().SetCamera( Camera::current->mTransform.GetPosition(), Camera::current->GetViewMatrix(), Camera::current->GetProjectionMatrix() );
+    Renderer::Get().UpdateCameraUniform();
 
     int max_layer = 0;
     for (int layer = 0; layer <= max_layer; layer++)
@@ -49,37 +50,22 @@ void Scene::Draw()
 
 void Scene::SetUniformBuffers()
 {
-    _camera_ubo_info.pos = Camera::current->mTransform.GetPosition();
-    _camera_ubo_info.view_mat = Camera::current->GetViewMatrix();
-    _camera_ubo_info.proj_mat = Camera::current->GetProjectionMatrix();
-    _camera_ubo_info.viewproj_mat = _camera_ubo_info.proj_mat * _camera_ubo_info.view_mat;
+    Renderer::Get().SetCamera( Camera::current->mTransform.GetPosition(), Camera::current->GetViewMatrix(), Camera::current->GetProjectionMatrix() );
 
     auto dir_lights = GetAllChildOfType<DirLight>();
-    _lights_ubo_info.nb_dirlights = std::min( dir_lights.size(), _lights_ubo_info.dirlights.size() );
-    for (int i = 0; i < _lights_ubo_info.nb_dirlights; i++)
+    Renderer::Get().ClearDirLights();
+    for (const auto& light : dir_lights)
     {
-        _lights_ubo_info.dirlights[i].dir = dir_lights[i]->dir;
-        _lights_ubo_info.dirlights[i].ambient = dir_lights[i]->ambient;
-        _lights_ubo_info.dirlights[i].diffuse = dir_lights[i]->diffuse;
-        _lights_ubo_info.dirlights[i].specular = dir_lights[i]->specular;
-        _lights_ubo_info.dirlights[i].intensity = dir_lights[i]->intensity;
-        _lights_ubo_info.dirlights[i].light_space_mat = dir_lights[i]->GetLightSpaceMat();
-
+        Renderer::Get().AddDirLight( light->dir, light->ambient, light->diffuse, light->specular, light->intensity, light->GetLightSpaceMat() );
     }
+
     auto point_lights = GetAllChildOfType<PointLight>();
-    _lights_ubo_info.nb_pointlights = std::min( point_lights.size(), _lights_ubo_info.pointlights.size() );
-    for (int i = 0; i < _lights_ubo_info.nb_pointlights; i++)
+    for (const auto& light : point_lights)
     {
-        _lights_ubo_info.pointlights[i].pos = point_lights[i]->mTransform.GetPosition();
-        _lights_ubo_info.pointlights[i].color = point_lights[i]->_color;
-        _lights_ubo_info.pointlights[i].intensity = point_lights[i]->_intensity;
-        _lights_ubo_info.pointlights[i].att_const = point_lights[i]->_att_const;
-        _lights_ubo_info.pointlights[i].att_linear = point_lights[i]->_att_linear;
-        _lights_ubo_info.pointlights[i].att_exp = point_lights[i]->_att_exp;
+        Renderer::Get().AddPointLight( light->mTransform.GetPosition(), light->_color, light->_intensity, light->_att_const, light->_att_linear, light->_att_exp );
     }
 
-    _camera_ubo->SetData( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
-    _lights_ubo->SetData( sizeof( LightUniformBlock ), static_cast<void*>(&_lights_ubo_info), GL_DYNAMIC_DRAW );
+    Renderer::Get().UpdateEnvUniformBuffers();
 }
 
 void Scene::SetUniformBuffersForObject( const SceneObject& obj )

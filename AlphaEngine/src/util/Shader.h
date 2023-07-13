@@ -32,6 +32,8 @@ ShaderDataType GLTypeToShaderDataType( GLenum type );
 
 GLenum ShaderDataTypeToGLType( ShaderDataType type );
 
+constexpr std::string ShaderDataTypeToString( ShaderDataType type );
+
 class ShaderUniformInfo
 {
 public:
@@ -44,16 +46,12 @@ public:
             _env = false;
     }
 
-protected:
     std::string _name{ "" };
     ShaderDataType _type{ ShaderDataType::Unknown };
     bool _env{ true };
 
     static const std::unordered_set<std::string> sPredefinedEnvVarNames;
 };
-
-
-
 
 struct ShaderVertexAttribInfo
 {
@@ -88,6 +86,7 @@ public:
     void setVec( const std::string& name, glm::vec3 value );
     void setVec( const std::string& name, glm::vec4 value );
     void BuildShaderInfo();
+    void PrintShaderInfo() const;
 
 protected:
     GLuint mID;
@@ -102,7 +101,6 @@ protected:
     static shaderc_shader_kind ShaderStageToShaderc( GLuint stage );
     GLuint openglCreateShader( const GLchar* code, shader_type type, const std::string& name );
     GLuint BuildProgram( const std::vector<std::pair<std::string, GLuint>>& shaderCodeTypeArray );
-
 
     /*SHADER MANAGEMENT*/
 public:

@@ -20,7 +20,9 @@ VertexArray::VertexArray( VertexArray&& vao ) noexcept
     mID = vao.mID;
     mOffset = vao.mOffset;
     mAttribCount = vao.mAttribCount;
+    mVertexNumber = vao.mVertexNumber;
     vao.mID = 0;
+    vao.mVertexNumber = 0;
 }
 
 VertexArray& VertexArray::operator=( VertexArray&& vao ) noexcept
@@ -28,7 +30,9 @@ VertexArray& VertexArray::operator=( VertexArray&& vao ) noexcept
     mID = vao.mID;
     mOffset = vao.mOffset;
     mAttribCount = vao.mAttribCount;
+    mVertexNumber = vao.mVertexNumber;
     vao.mID = 0;
+    vao.mVertexNumber = 0;
     return *this;
 }
 
@@ -53,6 +57,7 @@ void VertexArray::AddBuffer( VertexBuffer& vbo )
         }
         mAttribCount++;
     }
+    mVertexNumber = std::min( mVertexNumber, vbo.GetCount() );
 }
 
 void VertexArray::Bind() const
@@ -68,6 +73,11 @@ bool VertexArray::IsBinding() const
 void VertexArray::BindElementBuffer( const IndexBuffer& ibo ) const
 {
     glVertexArrayElementBuffer( mID, ibo.GetID() );
+}
+
+unsigned int VertexArray::GetVertexNumber() const
+{
+    return mVertexNumber;
 }
 
 void VertexArray::Unbind()

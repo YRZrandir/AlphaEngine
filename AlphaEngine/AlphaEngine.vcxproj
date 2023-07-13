@@ -171,6 +171,9 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ECS\HalfEdgeMeshRendererSystem.cpp" />
+    <ClCompile Include="src\ECS\ECS.cpp" />
+    <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp" />
     <ClCompile Include="src\acceleration\AABB.cpp" />
     <ClCompile Include="src\acceleration\BVH.cpp" />
     <ClCompile Include="src\acceleration\RayIntersectSolver.cpp" />
@@ -178,6 +181,8 @@
     <ClCompile Include="src\application\ElasticityApp.cpp" />
     <ClCompile Include="src\CVT\WeightedCVT.cpp" />
     <ClCompile Include="src\deform\LaplaceDeformation.cpp" />
+    <ClCompile Include="src\ECS\PBDTetraModelSystem.cpp" />
+    <ClCompile Include="src\ECS\PBDTetraModelSystem.h" />
     <ClCompile Include="src\FEM\FEMSolver.cpp" />
     <ClCompile Include="src\free_cutting\CuttingFace.cpp" />
     <ClCompile Include="src\free_cutting\CuttingTool.cpp" />
@@ -187,7 +192,6 @@
     <ClCompile Include="src\gl\HalfEdgeMeshRenderer.cpp" />
     <ClCompile Include="src\gl\IndexBuffer.cpp" />
     <ClCompile Include="src\gl\Renderer.cpp" />
-    <ClCompile Include="src\gl\SceneObjectRenderer.cpp" />
     <ClCompile Include="src\gl\ShaderStorageBuffer.cpp" />
     <ClCompile Include="src\gl\UniformBuffer.cpp" />
     <ClCompile Include="src\gl\VertexArray.cpp" />
@@ -244,6 +248,8 @@
     <ClCompile Include="src\vr\OpenVRWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ECS\HalfEdgeMeshRendererSystem.h" />
+    <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h" />
     <ClInclude Include="src\acceleration\AABB.h" />
     <ClInclude Include="src\acceleration\BVH.h" />
     <ClInclude Include="src\acceleration\RayIntersectSolver.h" />
@@ -251,6 +257,7 @@
     <ClInclude Include="src\application\ElasticityApp.h" />
     <ClInclude Include="src\CVT\WeightedCVT.h" />
     <ClInclude Include="src\deform\LaplaceDeformation.h" />
+    <ClInclude Include="src\ECS\ECS.h" />
     <ClInclude Include="src\FEM\FEMSolver.h" />
     <ClInclude Include="src\free_cutting\CuttingFace.h" />
     <ClInclude Include="src\free_cutting\CuttingTool.h" />
@@ -292,6 +299,7 @@
     <ClInclude Include="src\PBD\MetaballCuttingModel.h" />
     <ClInclude Include="src\PBD\MetaballModel.h" />
     <ClInclude Include="src\PBD\MetaballTester.h" />
+    <ClInclude Include="src\PBD\PBDConstraints.h" />
     <ClInclude Include="src\PBD\PBDGPUTetraModel.h" />
     <ClInclude Include="src\PBD\PBDTetraModel.h" />
     <ClInclude Include="src\PBD\Scalpel.h" />

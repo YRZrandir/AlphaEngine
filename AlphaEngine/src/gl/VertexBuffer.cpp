@@ -29,19 +29,24 @@ VertexBuffer::VertexBuffer( const void* data, unsigned int size, GLenum usage )
     glGenBuffers( 1, &_id );
     glBindBuffer( GL_ARRAY_BUFFER, _id );
     glBufferData( GL_ARRAY_BUFFER, size, data, usage );
+    _size = size;
 }
 
 VertexBuffer& VertexBuffer::operator=( VertexBuffer&& rh ) noexcept
 {
-    _id = rh.GetID();
+    _id = rh._id;
+    _size = rh._size;
     rh._id = 0;
+    rh._size = 0;
     return *this;
 }
 
 VertexBuffer::VertexBuffer( VertexBuffer&& rh ) noexcept
-    : _id( rh._id )
+    :_id( rh._id ),
+    _size( rh._size )
 {
     rh._id = 0;
+    rh._size = 0;
 }
 
 
@@ -53,6 +58,18 @@ VertexBuffer::~VertexBuffer()
 GLuint VertexBuffer::GetID() const
 {
     return _id;
+}
+
+size_t VertexBuffer::GetSize() const
+{
+    return _size;
+}
+
+size_t VertexBuffer::GetCount() const
+{
+    if (_size == 0)
+        return 0;
+    return _size / _layout.GetStride();
 }
 
 void VertexBuffer::Bind() const
@@ -77,6 +94,7 @@ void VertexBuffer::UpdateData( const void* data, unsigned int size, GLenum usage
     std::lock_guard<std::mutex> lock( _gl_lock );
     Bind();
     glBufferData( GL_ARRAY_BUFFER, size, data, usage );
+    _size = size;
 }
 
 void VertexBuffer::UpdateSubData( const void* data, unsigned int offset, unsigned int size )
@@ -101,10 +119,12 @@ void VertexBuffer::CopyDataFrom( const VertexBuffer& src )
 
 void VertexBuffer::CopyDataFrom( unsigned src )
 {
+    std::lock_guard<std::mutex> lock( _gl_lock );
     int size = 0;
     glGetNamedBufferParameteriv( src, GL_BUFFER_SIZE, &size );
     glNamedBufferData( _id, size, nullptr, GL_DYNAMIC_DRAW );
     glCopyNamedBufferSubData( src, _id, 0, 0, size );
+    _size = size;
 }
 
 void VertexBuffer::CopySubDataFrom( const VertexBuffer& src, unsigned int readOffset, unsigned int writeOffset, unsigned int size )
@@ -125,6 +145,7 @@ std::unique_ptr<VertexBuffer> VertexBuffer::Copy() const
     GLenum usage = GL_STATIC_DRAW;
     glGetNamedBufferParameteriv( _id, GL_BUFFER_USAGE, (GLint*)&usage );
     auto ret = std::make_unique<VertexBuffer>( nullptr, size, usage );
+    ret->SetLayout( _layout );
     ret->CopyDataFrom( _id );
     return ret;
 }

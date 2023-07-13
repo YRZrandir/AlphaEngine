@@ -1,14 +1,18 @@
 #include "HalfEdgeMeshRenderer.h"
 #include "util/Shader.h"
 
-HalfEdgeMeshRenderer::HalfEdgeMeshRenderer( HalfEdgeMesh* mesh )
-    :_mesh( mesh )
+HalfEdgeMeshRenderer::HalfEdgeMeshRenderer()
 {
+}
 
+void HalfEdgeMeshRenderer::Start()
+{
+    _mesh = GetComponent<HalfEdgeMesh>();
 }
 
 void HalfEdgeMeshRenderer::Render()
 {
+    std::cout << "Render" << std::endl;
     _mesh->_vao->Bind();
     auto shader = Shader::Find( _mesh->_material_main->mShader );
     shader->use();
@@ -19,6 +23,7 @@ void HalfEdgeMeshRenderer::Render()
 
 void HalfEdgeMeshRenderer::RenderShadowDepth()
 {
+    std::cout << "Calc depth for shadow" << std::endl;
     _mesh->_vao->Bind();
     auto shader = Shader::Find( "depth" );
     shader->use();

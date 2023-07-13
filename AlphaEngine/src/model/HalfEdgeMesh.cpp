@@ -1499,7 +1499,7 @@ void HalfEdgeMesh::Draw()
             }
             else
             {
-                shader = Shader::Find( _shader_name );
+                shader = Shader::Find( "model" );
             }
             break;
         default:
@@ -1528,7 +1528,7 @@ void HalfEdgeMesh::DrawShadowDepth()
 
 HalfEdgeMesh::VertexAttr operator*( float s, const HalfEdgeMesh::VertexAttr& a )
 {
-    return HalfEdgeMesh::VertexAttr{ a.normal * s, a.texcoord * s, a.color * s, a.tangent * s };
+    return HalfEdgeMesh::VertexAttr{ a.normal* s, a.texcoord* s, a.color* s, a.tangent* s };
 }
 
 MetaballHalfEdgeMesh::MetaballHalfEdgeMesh()

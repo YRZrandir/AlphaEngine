@@ -8,14 +8,14 @@ std::unordered_map<std::string, std::unique_ptr<Shader>> Shader::shaders = {};
 const std::unordered_set<std::string> ShaderUniformInfo::sPredefinedEnvVarNames
 {
     "Camera",
-    "Lights",
-    "Transform"
+        "Lights",
+        "Transform"
 };
 
 ShaderDataType GLTypeToShaderDataType( GLenum type )
 {
     static std::unordered_map<GLenum, ShaderDataType> sTable{
-        { GL_FLOAT,      ShaderDataType::Float32 },
+        { GL_FLOAT, ShaderDataType::Float32 },
         { GL_FLOAT_VEC2, ShaderDataType::Vec2f },
         { GL_FLOAT_VEC3, ShaderDataType::Vec3f },
         { GL_FLOAT_VEC4, ShaderDataType::Vec4f },
@@ -54,6 +54,26 @@ GLenum ShaderDataTypeToGLType( ShaderDataType type )
         return sTable[type];
     }
     return 0;
+}
+
+constexpr std::string ShaderDataTypeToString( ShaderDataType type )
+{
+    constexpr std::array<std::string, static_cast<size_t>(ShaderDataType::Unknown) + 1u> names = {
+        "Int32",
+        "Uint32",
+        "Float32",
+        "Vec2f",
+        "Vec3f",
+        "Vec4f",
+        "Mat3f",
+        "Mat4f",
+        "Sampler2D",
+        "SamplerCube",
+        "Unknown"
+    };
+
+    return names[static_cast<size_t>(type)];
+
 }
 
 Shader::Shader( const shader_paths& infos )
@@ -164,11 +184,11 @@ std::vector<std::pair<std::string, GLuint>> Shader::splitShaderCode( const std::
     static const std::string MARK( "###SHADER " );
     static const std::unordered_map<std::string, GLuint> TYPE_MAPPING{
         {"VERT", GL_VERTEX_SHADER},
-        {"FRAG", GL_FRAGMENT_SHADER},
-        {"GEOM", GL_GEOMETRY_SHADER},
-        {"TESC", GL_TESS_CONTROL_SHADER},
-        {"TESE", GL_TESS_EVALUATION_SHADER},
-        {"COMP", GL_COMPUTE_SHADER }
+        { "FRAG", GL_FRAGMENT_SHADER },
+        { "GEOM", GL_GEOMETRY_SHADER },
+        { "TESC", GL_TESS_CONTROL_SHADER },
+        { "TESE", GL_TESS_EVALUATION_SHADER },
+        { "COMP", GL_COMPUTE_SHADER }
     };
 
     std::vector<std::pair<std::string, GLuint>> shaderCodeTypeArray;
@@ -266,6 +286,22 @@ void Shader::BuildShaderInfo()
         glGetActiveUniform( mID, i, uniformNameMaxLength, &length, &size, &type, uniform_name_buf.data() );
         _uniform_infos.push_back( { std::string( uniform_name_buf.begin(), uniform_name_buf.begin() + length ), GLTypeToShaderDataType( type ) } );
     }
+}
+
+void Shader::PrintShaderInfo() const
+{
+    std::cout << "Shader: " << _path << '\n';
+    for (size_t i = 0; i < _vertex_attribs.size(); i++)
+    {
+        const auto& attr = _vertex_attribs[i];
+        std::cout << "\tAttrib_" << i << ": " << attr.name << ", " << ShaderDataTypeToGLType( attr.type ) << '\n';
+    }
+    for (size_t i = 0; i < _uniform_infos.size(); i++)
+    {
+        const auto& info = _uniform_infos[i];
+        std::cout << "\tUniform_" << i << ": " << info._name << ", " << ShaderDataTypeToString( info._type ) << '\n';
+    }
+    std::cout << std::endl;
 }
 
 void Shader::setBool( const std::string& name, GLboolean value )

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <tinyxml2.h>
 #include "model/Transform.h"
+#include "ECS/HalfEdgeMeshSystem.h"
+#include "ECS/ECS.h"
 
 namespace PD
 {
@@ -27,7 +29,6 @@ protected:
     virtual void PostDraw() override;
     virtual void DrawGUI() override;
     virtual void DrawGraphics() override;
-
     PD::PDGPUMetaballModel* LoadPDGPUMetaballModel( tinyxml2::XMLElement* root );
     PD::PDMetaballModelFC* LoadPDMetaballModelFC( tinyxml2::XMLElement* root );
     PD::PDMetaballModel* LoadPDMetaballModel( tinyxml2::XMLElement* root );
@@ -37,4 +38,6 @@ protected:
     RigidBall* LoadRigidBall( tinyxml2::XMLElement* root );
     RigidStatic* LoadRigidStatic( tinyxml2::XMLElement* root );
     void LoadSceneFile( const char* filename );
+
+    std::vector<std::unique_ptr<System>> _systems;
 };

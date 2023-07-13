@@ -38,6 +38,7 @@ class VertexBuffer
 private:
     unsigned int _id;
     VertexBufferLayout _layout;
+    size_t _size{ 0 };
     static std::mutex _gl_lock;
 
 public:
@@ -49,6 +50,8 @@ public:
     ~VertexBuffer();
 
     GLuint GetID() const;
+    size_t GetSize() const;
+    size_t GetCount() const;
     void Bind() const;
     bool IsBinding() const;
     void UpdateData( const void* data, unsigned int size, GLenum usage = GL_STATIC_DRAW );

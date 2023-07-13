@@ -3,8 +3,6 @@
 #include <fstream>
 #include <imgui/imgui.h>
 #include <tinyxml2.h>
-#include <locale>
-#include <codecvt>
 #include <string>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -42,6 +40,10 @@
 #include "util/GlobalTimer.h"
 #include "CVT/WeightedCVT.h"
 #include "haptic/Haptic.h"
+
+#include "ECS/ECS.h"
+#include "ECS/HalfEdgeMeshRendererSystem.h"
+#include "gl/HalfEdgeMeshRenderer.h"
 
 namespace
 {
@@ -193,7 +195,8 @@ void ElasticityApp::Init()
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "GLPoints.glsl" ), "GLPoints" );
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "bvh.glsl" ), "bvh" );
 
-    Shader::Find( "model" )->BuildShaderInfo();
+
+    Shader::Find( "model" )->PrintShaderInfo();
 
 #ifdef EXAMPLE_COMPARE
     PD::PDMetaballModelConfig cfg{};
@@ -509,17 +512,28 @@ void ElasticityApp::Init()
     //auto rigid_ball = Scene::active->AddChild( std::make_unique<RigidBall>( glm::vec3( 0, -1.5, 0 ), 2.0f ) );
     //rigid_ball->mName = "rigid_ball";
 
-     //Scene::active->AddChild( std::make_unique<RigidSDF>( "D:/models/cylinder.obj", 0.02f ) );
+    //Scene::active->AddChild( std::make_unique<RigidSDF>( "D:/models/cylinder.obj", 0.02f ) );
      //Scene::active->AddChild( std::make_unique<PBD::GPUTetraModel>( "D:/models/arma/armadillo_coarse.obj", "D:/models/arma/armadillo_coarse.obj", 10000.f ) );
 
     //auto ball = Scene::active->AddChild( std::make_unique<CHalfEdgeMesh<ItemBase>>( "res/models/ball960.obj" ) );
     //ball->mName = "haptic";
     //Haptic::Init( UpdateHaptics );
+
+    _systems.push_back( std::make_unique<HalfEdgeMeshSystem>() );
+    _systems.push_back( std::make_unique<HalfEdgeMeshRendererSystem>() );
+    auto ent0 = EntityManager::Get().AddEntity();
+    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
+    EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
     GlobalTimer::Start();
 }
 
 void ElasticityApp::PreDraw()
 {
+    for (auto& system : _systems)
+    {
+        system->Update();
+    }
+
     Scene::active->Update();
     //UpdateHaptics();
     GlobalTimer::Update();
@@ -716,6 +730,18 @@ void ElasticityApp::DrawGraphics()
     glClearColor( 1, 1, 1, 1 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     Scene::active->Draw();
+    for (auto& system : _systems)
+    {
+        system->OnPreRender();
+    }
+    for (auto& system : _systems)
+    {
+        system->OnRender();
+    }
+    for (auto& system : _systems)
+    {
+        system->OnPostRender();
+    }
 }
 
 PD::PDGPUMetaballModel* ElasticityApp::LoadPDGPUMetaballModel( tinyxml2::XMLElement* root )
