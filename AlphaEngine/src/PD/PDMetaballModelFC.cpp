@@ -390,9 +390,8 @@ void PDMetaballModelFC::Draw()
         _surface->Draw();
     }
 
-    Scene::active->_transform_ubo_info.world_mat = _contacts_vis->mTransform.GetModelMat();
-    Scene::active->_transform_ubo->SetData( sizeof( Scene::active->_transform_ubo_info ), &Scene::active->_transform_ubo_info, GL_DYNAMIC_DRAW );
-
+    Renderer::Get().SetTransform( _contacts_vis->mTransform.GetModelMat() );
+    Renderer::Get().UpdateTranformUniform();
     if (_show_contacts)
     {
         _contacts_vis->Draw();

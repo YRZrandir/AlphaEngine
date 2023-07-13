@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <vector>
 #include <glad/glad.h>
 
 class VertexBufferLayout;
@@ -12,6 +13,8 @@ private:
     unsigned int mOffset;
     unsigned int mAttribCount;
     size_t mVertexNumber{ 0 };
+    std::vector<VertexBuffer*> _bind_vbos;
+
 public:
     VertexArray();
     VertexArray( const VertexArray& rh ) = delete;

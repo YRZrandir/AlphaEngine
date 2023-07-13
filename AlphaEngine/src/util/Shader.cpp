@@ -56,9 +56,9 @@ GLenum ShaderDataTypeToGLType( ShaderDataType type )
     return 0;
 }
 
-constexpr std::string ShaderDataTypeToString( ShaderDataType type )
+constexpr const char* ShaderDataTypeToString( ShaderDataType type )
 {
-    constexpr std::array<std::string, static_cast<size_t>(ShaderDataType::Unknown) + 1u> names = {
+    constexpr const char* names[static_cast<size_t>(ShaderDataType::Unknown) + 1u]{
         "Int32",
         "Uint32",
         "Float32",

@@ -32,7 +32,7 @@ ShaderDataType GLTypeToShaderDataType( GLenum type );
 
 GLenum ShaderDataTypeToGLType( ShaderDataType type );
 
-constexpr std::string ShaderDataTypeToString( ShaderDataType type );
+constexpr const char* ShaderDataTypeToString( ShaderDataType type );
 
 class ShaderUniformInfo
 {

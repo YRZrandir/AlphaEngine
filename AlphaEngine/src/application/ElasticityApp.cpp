@@ -524,11 +524,14 @@ void ElasticityApp::Init()
     auto ent0 = EntityManager::Get().AddEntity();
     EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
     EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
+    EntityManager::Get().AddComponent<Transform>( ent0 );
+    EntityManager::Get().AddComponent<Material>( ent0 );
     GlobalTimer::Start();
 }
 
 void ElasticityApp::PreDraw()
 {
+
     for (auto& system : _systems)
     {
         system->Update();
@@ -537,15 +540,7 @@ void ElasticityApp::PreDraw()
     Scene::active->Update();
     //UpdateHaptics();
     GlobalTimer::Update();
-    //Scene::active->GetChild<PointLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
     Scene::active->GetChild<DirLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
-    //Scene::active->GetChild<DirLight>()->dir = -Camera::current->mTransform.GetPosition();
-    if (Input::IsKeyDown( Input::Key::F ))
-    {
-        auto arma1 = Scene::active->GetChild<PD::PDMetaballModel>( "armadillo1" );
-        auto arma2 = Scene::active->GetChild<PD::PDMetaballModel>( "armadillo2" );
-        std::cout << "distance: " << arma1->_mesh->Distance( *arma2->_mesh ) << std::endl;
-    }
 
 #ifdef EXAMPLE_DUCK
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -570,9 +565,6 @@ void ElasticityApp::PreDraw()
         }
         rad += 0.01f;
     }
-#endif
-#ifdef EXAMPLE_PERFORMANCE
-
 #endif
 }
 
@@ -612,7 +604,7 @@ void ElasticityApp::PostDraw()
     //        ofs.close();
     //    }
     //}
-}
+        }
 
 void ElasticityApp::DrawGUI()
 {

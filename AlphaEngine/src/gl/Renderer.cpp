@@ -5,7 +5,19 @@ std::unique_ptr<Renderer> Renderer::_instance = nullptr;
 
 Renderer& Renderer::Get()
 {
+    if (Renderer::_instance == nullptr)
+        Renderer::_instance = std::unique_ptr<Renderer>( new Renderer() );  //do this or have make_unique as a friend function.
     return *Renderer::_instance;
+}
+
+Renderer::Renderer()
+{
+    _camera_ubo = std::make_unique<UniformBuffer>( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
+    _transform_ubo = std::make_unique<UniformBuffer>( sizeof( TransformUniformBlock ), static_cast<void*>(&_transform_ubo_info), GL_DYNAMIC_DRAW );
+    _lights_ubo = std::make_unique<UniformBuffer>( sizeof( LightUniformBlock ), static_cast<void*>(&_lights_ubo_info), GL_DYNAMIC_DRAW );
+    _camera_ubo->BindBase( 0 );
+    _transform_ubo->BindBase( 1 );
+    _lights_ubo->BindBase( 2 );
 }
 
 void Renderer::Draw( const VertexArray& vao, const Material& material )
@@ -110,7 +122,7 @@ void Renderer::SetCamera( glm::vec3 pos, glm::mat4 view_mat, glm::mat4 proj_mat 
     _camera_ubo_info.pos = pos;
     _camera_ubo_info.view_mat = view_mat;
     _camera_ubo_info.proj_mat = proj_mat;
-    _camera_ubo_info.viewproj_mat = view_mat * proj_mat;
+    _camera_ubo_info.projview_mat = proj_mat * view_mat;
 }
 
 void Renderer::SetTransform( glm::mat4 world_mat )

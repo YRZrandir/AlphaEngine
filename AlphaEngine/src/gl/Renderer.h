@@ -15,7 +15,7 @@ protected:
         float padding;
         glm::mat4 view_mat;
         glm::mat4 proj_mat;
-        glm::mat4 viewproj_mat;
+        glm::mat4 projview_mat;
     };
 
     struct TransformUniformBlock
@@ -76,6 +76,8 @@ public:
     void SetTransform( glm::mat4 world_mat );
 
 protected:
+    Renderer();
+
     CameraUniformBlock _camera_ubo_info;
     LightUniformBlock _lights_ubo_info;
     TransformUniformBlock _transform_ubo_info;

@@ -26,12 +26,12 @@ PD::PDTetraModel::PDTetraModel( const std::string& sur_path, const std::string& 
     _simple_cylin->_material_main->SetDiffuseColor( 0.f, 0.f, 0.f );
     std::vector<glm::vec3> extrude_dir( _mesh->GetPointNum(), glm::vec3( 0.f ) );
     _mesh->CalcBorderFaces();
-    for (int f = 0; f < _mesh->GetBorderFaceNum(); f++)
+    for (size_t f = 0; f < _mesh->GetBorderFaceNum(); f++)
     {
         Triangle face = _mesh->mBorderFaces[f];
-        int ia = face.a;
-        int ib = face.b;
-        int ic = face.c;
+        auto ia = face.a;
+        auto ib = face.b;
+        auto ic = face.c;
         glm::vec3 va = _mesh->mPoints[ia];
         glm::vec3 vb = _mesh->mPoints[ib];
         glm::vec3 vc = _mesh->mPoints[ic];
@@ -41,7 +41,7 @@ PD::PDTetraModel::PDTetraModel( const std::string& sur_path, const std::string& 
         extrude_dir[ic] += n;
     }
 
-    for (int i = 0; i < _mesh->GetPointNum(); i++)
+    for (size_t i = 0; i < _mesh->GetPointNum(); i++)
     {
         if (glm::length2( extrude_dir[i] ) != 0.f)
         {
@@ -336,7 +336,7 @@ void PD::PDTetraModel::DrawGUI()
 void PD::PDTetraModel::PhysicalUpdate()
 {//External force
     _external_force.setZero();
-    for (int i = 0; i < _mesh->GetPointNum(); ++i)
+    for (size_t i = 0; i < _mesh->GetPointNum(); ++i)
     {
         //_external_force.col( i ).y() -= 9.8f;
     }
@@ -414,7 +414,7 @@ PD::PDTetraModel::Matrix3X PD::PDTetraModel::CollisionDetection( const Matrix3X&
     std::vector<RigidSDF*> rigid_sdfs = Scene::active->GetAllChildOfType<RigidSDF>();
     for (RigidSDF* rigid_sdf : rigid_sdfs)
     {
-        for (int i = 0; i < _mesh->GetPointNum(); i++)
+        for (size_t i = 0; i < _mesh->GetPointNum(); i++)
         {
             glm::vec3 normal;
             float depth;

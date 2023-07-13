@@ -9,7 +9,7 @@ void HalfEdgeMeshRendererSystem::OnPreRender()
 {
     for (auto& mesh_renderer : EntityManager::Get().GetAllComponentOfType<HalfEdgeMeshRenderer>())
     {
-        mesh_renderer->RenderShadowDepth();
+        //mesh_renderer->RenderShadowDepth();
     }
 }
 

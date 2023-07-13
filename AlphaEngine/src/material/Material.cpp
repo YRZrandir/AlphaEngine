@@ -2,9 +2,21 @@
 #include "util/Shader.h"
 #include "util/util.h"
 
+Material::Material()
+{
+    unsigned char trival[3] = { 255, 255, 255 };
+    mDiffuseTexture = std::make_unique<Texture>( 1, 1, 3, Texture::Types::DIFFUSE, trival );
+    mSpecularTexture = std::make_unique<Texture>( 1, 1, 3, Texture::Types::SPECULAR, trival );
+    unsigned char trival_normal[3] = { 127, 127, 255 };
+    mNormalTexture = std::make_unique<Texture>( 1, 1, 3, Texture::Types::NORMAL, trival_normal );
+    float trival_roughness = 1.0;
+    mRoughnessTexture = std::make_unique<Texture>( 1, 1, 1, Texture::Types::ROUGHNESS, &trival_roughness );
+    float trival_metal = 1.0;
+    mMetallicTexture = std::make_unique<Texture>( 1, 1, 1, Texture::Types::METALLIC, &trival_metal );
+}
+
 Material::Material( const std::string& directory, const std::string& name, const MaterialInfos& materialInfos )
-    :mName( name ),
-    mDirectory( directory ),
+    : mDirectory( directory ),
     mDiffuseColor( materialInfos.diffuseColor ),
     mSpecularColor( materialInfos.specularColor ),
     mShininess( materialInfos.shininess ),

@@ -16,9 +16,10 @@ public:
     virtual void SetShaderUniforms( Shader& shader ) = 0;
     virtual void Update() = 0;
     virtual void Draw() = 0;
-    virtual glm::mat4 GetLightSpaceMat() = 0;
+    virtual glm::mat4 GetLightSpaceMat() const = 0;
+    virtual glm::mat4 GetLightSpaceViewMat() const = 0;
+    virtual glm::mat4 GetLightSpaceProjMat() const = 0;
     static void SetAllLightUniforms( Shader& shader );
-
 };
 
 
@@ -30,7 +31,9 @@ public:
     virtual void SetShaderUniforms( Shader& shader ) override;
     virtual void Update() override;
     virtual void Draw() override;
-    virtual glm::mat4 GetLightSpaceMat() override;
+    virtual glm::mat4 GetLightSpaceMat() const override;
+    virtual glm::mat4 GetLightSpaceViewMat() const override;
+    virtual glm::mat4 GetLightSpaceProjMat() const override;
     FrameBuffer* GetShadowDepthBuffer();
     bool CastShadow() const;
     void CastShadow( bool value );
@@ -53,8 +56,9 @@ public:
     virtual void SetShaderUniforms( Shader& shader ) override;
     virtual void Update() override;
     virtual void Draw() override;
-    virtual glm::mat4 GetLightSpaceMat() override;
-
+    virtual glm::mat4 GetLightSpaceMat() const override;
+    virtual glm::mat4 GetLightSpaceViewMat() const override;
+    virtual glm::mat4 GetLightSpaceProjMat() const override;
     glm::vec3 _color;
     float _intensity;
     float _att_const;

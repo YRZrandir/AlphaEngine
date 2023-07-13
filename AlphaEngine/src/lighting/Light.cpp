@@ -67,17 +67,24 @@ void DirLight::Draw()
 {
 }
 
-glm::mat4 DirLight::GetLightSpaceMat()
+glm::mat4 DirLight::GetLightSpaceMat() const
 {
-    glm::mat4 proj = glm::ortho( -4.f, 4.f, -4.f, 4.f, -5.f, 5.f );
+    return GetLightSpaceProjMat() * GetLightSpaceViewMat();
+}
+
+glm::mat4 DirLight::GetLightSpaceViewMat() const
+{
     glm::vec3 up = glm::vec3( 0, 1, 0 );
     if (std::abs( dir.x ) < 1e-4 && std::abs( dir.z ) < 1e-4)
     {
         up = glm::vec3( 0, 1, 0 );
     }
-    glm::mat4 view = glm::lookAt( -dir, glm::vec3( 0, 0, 0 ), up );
+    return glm::lookAt( -dir, glm::vec3( 0, 0, 0 ), up );
+}
 
-    return proj * view;
+glm::mat4 DirLight::GetLightSpaceProjMat() const
+{
+    return glm::ortho( -4.f, 4.f, -4.f, 4.f, -5.f, 5.f );
 }
 
 FrameBuffer* DirLight::GetShadowDepthBuffer()
@@ -153,7 +160,17 @@ void PointLight::Draw()
 {
 }
 
-glm::mat4 PointLight::GetLightSpaceMat()
+glm::mat4 PointLight::GetLightSpaceMat() const
+{
+    return GetLightSpaceProjMat() * GetLightSpaceViewMat();
+}
+
+glm::mat4 PointLight::GetLightSpaceViewMat() const
+{
+    return glm::mat4( 1.f );
+}
+
+glm::mat4 PointLight::GetLightSpaceProjMat() const
 {
     return glm::mat4( 1.f );
 }

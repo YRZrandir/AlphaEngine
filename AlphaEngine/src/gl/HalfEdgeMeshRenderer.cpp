@@ -1,5 +1,6 @@
 #include "HalfEdgeMeshRenderer.h"
 #include "util/Shader.h"
+#include "gl/Renderer.h"
 
 HalfEdgeMeshRenderer::HalfEdgeMeshRenderer()
 {
@@ -12,22 +13,12 @@ void HalfEdgeMeshRenderer::Start()
 
 void HalfEdgeMeshRenderer::Render()
 {
-    std::cout << "Render" << std::endl;
-    _mesh->_vao->Bind();
-    auto shader = Shader::Find( _mesh->_material_main->mShader );
-    shader->use();
-    _mesh->_material_main->SetShaderUniforms( *shader );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    glDrawArrays( GL_TRIANGLES, 0, _mesh->mRenderingVtxCount );
+    Renderer::Get().SetTransform( GetComponent<Transform>()->GetModelMat() );
+    Renderer::Get().UpdateTranformUniform();
+    Renderer::Get().Draw( *_mesh->_vao, *GetComponent<Material>() );
 }
 
 void HalfEdgeMeshRenderer::RenderShadowDepth()
 {
-    std::cout << "Calc depth for shadow" << std::endl;
-    _mesh->_vao->Bind();
-    auto shader = Shader::Find( "depth" );
-    shader->use();
-    _mesh->_material_main->SetShaderUniforms( *shader );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    glDrawArrays( GL_TRIANGLES, 0, _mesh->mRenderingVtxCount );
+    Renderer::Get().DrawShadowDepth( *_mesh->_vao );
 }

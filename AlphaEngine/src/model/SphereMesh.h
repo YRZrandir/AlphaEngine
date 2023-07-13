@@ -306,8 +306,8 @@ inline void SphereMesh<Sphere>::Draw()
             _ballmesh->mTransform.SetPos( ball.x );
             float r = ball.r;
             _ballmesh->mTransform.SetScale( glm::vec3( r * 2 ) );
-            Scene::active->_transform_ubo_info.world_mat = _ballmesh->mTransform.GetModelMat();
-            Scene::active->_transform_ubo->SetData( sizeof( Scene::active->_transform_ubo_info ), &Scene::active->_transform_ubo_info, GL_DYNAMIC_DRAW );
+            Renderer::Get().SetTransform( _ballmesh->mTransform.GetModelMat() );
+            Renderer::Get().UpdateTranformUniform();
             auto mapcolor = tinycolormap::GetParulaColor( glm::pow( ball.m_rel, 1.0 / 3.0 ) );
             _ballmesh->_material_main->mDiffuseColor = ball.color;
             _ballmesh->Draw();

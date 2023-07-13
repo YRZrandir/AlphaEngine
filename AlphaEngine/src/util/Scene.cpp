@@ -7,12 +7,6 @@ std::unique_ptr<Scene> Scene::active = nullptr;
 
 Scene::Scene()
 {
-    _camera_ubo = std::make_unique<UniformBuffer>( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
-    _transform_ubo = std::make_unique<UniformBuffer>( sizeof( TransformUniformBlock ), static_cast<void*>(&_transform_ubo_info), GL_DYNAMIC_DRAW );
-    _lights_ubo = std::make_unique<UniformBuffer>( sizeof( LightUniformBlock ), static_cast<void*>(&_lights_ubo_info), GL_DYNAMIC_DRAW );
-    _camera_ubo->BindBase( 0 );
-    _transform_ubo->BindBase( 1 );
-    _lights_ubo->BindBase( 2 );
 }
 
 void Scene::Update()
@@ -65,14 +59,13 @@ void Scene::SetUniformBuffers()
         Renderer::Get().AddPointLight( light->mTransform.GetPosition(), light->_color, light->_intensity, light->_att_const, light->_att_linear, light->_att_exp );
     }
 
-    Renderer::Get().UpdateEnvUniformBuffers();
+    Renderer::Get().UpdateEnvUniforms();
 }
 
 void Scene::SetUniformBuffersForObject( const SceneObject& obj )
 {
-    _transform_ubo_info.world_mat = obj.mTransform.GetModelMat();
-    _transform_ubo_info.normal_mat = glm::transpose( glm::inverse( _transform_ubo_info.world_mat ) );
-    _transform_ubo->SetData( sizeof( TransformUniformBlock ), static_cast<void*>(&_transform_ubo_info), GL_DYNAMIC_DRAW );
+    Renderer::Get().SetTransform( obj.mTransform.GetModelMat() );
+    Renderer::Get().UpdateTranformUniform();
 }
 
 void Scene::DrawShadowDepthBuffer()
@@ -88,8 +81,9 @@ void Scene::DrawShadowDepthBuffer()
 
         light->GetShadowDepthBuffer()->Bind();
         light->GetShadowDepthBuffer()->Clear();
-        _camera_ubo_info.viewproj_mat = light->GetLightSpaceMat();
-        _camera_ubo->SetData( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
+
+        Renderer::Get().SetCamera( light->mTransform.GetPosition(), light->GetLightSpaceViewMat(), light->GetLightSpaceProjMat() );
+        Renderer::Get().UpdateCameraUniform();
 
         glViewport( 0, 0, light->GetShadowDepthBuffer()->Width(), light->GetShadowDepthBuffer()->Height() );
         for (auto& child : _children)

@@ -90,8 +90,6 @@ protected:
     void SetUniformBuffersForObject( const SceneObject& obj );
     void DrawChild( SceneObject& obj );
 
-    Renderer renderer;
-
 public:
     std::vector<std::unique_ptr<SceneObject>> _children;
 };

@@ -71,7 +71,7 @@ public:
     class Hash
     {
     public:
-        unsigned operator()( const IdxPair& info ) const
+        size_t operator()( const IdxPair& info ) const
         {
             std::hash<int>* p = nullptr;
             return p->operator()( info.i0 ) ^ p->operator()( info.i1 );

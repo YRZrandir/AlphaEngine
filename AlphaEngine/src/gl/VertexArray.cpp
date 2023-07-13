@@ -57,7 +57,7 @@ void VertexArray::AddBuffer( VertexBuffer& vbo )
         }
         mAttribCount++;
     }
-    mVertexNumber = std::min( mVertexNumber, vbo.GetCount() );
+    _bind_vbos.push_back( &vbo );
 }
 
 void VertexArray::Bind() const
@@ -77,7 +77,9 @@ void VertexArray::BindElementBuffer( const IndexBuffer& ibo ) const
 
 unsigned int VertexArray::GetVertexNumber() const
 {
-    return mVertexNumber;
+    if (_bind_vbos.empty())
+        return 0;
+    return _bind_vbos[0]->GetCount();
 }
 
 void VertexArray::Unbind()
