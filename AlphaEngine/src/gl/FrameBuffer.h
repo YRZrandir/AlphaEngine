@@ -15,7 +15,7 @@ public:
     static void Unbind();
     GLuint GetID() const noexcept { return _id; };
     GLuint GetRenderTargetID() const;
-    Texture* GetDepthTexture() { return _depth_target.get(); };
+    virtual Texture* GetDepthTexture() { return _depth_target.get(); };
     Texture* GetRenderTexture() { return _render_target.get(); };
     Texture* GetDepthStencilTexture() { return _ds_target.get(); }
     glm::vec3 ReadPixel( int x, int y );
@@ -25,7 +25,7 @@ public:
     bool HasStencilBuffer() const noexcept { return _has_stencil; };
     int Width() { return _width; }
     int Height() { return _height; }
-private:
+protected:
     GLuint _id;
     std::unique_ptr<Texture> _render_target;
     std::unique_ptr<Texture> _depth_target;
@@ -35,4 +35,14 @@ private:
     bool _has_color;
     bool _has_depth;
     bool _has_stencil;
+};
+
+class ShadowFrameBuffer : public FrameBuffer
+{
+public:
+    ShadowFrameBuffer( Texture2DArray& depth_buffers, int layer );
+
+    virtual Texture* GetDepthTexture() { return _depth_buffers; }
+protected:
+    Texture2DArray* _depth_buffers{ nullptr };
 };

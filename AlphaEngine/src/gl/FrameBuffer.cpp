@@ -36,7 +36,7 @@ FrameBuffer::FrameBuffer( int width, int height, bool has_color, bool has_depth,
     //{
     //    std::cout << "framebuffer complete!" << std::endl;
     //}
-    Clear();
+    //Clear();
     Unbind();
 }
 
@@ -103,5 +103,17 @@ void FrameBuffer::ChangeSize( int width, int height )
         glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, _depth_target->GetID(), 0 );
     }
 
+    Unbind();
+}
+
+
+ShadowFrameBuffer::ShadowFrameBuffer( Texture2DArray& depth_buffers, int layer ) : FrameBuffer( depth_buffers.GetWidth(), depth_buffers.GetHeight(), false, false, false )
+{
+    _depth_buffers = &depth_buffers;
+    Bind();
+    glFramebufferTextureLayer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_buffers.GetID(), 0, layer );
+    _has_depth = true;
+    Clear();
+    auto status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     Unbind();
 }

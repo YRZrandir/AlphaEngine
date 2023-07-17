@@ -11,14 +11,15 @@ void HalfEdgeMeshRenderer::Start()
     _mesh = GetComponent<HalfEdgeMesh>();
 }
 
-void HalfEdgeMeshRenderer::Render()
+void HalfEdgeMeshRenderer::Render() const
 {
-    Renderer::Get().SetTransform( GetComponent<Transform>()->GetModelMat() );
-    Renderer::Get().UpdateTranformUniform();
     Renderer::Get().Draw( *_mesh->_vao, *GetComponent<Material>() );
 }
 
-void HalfEdgeMeshRenderer::RenderShadowDepth()
+void HalfEdgeMeshRenderer::RenderShadowDepth() const
 {
-    Renderer::Get().DrawShadowDepth( *_mesh->_vao );
+    if (_cast_shadow)
+    {
+        Renderer::Get().DrawShadowDepth( *_mesh->_vao );
+    }
 }

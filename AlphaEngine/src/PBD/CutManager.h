@@ -15,7 +15,7 @@ public:
         class Hash
         {
         public:
-            unsigned operator()( const IntersectInfo& info ) const
+            size_t operator()( const IntersectInfo& info ) const
             {
                 return std::hash<int>()(info.iv0) ^ std::hash<int>()(info.iv1);
             }

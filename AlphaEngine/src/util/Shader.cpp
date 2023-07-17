@@ -5,8 +5,7 @@
 
 std::unordered_map<std::string, std::unique_ptr<Shader>> Shader::shaders = {};
 
-const std::unordered_set<std::string> ShaderUniformInfo::sPredefinedEnvVarNames
-{
+const std::unordered_set<std::string> ShaderUniformInfo::sPredefinedEnvVarNames{
     "Camera",
         "Lights",
         "Transform"

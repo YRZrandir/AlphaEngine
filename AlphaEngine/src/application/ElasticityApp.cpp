@@ -42,7 +42,7 @@
 #include "haptic/Haptic.h"
 
 #include "ECS/ECS.h"
-#include "ECS/HalfEdgeMeshRendererSystem.h"
+#include "ECS/RenderingSystem.h"
 #include "gl/HalfEdgeMeshRenderer.h"
 
 namespace
@@ -175,8 +175,6 @@ void ElasticityApp::Init()
     //    glm::vec3( 1, 1, 1 ),
     //    70.0f,
     //    1.0f, 0.2f, 0.1f ) );
-
-    auto light = Scene::active->AddChild( std::make_unique<DirLight>( "dirlight", glm::vec3( 0.3, -1, 0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 5.0f, glm::vec3( 1.f ) ) );
 
     //Shaders
     const std::string SHADER_PATH = "res/shaders/";
@@ -505,33 +503,53 @@ void ElasticityApp::Init()
 
     Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cube.obj" ) );
 #endif
-    //auto rigid_box = Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cylinder.obj" ) );
-    //rigid_box->mTransform.Translate( { 0,-1, 0 } );
-    //rigid_box->UpdateTransPos();
+#ifdef TEST_HAPTIC
+    auto rigid_box = Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cylinder.obj" ) );
+    rigid_box->mTransform.Translate( { 0,-1, 0 } );
+    rigid_box->UpdateTransPos();
 
-    //auto rigid_ball = Scene::active->AddChild( std::make_unique<RigidBall>( glm::vec3( 0, -1.5, 0 ), 2.0f ) );
-    //rigid_ball->mName = "rigid_ball";
+    auto rigid_ball = Scene::active->AddChild( std::make_unique<RigidBall>( glm::vec3( 0, -1.5, 0 ), 2.0f ) );
+    rigid_ball->mName = "rigid_ball";
 
-    //Scene::active->AddChild( std::make_unique<RigidSDF>( "D:/models/cylinder.obj", 0.02f ) );
-     //Scene::active->AddChild( std::make_unique<PBD::GPUTetraModel>( "D:/models/arma/armadillo_coarse.obj", "D:/models/arma/armadillo_coarse.obj", 10000.f ) );
+    Scene::active->AddChild( std::make_unique<RigidSDF>( "D:/models/cylinder.obj", 0.02f ) );
+    Scene::active->AddChild( std::make_unique<PBD::GPUTetraModel>( "D:/models/arma/armadillo_coarse.obj", "D:/models/arma/armadillo_coarse.obj", 10000.f ) );
 
-    //auto ball = Scene::active->AddChild( std::make_unique<CHalfEdgeMesh<ItemBase>>( "res/models/ball960.obj" ) );
-    //ball->mName = "haptic";
-    //Haptic::Init( UpdateHaptics );
+    auto ball = Scene::active->AddChild( std::make_unique<CHalfEdgeMesh<ItemBase>>( "res/models/ball960.obj" ) );
+    ball->mName = "haptic";
+    Haptic::Init( UpdateHaptics );
+#endif
 
     _systems.push_back( std::make_unique<HalfEdgeMeshSystem>() );
-    _systems.push_back( std::make_unique<HalfEdgeMeshRendererSystem>() );
+    _systems.push_back( std::make_unique<RenderingSystem>() );
     auto ent0 = EntityManager::Get().AddEntity();
     EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
     EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
     EntityManager::Get().AddComponent<Transform>( ent0 );
     EntityManager::Get().AddComponent<Material>( ent0 );
+
+    auto ent1 = EntityManager::Get().AddEntity();
+    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent1, "D:/models/floor.obj" );
+    EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent1 );
+    EntityManager::Get().AddComponent<Transform>( ent1, glm::vec3( 0, -0.5, 0 ), glm::vec3( 2.f ), glm::quat() );
+    EntityManager::Get().AddComponent<Material>( ent1 );
+
+    auto ent_light = EntityManager::Get().AddEntity();
+    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent_light, "D:/models/ball.obj" );
+    auto light_renderer = EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent_light );
+    light_renderer->SetCastShadow( false );
+    EntityManager::Get().AddComponent<Transform>( ent_light, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
+    EntityManager::Get().AddComponent<Material>( ent_light );
+    EntityManager::Get().AddComponent<DirLight>( ent_light, "dirlight", glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
+
+    auto ent_light2 = EntityManager::Get().AddEntity();
+    EntityManager::Get().AddComponent<Transform>( ent_light2, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
+    EntityManager::Get().AddComponent<DirLight>( ent_light2, "dirlight2", glm::vec3( 0.5, -1, 0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
+
     GlobalTimer::Start();
 }
 
 void ElasticityApp::PreDraw()
 {
-
     for (auto& system : _systems)
     {
         system->Update();
@@ -539,8 +557,7 @@ void ElasticityApp::PreDraw()
 
     Scene::active->Update();
     //UpdateHaptics();
-    GlobalTimer::Update();
-    Scene::active->GetChild<DirLight>()->mTransform.SetPos( Camera::current->mTransform.GetPosition() );
+    //GlobalTimer::Update();
 
 #ifdef EXAMPLE_DUCK
     if (Input::IsKeyHeld( Input::Key::R ))
@@ -562,7 +579,7 @@ void ElasticityApp::PreDraw()
         {
             Scene::active->GetChild<HalfEdgeMesh>( "cy1" )->mTransform.Translate( glm::vec3( 0, -0.01, 0 ) );
             Scene::active->GetChild<HalfEdgeMesh>( "cy2" )->mTransform.Translate( glm::vec3( 0, -0.01, 0 ) );
-        }
+}
         rad += 0.01f;
     }
 #endif
@@ -604,7 +621,7 @@ void ElasticityApp::PostDraw()
     //        ofs.close();
     //    }
     //}
-        }
+}
 
 void ElasticityApp::DrawGUI()
 {
@@ -721,7 +738,7 @@ void ElasticityApp::DrawGraphics()
     glViewport( 0, 0, static_cast<GLsizei>(_width), static_cast<GLsizei>(_height) );
     glClearColor( 1, 1, 1, 1 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    Scene::active->Draw();
+    //Scene::active->Draw();
     for (auto& system : _systems)
     {
         system->OnPreRender();

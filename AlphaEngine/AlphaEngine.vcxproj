@@ -171,7 +171,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\ECS\HalfEdgeMeshRendererSystem.cpp" />
+    <ClCompile Include="src\ECS\RenderingSystem.cpp" />
     <ClCompile Include="src\ECS\ECS.cpp" />
     <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp" />
     <ClCompile Include="src\acceleration\AABB.cpp" />
@@ -248,7 +248,7 @@
     <ClCompile Include="src\vr\OpenVRWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ECS\HalfEdgeMeshRendererSystem.h" />
+    <ClInclude Include="src\ECS\RenderingSystem.h" />
     <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h" />
     <ClInclude Include="src\acceleration\AABB.h" />
     <ClInclude Include="src\acceleration\BVH.h" />

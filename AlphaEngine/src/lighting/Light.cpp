@@ -12,35 +12,39 @@ Light::Light( const std::string& name )
 void Light::SetAllLightUniforms( Shader& shader )
 {
     shader.use();
-    auto lights = Scene::active->GetAllChildOfType<Light>();
+    /*auto lights = Scene::active->GetAllChildOfType<Light>();
     for (auto light : lights)
     {
         light->SetShaderUniforms( shader );
-    }
+    }*/
+    DirLight::_shadow_depth_texarray->BindToUnit( 10 );
 }
+
+std::unique_ptr<Texture2DArray> DirLight::_shadow_depth_texarray = nullptr;
+int DirLight::_instance_count = 0;
 
 DirLight::DirLight( const std::string& name, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular )
     : Light( name ), dir( dir ), ambient( ambient ), diffuse( diffuse ), specular( specular ), intensity( intensity )
 {
-    mTransform.LookAt( dir );
-    if (_cast_shadow)
+    if (_shadow_depth_texarray == nullptr)
     {
-        _shadow_depth_buffer = std::make_unique<FrameBuffer>( 2048, 2048, false, true, false );
+        _shadow_depth_texarray = std::make_unique<Texture2DArray>( 1024, 1024, 1, 5 );
     }
+    _shadow_depth_buffer = std::make_unique<ShadowFrameBuffer>( *_shadow_depth_texarray, _instance_count );
+    _instance_count++;
+    mTransform.LookAt( dir );
 }
 
 void DirLight::SetShaderUniforms( Shader& shader )
 {
     shader.use();
-    shader.setVec( mName + ".dir", mTransform.Forward() );
-    shader.setVec( mName + ".ambient", ambient );
-    shader.setVec( mName + ".diffuse", diffuse );
-    shader.setVec( mName + ".specular", specular );
-    if (_cast_shadow)
-    {
-        shader.setInt( "uShadowDepthMap[" + std::to_string( id ) + "]", id + 10 );
-        _shadow_depth_buffer->GetDepthTexture()->BindToUnit( id + 10 );
-    }
+    //shader.setVec( mName + ".dir", mTransform.Forward() );
+    //shader.setVec( mName + ".ambient", ambient );
+    //shader.setVec( mName + ".diffuse", diffuse );
+    //shader.setVec( mName + ".specular", specular );
+    //shader.setInt( "uShadowDepthMap[" + std::to_string( id ) + "]", id + 10 );
+    shader.setInt( "shadow_depth_textures", 10 );
+    _shadow_depth_buffer->GetDepthTexture()->BindToUnit( 10 );
 }
 
 void DirLight::Update()
@@ -48,8 +52,8 @@ void DirLight::Update()
     if (Input::IsKeyHeld( Input::Key::LEFT_ALT ) && Input::IsMouseButtonHeld( Input::MouseButton::Right ))
     {
         glm::vec2 cursordelta = Input::GetMousePosDelta();
-        float xoffset = cursordelta.x * 0.2;
-        float yoffset = cursordelta.y * 0.2;
+        float xoffset = cursordelta.x * 0.2f;
+        float yoffset = cursordelta.y * 0.2f;
         xoffset = glm::radians( xoffset );
         yoffset = glm::radians( yoffset );
         glm::vec3 r = {

@@ -36,7 +36,7 @@ public:
     using pointer = ComponentType*;
     using reference = ComponentType;
     using iterator_category = std::input_iterator_tag;
-    using map_it = std::unordered_map<unsigned, ComponentType*>::iterator;
+    using map_it = std::unordered_map<unsigned, Component*>::iterator;
     map_it _it;
 
     ComponentIterator( const map_it& it ) : _it( it ) {}
@@ -47,12 +47,12 @@ public:
 
     ComponentType& operator*() const
     {
-        return *(_it->second);
+        return *(static_cast<ComponentType*>(_it->second));
     }
 
     ComponentType* operator->() const
     {
-        return _it->second;
+        return static_cast<ComponentType*>(_it->second);
     }
 
     ComponentIterator operator++()
@@ -83,7 +83,7 @@ template <typename ComponentType>
 class ComponentRange
 {
 public:
-    ComponentRange( std::unordered_map<unsigned, ComponentType*>& container ) : _it0( container.begin() ), _it1( container.end() )
+    ComponentRange( std::unordered_map<unsigned, Component*>& container ) : _it0( container.begin() ), _it1( container.end() )
     {
 
     }
@@ -120,16 +120,16 @@ public:
     }
 
     template <typename ComponentType, typename...P0toN>
-    void AddComponent( unsigned entity, P0toN&&...args )
+    ComponentType* AddComponent( unsigned entity, P0toN&&...args )
     {
         if (!_entities.contains( entity ))
-            return;
+            return nullptr;
         auto tid = std::type_index( typeid(ComponentType) );
-        //ugly. but have to pass the entity id to the component. Is there another way?
         auto it = _entities.at( entity )._components.insert( { tid, std::make_unique<ComponentType>( std::forward<P0toN>( args )... ) } );
         it.first->second->SetEntity( entity );
         it.first->second->Start();
         _components[tid].insert( { entity, it.first->second.get() } );
+        return static_cast<ComponentType*>(it.first->second.get());
     }
 
     template <typename ComponentType>
@@ -256,7 +256,7 @@ public:
     }
 
     template<typename ComponentType>
-    ComponentType* GetComponent()
+    ComponentType* GetComponent() const
     {
         if (_ent == 0)
         {

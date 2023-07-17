@@ -238,7 +238,7 @@
     <ClCompile Include="src\ECS\ECS.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\ECS\HalfEdgeMeshRendererSystem.cpp">
+    <ClCompile Include="src\ECS\RenderingSystem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -508,10 +508,10 @@
     <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\ECS\HalfEdgeMeshRendererSystem.h">
+    <ClInclude Include="src\PBD\PBDConstraints.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\PBD\PBDConstraints.h">
+    <ClInclude Include="src\ECS\RenderingSystem.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

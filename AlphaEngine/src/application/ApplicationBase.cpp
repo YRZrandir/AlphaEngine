@@ -155,8 +155,10 @@ void ApplicationBase::OpenGLInit()
         std::cout << "Failed to load gl loader." << std::endl;
         exit( -1 );
     }
+#ifdef _DEBUG
     glEnable( GL_DEBUG_OUTPUT );
     glDebugMessageCallback( debugproc1, nullptr );
+#endif
 }
 
 void ApplicationBase::OpenGLTerminate()

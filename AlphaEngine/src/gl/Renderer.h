@@ -56,6 +56,7 @@ protected:
         float padding0[2];
         std::array<DirLightUniformBlock, 5> dirlights;
         std::array<PointLightUniformBlock, 5> pointlights;
+        unsigned int _shadow_depth_textures;
     };
 
 public:
@@ -84,6 +85,7 @@ protected:
     std::unique_ptr<UniformBuffer> _camera_ubo{ nullptr };
     std::unique_ptr<UniformBuffer> _lights_ubo{ nullptr };
     std::unique_ptr<UniformBuffer> _transform_ubo{ nullptr };
+
     static std::unique_ptr<Renderer> _instance;
 };
 

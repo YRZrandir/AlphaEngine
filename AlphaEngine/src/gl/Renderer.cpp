@@ -26,6 +26,8 @@ void Renderer::Draw( const VertexArray& vao, const Material& material )
     auto shader = Shader::Find( material.mShader );
     shader->use();
     material.SetShaderUniforms( *shader );
+    Light::SetAllLightUniforms( *shader );
+
     glDrawArrays( GL_TRIANGLES, 0, vao.GetVertexNumber() );
 }
 

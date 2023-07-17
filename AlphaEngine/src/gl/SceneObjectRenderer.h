@@ -6,6 +6,6 @@ class SceneObjectRenderer : public Component
 public:
     SceneObjectRenderer() {}
     virtual ~SceneObjectRenderer() = default;
-    virtual void Render() = 0;
-    virtual void RenderShadowDepth() = 0;
+    virtual void Render() const = 0;
+    virtual void RenderShadowDepth() const = 0;
 };

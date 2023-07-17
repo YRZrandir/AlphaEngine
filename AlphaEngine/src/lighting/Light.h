@@ -6,10 +6,11 @@
 #include "model/Transform.h"
 #include "util/SceneObject.h"
 #include "gl/FrameBuffer.h"
+#include "ECS/ECS.h"
 
 class Shader;
 
-class Light : public SceneObject
+class Light : public SceneObject, public Component
 {
 public:
     Light( const std::string& name );
@@ -45,8 +46,12 @@ public:
     float intensity = 1.0f;
     int id = 0;
 protected:
+    friend class Light;
     bool _cast_shadow = true;
     std::unique_ptr<FrameBuffer> _shadow_depth_buffer = nullptr;
+
+    static std::unique_ptr<Texture2DArray> _shadow_depth_texarray;
+    static int _instance_count;
 };
 
 class PointLight : public Light
@@ -64,5 +69,4 @@ public:
     float _att_const;
     float _att_linear;
     float _att_exp;
-
 };

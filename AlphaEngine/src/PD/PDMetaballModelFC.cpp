@@ -732,8 +732,8 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             if (glm::distance2( rigid->GetPos(), ToGLM( p ) ) < (r + rigid->GetRadius()) * (r + rigid->GetRadius()))
             {
                 Vector3 n = (p - ToEigen( rigid->GetPos() )).normalized();
-                Vector3 test( 1.1, 2.2, 3.4 );
-                Vector3 t = n.cross( Vector3( 1.1, 2.2, 3.4 ) ).normalized();
+                Vector3 test( 1.1f, 2.2f, 3.4f );
+                Vector3 t = n.cross( Vector3( 1.1f, 2.2f, 3.4f ) ).normalized();
 #pragma omp critical
                 {
                     _contacts.emplace_back( n, t, i, 0 );

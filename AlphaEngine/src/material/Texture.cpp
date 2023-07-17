@@ -28,7 +28,7 @@ Texture::Texture( const std::string& path, Types type )
 }
 
 Texture::Texture( int width, int height, int channel_num, Types type )
-    :_type( type )
+    :_type( type ), _width( width ), _height( height ), _nb_channel( channel_num )
 {
     _img = Image<unsigned char>( width, height, channel_num );
     glCreateTextures( GL_TEXTURE_2D, 1, &_id );
@@ -42,7 +42,7 @@ Texture::Texture( int width, int height, int channel_num, Types type )
 }
 
 Texture::Texture( int width, int height, int channel_num, Types type, unsigned char* data )
-    :_type( type )
+    :_type( type ), _width( width ), _height( height ), _nb_channel( channel_num )
 {
     _img = Image<unsigned char>( width, height, channel_num );
     _img.SetData( 0, width * height * channel_num, data );
@@ -57,7 +57,7 @@ Texture::Texture( int width, int height, int channel_num, Types type, unsigned c
 }
 
 Texture::Texture( int width, int height, int channel_num, Types type, float* data )
-    :_type( type )
+    :_type( type ), _width( width ), _height( height ), _nb_channel( channel_num )
 {
     auto tmp = Image<float>( width, height, channel_num );
     tmp.SetData( 0, width * height * channel_num, data );
@@ -74,7 +74,6 @@ Texture::Texture( int width, int height, int channel_num, Types type, float* dat
 
 Texture::Texture()
 {
-    glCreateTextures( GL_TEXTURE_2D, 1, &_id );
 }
 
 Texture::~Texture()
@@ -200,8 +199,27 @@ void Texture::UpdateData() noexcept
     glTexImage2D( GL_TEXTURE_2D, 0, internal_format, _img.Width(), _img.Height(), 0, format, GL_UNSIGNED_BYTE, _img.Data() );
 }
 
+int Texture::GetWidth() const
+{
+    return _width;
+}
+
+int Texture::GetHeight() const
+{
+    return _height;
+}
+
+int Texture::GetNbChannel() const
+{
+    return _nb_channel;
+}
+
 TextureDepth::TextureDepth( int width, int height )
 {
+    _width = width;
+    _height = height;
+    _nb_channel = 1;
+    glCreateTextures( GL_TEXTURE_2D, 1, &_id );
     Bind();
     glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -218,6 +236,10 @@ void TextureDepth::UpdateData() noexcept
 
 TextureDepthStencil::TextureDepthStencil( int width, int height )
 {
+    _width = width;
+    _height = height;
+    _nb_channel = 1;
+    glCreateTextures( GL_TEXTURE_2D, 1, &_id );
     Bind();
     glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -226,9 +248,97 @@ TextureDepthStencil::TextureDepthStencil( int width, int height )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-
 }
 
 void TextureDepthStencil::UpdateData() noexcept
 {
+}
+
+Texture2DArray::Texture2DArray( int width, int height, int nb_channel, int nb_layer, unsigned char* data )
+    :Texture(), _nb_layer( nb_layer )
+{
+    _width = width;
+    _height = height;
+    _nb_channel = nb_channel;
+    glCreateTextures( GL_TEXTURE_2D_ARRAY, 1, &_id );
+
+    glBindTexture( GL_TEXTURE_2D_ARRAY, _id );
+    GLenum internal_format = GL_RGB8;
+    GLenum format = GL_RGB;
+    switch (_nb_channel)
+    {
+    case 1:
+        internal_format = GL_R8;
+        format = GL_RED;
+        break;
+    case 2:
+        internal_format = GL_RG8;
+        format = GL_RG;
+        break;
+    case 3:
+        internal_format = GL_RGB8;
+        format = GL_RGB;
+        break;
+    case 4:
+        internal_format = GL_RGBA8;
+        format = GL_RGBA;
+        break;
+    }
+
+    glTexImage3D( GL_TEXTURE_2D_ARRAY, 0, internal_format, _width, _height, _nb_layer, 0, format, GL_FLOAT, data );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+}
+
+Texture2DArray::Texture2DArray( int width, int height, int nb_channel, int nb_layer )
+    :Texture(), _nb_layer( nb_layer )
+{
+    _width = width;
+    _height = height;
+    _nb_channel = nb_channel;
+    glCreateTextures( GL_TEXTURE_2D_ARRAY, 1, &_id );
+
+    glBindTexture( GL_TEXTURE_2D_ARRAY, _id );
+    GLenum internal_format = GL_RGB8;
+    GLenum format = GL_RGB;
+    switch (_nb_channel)
+    {
+    case 1:
+        internal_format = GL_DEPTH_COMPONENT24;
+        format = GL_DEPTH_COMPONENT;
+        break;
+    case 2:
+        internal_format = GL_RG8;
+        format = GL_RG;
+        break;
+    case 3:
+        internal_format = GL_RGB8;
+        format = GL_RGB;
+        break;
+    case 4:
+        internal_format = GL_RGBA8;
+        format = GL_RGBA;
+        break;
+    }
+    glTexImage3D( GL_TEXTURE_2D_ARRAY, 0, internal_format, _width, _height, _nb_layer, 0, format, GL_FLOAT, nullptr );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+}
+
+void Texture2DArray::UpdateData() noexcept
+{
+}
+
+int Texture2DArray::GetNbLayer() const
+{
+    return _nb_layer;
+}
+
+void Texture2DArray::Bind() const noexcept
+{
+    glBindTexture( GL_TEXTURE_2D_ARRAY, _id );
 }
