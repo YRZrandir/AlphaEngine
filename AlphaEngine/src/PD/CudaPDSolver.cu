@@ -98,9 +98,7 @@ __global__ void cudaPDPred( CudaPDSystem sys )
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= sys.nb_points)
         return;
-
-    sys.f_ext[i] = make_vec3( 0.0, 0.0, 0.0 );
-    sys.f_ext[i].y -= 9.8;
+    sys.f_ext[i].y -= sys.gravity;
     sys.momentum[i] = sys.q[i] + sys.dt * sys.v[i] + (sys.dt * sys.dt) * sys.f_ext[i];
     sys.qlast[i] = sys.q[i];
     sys.q[i] = sys.momentum[i];

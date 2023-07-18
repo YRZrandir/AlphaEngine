@@ -175,7 +175,6 @@
     <ClCompile Include="src\ECS\PhysicsSystem.cpp" />
     <ClCompile Include="src\ECS\RenderingSystem.cpp" />
     <ClCompile Include="src\ECS\ECS.cpp" />
-    <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp" />
     <ClCompile Include="src\acceleration\AABB.cpp" />
     <ClCompile Include="src\acceleration\BVH.cpp" />
     <ClCompile Include="src\acceleration\RayIntersectSolver.cpp" />
@@ -253,7 +252,6 @@
     <ClInclude Include="src\gl\MBSkinMeshRenderer.h" />
     <ClInclude Include="src\ECS\PhysicsSystem.h" />
     <ClInclude Include="src\ECS\RenderingSystem.h" />
-    <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h" />
     <ClInclude Include="src\acceleration\AABB.h" />
     <ClInclude Include="src\acceleration\BVH.h" />
     <ClInclude Include="src\acceleration\RayIntersectSolver.h" />

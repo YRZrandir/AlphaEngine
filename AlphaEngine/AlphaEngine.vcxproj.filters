@@ -232,9 +232,6 @@
     <ClCompile Include="src\ECS\PBDTetraModelSystem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\ECS\ECS.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -509,9 +506,6 @@
     </ClInclude>
     <ClInclude Include="src\util\CudaMathTypes.cuh" />
     <ClInclude Include="src\ECS\ECS.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\PBD\PBDConstraints.h">

@@ -3,7 +3,6 @@
 #include <sstream>
 #include <tinyxml2.h>
 #include "model/Transform.h"
-#include "ECS/HalfEdgeMeshSystem.h"
 #include "ECS/ECS.h"
 
 namespace PD

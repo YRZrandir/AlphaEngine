@@ -22,8 +22,17 @@
 PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PDMetaballHalfEdgeMesh* mesh )
     :_cfg( cfg ), _surface( mesh )
 {
-    Instrumentor::Get().BeginSession( "PDGPUMetaballModel", "PDGPUMetaballModel.json" );
+}
+
+PD::PDGPUMetaballModel::~PDGPUMetaballModel()
+{
+    Instrumentor::Get().EndSession();
+}
+
+void PD::PDGPUMetaballModel::Start()
+{
     _line_segments = std::make_unique<GLLineSegment>();
+    _surface = GetComponent<PDMetaballHalfEdgeMesh>();
 
     _simple_ball = std::make_unique<HalfEdgeMesh>( "res/models/ball960.obj" );
     _simple_ball->_material_main->SetDiffuseColor( 0.8f, 0.f, 0.f );
@@ -50,29 +59,28 @@ PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PD
     _color = COLORS[rand() % _countof( COLORS )] / 255.f;
 
     _mesh = std::make_unique<SphereMesh<Particle>>();
-    _coarse_surface = std::make_unique<HalfEdgeMesh>( cfg._coarse_surface );
-    _surface_path = cfg._coarse_surface;
+    _coarse_surface = std::make_unique<HalfEdgeMesh>( _cfg._coarse_surface );
+    _surface_path = _cfg._coarse_surface;
 
-    InstrumentationTimer timer( "Model Construction" );
-    switch (cfg._method)
+    switch (_cfg._method)
     {
     case 0:
     {
-        _mesh->CreateFromSurfaceVoroOptimize( _coarse_surface.get(), cfg._coarse_surface, cfg._nb_points, cfg._nb_lloyd, cfg._sample_dx );
+        _mesh->CreateFromSurfaceVoroOptimize( _coarse_surface.get(), _cfg._coarse_surface, _cfg._nb_points, _cfg._nb_lloyd, _cfg._sample_dx );
         break;
     }
     case 1:
     {
-        _mesh->CreateFromSurfaceUniform( _coarse_surface.get(), cfg._sample_dx );
+        _mesh->CreateFromSurfaceUniform( _coarse_surface.get(), _cfg._sample_dx );
         break;
     }
     case 2:
     {
-        _mesh->LoadFromSphereTreeFile( cfg._metaball_path );
+        _mesh->LoadFromSphereTreeFile( _cfg._metaball_path );
         break;
     }
     case 3:
-        SampleFromVoxel( cfg._sample_dx );
+        SampleFromVoxel( _cfg._sample_dx );
         break;
     }
     _skin_ball_buffer = std::make_unique<ShaderStorageBuffer>( nullptr, 0 );
@@ -86,14 +94,13 @@ PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PD
 
     UpdateSkinInfoBuffer();
 
-
     float m_max = 0.f;
     float m_total = 0.f;
     for (int i = 0; i < _mesh->BallsNum(); ++i)
     {
         auto& ball = _mesh->Ball( i );
         float r = ball.r;
-        ball.m = 4.f / 3.f * 3.14f * r * r * r * cfg._density;
+        ball.m = 4.f / 3.f * 3.14f * r * r * r * _cfg._density;
         m_max = std::max( m_max, ball.m );
         m_total += ball.m;
     }
@@ -102,36 +109,7 @@ PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PD
         _mesh->Ball( i ).m_rel = _mesh->Ball( i ).m / m_max;
     }
 
-    std::cout << "total v = " << _surface->TotalVolume() << std::endl;
-    std::cout << "total m = " << m_total << std::endl;
     Init();
-
-    //std::cout << "//////////////////////////////" << std::endl;
-    //std::vector<float> mass_table( 20, 0.f );
-    //std::vector<int> counts( 20, 0 );
-    //HalfEdgeSurfaceTester tester( _coarse_surface.get() );
-    //for (int i = 0; i < _mesh->BallsNum(); i++)
-    //{
-    //    float dist = tester.MinDistToSurface( _mesh->Ball( i ).x0 );
-    //    int idx = (int)(dist / 0.02f);
-    //    mass_table[idx] += _mesh->Ball( i ).m;
-    //    counts[idx] += 1;
-    //}
-
-    //for (int i = 0; i < 20; i++)
-    //{
-    //    std::cout << mass_table[i] / counts[i] << std::endl;
-    //}
-}
-
-PD::PDGPUMetaballModel::~PDGPUMetaballModel()
-{
-    Instrumentor::Get().EndSession();
-}
-
-void PD::PDGPUMetaballModel::Start()
-{
-
 }
 
 void PD::PDGPUMetaballModel::Init()
@@ -610,7 +588,6 @@ void PD::PDGPUMetaballModel::Draw()
 
 void PD::PDGPUMetaballModel::DrawGUI()
 {
-    ImGui::Begin( "metaball pd" );
     if (ImGui::Button( "Init" ))
     {
         Init();
@@ -648,7 +625,6 @@ void PD::PDGPUMetaballModel::DrawGUI()
     {
         _array_ext_forces.clear();
     }
-    ImGui::End();
 }
 
 void PD::PDGPUMetaballModel::PhysicalUpdate()
@@ -719,8 +695,6 @@ void PD::PDGPUMetaballModel::PhysicalUpdate()
 
 void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 {
-    InstrumentationTimer timer( "PhysicalUpdate" );
-
     static int framecount = 0;
     framecount++;
 
@@ -756,256 +730,255 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
     }
     cudaMemcpy( _cudapd.f_ext, _f_ext.data(), _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyHostToDevice );
 
-    if (framecount == 100)
-    {
-#pragma omp parallel for
-        for (int c = 0; c < _mesh->BallsNum(); c++)
-        {
-            _f_ext.col( c ) = Vector3( 0, 0, 0 );
-            _f_ext.col( c ).y() -= 9.8;
-            _momentum.col( c ) = _x.col( c ) + _v.col( c ) * (double)_cfg._dt;
-            _momentum.col( c ) += (double)_cfg._dt * (double)_cfg._dt * _f_ext.col( c );
-            _last_pos.col( c ) = _x.col( c );
-            _x.col( c ) = _momentum.col( c );
-        }
-
-        SparseMatrix sqrtM = _mass_matrix.cwiseSqrt();
-        auto calc_W = [&]( const Matrix3X& pos )
-        {
-            double W = 0.0;
-            //#pragma omp parallel for
-            for (int r = 0; r < 3; r++)
-            {
-                float w = (sqrtM * (pos - _momentum).transpose()).squaredNorm() / (2 * _cfg._dt * _cfg._dt);
-                //#pragma omp atomic
-                W += w;
-            }
-            //#pragma omp parallel for
-            for (int j = 0; j < _constraints.size(); j++)
-            {
-                auto p = _constraints[j]->GetP( pos );
-                float w = 0.5 * _constraints[j]->_weight * (_CAS[j] * pos - p).squaredNorm();
-                //#pragma omp atomic
-                W += w;
-            }
-            return W;
-        };
-
-        //        for (int i = 0; i < 100; i++)
-        //        {
-        //            double W = calc_W( xacc );
-        //            Wmin = std::min( Wmin, W );
-        //            std::cout << "Acc err" << i << " " << W << std::endl;
-        //#pragma omp parallel for
-        //            for (int r = 0; r < 3; r++)
-        //            {
-        //                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * xacc.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
-        //            }
-        //
-        //            for (int j = 0; j < _constraints.size(); j++)
-        //            {
-        //                auto p = _constraints[j]->GetP( xacc );
-        //                _g.row( 0 ) += (_CStAtAS[j] * xacc.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
-        //                _g.row( 1 ) += (_CStAtAS[j] * xacc.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
-        //                _g.row( 2 ) += (_CStAtAS[j] * xacc.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
-        //            }
-        //
-        //#pragma omp parallel for
-        //            for (int r = 0; r < 3; r++)
-        //            {
-        //                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
-        //                xacc.row( r ) += d.transpose();
-        //            }
-        //
-        //        }
-        //
-        //        Matrix3X x2 = _momentum;
-        //        std::cout << "newton" << std::endl;
-        //        for (int i = 0; i < 20; i++)
-        //        {
-        //            std::cout << i << " " << (calc_W( x2 ) - Wmin) / (W0 - Wmin) << std::endl;
-        //#pragma omp parallel for
-        //            for (int r = 0; r < 3; r++)
-        //            {
-        //                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * x2.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
-        //            }
-        //            for (int j = 0; j < _constraints.size(); j++)
-        //            {
-        //                auto p = _constraints[j]->GetP( x2 );
-        //                _g.row( 0 ) += (_CStAtAS[j] * x2.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
-        //                _g.row( 1 ) += (_CStAtAS[j] * x2.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
-        //                _g.row( 2 ) += (_CStAtAS[j] * x2.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
-        //            }
-        //#pragma omp parallel for
-        //            for (int r = 0; r < 3; r++)
-        //            {
-        //                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
-        //                x2.row( r ) += d.transpose();
-        //            }
-        //        }
-
-        std::cout << "acc" << std::endl;
-        Matrix3X xacc = _momentum;
-        for (int i = 0; i < 2000; i++)
-        {
-#pragma omp parallel for
-            for (int j = 0; j < _constraints.size(); j++)
-            {
-                _constraints[j]->Project( xacc, _p );
-            }
-#pragma omp parallel for
-            for (int r = 0; r < 3; r++)
-            {
-                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
-                xacc.row( r ) = _llt.solve( rh_vec ).transpose();
-            }
-        }
-
-        double momentum_err = (_momentum - xacc).norm();
-
-        std::cout << "PD" << std::endl;
-        Matrix3X x3 = _momentum;
-        auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < 2000; i++)
-        {
-            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-            std::cout << i << "," << (x3 - xacc).norm() / momentum_err << "," << time << std::endl;
-#pragma omp parallel for
-            for (int j = 0; j < _constraints.size(); j++)
-            {
-                _constraints[j]->Project( x3, _p );
-            }
-#pragma omp parallel for
-            for (int r = 0; r < 3; r++)
-            {
-                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
-                x3.row( r ) = _llt.solve( rh_vec ).transpose();
-            }
-        }
-
-        //        {
-        //            std::cout << "Cheby" << std::endl;
-        //            Matrix3X x4 = _momentum;
-        //            float omega = 1.f;
-        //            _last_pos1 = x4;
-        //            _last_pos2 = x4;
-        //            for (int i = 0; i < 100; i++)
-        //            {
-        //                std::cout << i << "," << (x4 - xacc).norm() / momentum_err << std::endl;
-        //                if (i == 5)
-        //                    omega = 2.f / (2.f - _rho * _rho);
-        //                else if (i > 5)
-        //                    omega = 4.f / (4.f - _rho * _rho * omega);
-        //#pragma omp parallel for
-        //                for (int j = 0; j < _constraints.size(); j++)
-        //                {
-        //                    _constraints[j]->Project( x4, _p );
-        //                }
-        //#pragma omp parallel for
-        //                for (int r = 0; r < 3; r++)
-        //                {
-        //                    VectorX b = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-        //                    VectorX Dinvb = _Dinv * b;
-        //                    for (int j = 0; j < 1; j++)
-        //                    {
-        //                        x4.row( r ) = (_B * x4.row( r ).transpose() + Dinvb).transpose();
-        //                    }
-        //                    x4.row( r ) = omega * (0.9 * (x4.row( r ) - _last_pos1.row( r )) + _last_pos1.row( r ) - _last_pos2.row( r )) + _last_pos2.row( r );
-        //                    _last_pos2.row( r ) = _last_pos1.row( r );
-        //                    _last_pos1.row( r ) = x4.row( r );
-        //                }
-        //            }
-        //        }
-
-        {
-            std::cout << "GPU" << std::endl;
-            int len = 128;
-            dim3 blocksize( len, 1, 1 );
-            dim3 gridsize( (_cudapd.nb_points + len - 1) / len, 1, 1 );
-            dim3 gridsize_ball( (_host_metaball_consts.size() + len - 1) / len, 1, 1 );
-            dim3 gridsize_attach( (_host_attach_consts.size() + len - 1) / len, 1, 1 );
-            dim3 gridsize_edge( (_host_edge_consts.size() + len - 1) / len, 1, 1 );
-            cudaMemcpy( _cudapd.v, _v.data(), _v.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-            PDPred( gridsize, blocksize, _cudapd );
-
-            cudaMemcpy( _cudapd.q, _x.data(), _x.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-            VectorX q0 = _x.row( 0 ).transpose();
-            VectorX q1 = _x.row( 1 ).transpose();
-            VectorX q2 = _x.row( 2 ).transpose();
-            cudaMemcpy( _cudapd.qx, q0.data(), q0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-            cudaMemcpy( _cudapd.qy, q1.data(), q1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-            cudaMemcpy( _cudapd.qz, q2.data(), q2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-
-            double omega = 1.f;
-            PDProcessPos( gridsize, blocksize, _cudapd );
-            start_time = std::chrono::high_resolution_clock::now();
-            long long total_time = 0;
-            auto last_time = std::chrono::high_resolution_clock::now();
-            for (int i = 0; i < 2000; i++)
-            {
-                cudaMemcpy( _x.data(), _cudapd.q, _x.size() * sizeof( Real ), cudaMemcpyDeviceToHost );
-                cudaDeviceSynchronize();
-                std::cout << i << "," << (_x - xacc).norm() / momentum_err << ", " << total_time / 1000 << std::endl;
-
-                last_time = std::chrono::high_resolution_clock::now();
-                if (i == 3)
-                    omega = 2.0 / (2.0 - _rho * _rho);
-                else if (i > 3)
-                    omega = 4.0 / (4.0 - _rho * _rho * omega);
-                if (_host_attach_consts.size() > 0)
-                {
-                    PDProjectAttachConstraint( gridsize_attach, blocksize, _cudapd );
-                }
-                if (_cfg._const_type == 0 && _host_metaball_consts.size() > 0)
-                {
-                    PDProjectMetaballConstraint( gridsize_ball, blocksize, _cudapd );
-                }
-                cudaDeviceSynchronize();
-                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
-
-
-#pragma omp parallel for
-                for (int j = 0; j < _constraints.size(); j++)
-                {
-                    _constraints[j]->Project( _x, _p );
-                }
-                cudaMemcpy( _cudapd.p, _p.data(), _p.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-                VectorX p0 = _p.row( 0 ).transpose();
-                VectorX p1 = _p.row( 1 ).transpose();
-                VectorX p2 = _p.row( 2 ).transpose();
-                cudaMemcpy( _cudapd.projx, p0.data(), p0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-                cudaMemcpy( _cudapd.projy, p1.data(), p1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-                cudaMemcpy( _cudapd.projz, p2.data(), p2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
-                cudaDeviceSynchronize();
-
-                last_time = std::chrono::high_resolution_clock::now();
-                for (int r = 0; r < 3; r++)
-                {
-                    CUDASpmv<Real>( _d_At, _d_proj[r], _d_rhvec[r], _Spmv_buf[r].Data() );
-                    PDComputeRhvec( gridsize, blocksize, _d_rhvec_buf[r].Data(), _Jacobi_b_buf[r].Data(), r, _cudapd );
-                    CUDASpmv<Real>( _Jacobi_Dinv, _Jacobi_b[r], _Jacobi_Dinvb[r], _Spmv_buf[r].Data() );
-                    for (int j = 0; j < 1; j++)
-                    {
-                        CUDASpmv<Real>( _Jacobi_B, _Jacobi_x[r], _Jacobi_y[r], _Spmv_buf[r].Data() );
-                        CUDAvplusv( _Jacobi_y_buf[r], 1.0, _Jacobi_Dinvb_buf[r], 1.0, _d_q[r], gridsize, blocksize );
-                    }
-                    PDChebyshev( gridsize, blocksize, _cudapd, _d_q[r].Data(), r, omega );
-                }
-                cudaDeviceSynchronize();
-                //#pragma omp parallel for
-                //                for (int r = 0; r < 3; r++)
-                //                {
-                //                    VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
-                //                    _x.row( r ) = _llt.solve( rh_vec ).transpose();
-                //                }
-                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
-            }
-
-            _x = _last_pos;
-            cudaMemcpy( _cudapd.q, _x.data(), _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyHostToDevice );
-        }
-    }
-
+    //    if (framecount == 100)
+    //    {
+    //#pragma omp parallel for
+    //        for (int c = 0; c < _mesh->BallsNum(); c++)
+    //        {
+    //            _f_ext.col( c ) = Vector3( 0, 0, 0 );
+    //            _f_ext.col( c ).y() -= 9.8;
+    //            _momentum.col( c ) = _x.col( c ) + _v.col( c ) * (double)_cfg._dt;
+    //            _momentum.col( c ) += (double)_cfg._dt * (double)_cfg._dt * _f_ext.col( c );
+    //            _last_pos.col( c ) = _x.col( c );
+    //            _x.col( c ) = _momentum.col( c );
+    //        }
+    //
+    //        SparseMatrix sqrtM = _mass_matrix.cwiseSqrt();
+    //        auto calc_W = [&]( const Matrix3X& pos )
+    //        {
+    //            double W = 0.0;
+    //            //#pragma omp parallel for
+    //            for (int r = 0; r < 3; r++)
+    //            {
+    //                float w = (sqrtM * (pos - _momentum).transpose()).squaredNorm() / (2 * _cfg._dt * _cfg._dt);
+    //                //#pragma omp atomic
+    //                W += w;
+    //            }
+    //            //#pragma omp parallel for
+    //            for (int j = 0; j < _constraints.size(); j++)
+    //            {
+    //                auto p = _constraints[j]->GetP( pos );
+    //                float w = 0.5 * _constraints[j]->_weight * (_CAS[j] * pos - p).squaredNorm();
+    //                //#pragma omp atomic
+    //                W += w;
+    //            }
+    //            return W;
+    //        };
+    //
+    //        //        for (int i = 0; i < 100; i++)
+    //        //        {
+    //        //            double W = calc_W( xacc );
+    //        //            Wmin = std::min( Wmin, W );
+    //        //            std::cout << "Acc err" << i << " " << W << std::endl;
+    //        //#pragma omp parallel for
+    //        //            for (int r = 0; r < 3; r++)
+    //        //            {
+    //        //                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * xacc.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+    //        //            }
+    //        //
+    //        //            for (int j = 0; j < _constraints.size(); j++)
+    //        //            {
+    //        //                auto p = _constraints[j]->GetP( xacc );
+    //        //                _g.row( 0 ) += (_CStAtAS[j] * xacc.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+    //        //                _g.row( 1 ) += (_CStAtAS[j] * xacc.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+    //        //                _g.row( 2 ) += (_CStAtAS[j] * xacc.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+    //        //            }
+    //        //
+    //        //#pragma omp parallel for
+    //        //            for (int r = 0; r < 3; r++)
+    //        //            {
+    //        //                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+    //        //                xacc.row( r ) += d.transpose();
+    //        //            }
+    //        //
+    //        //        }
+    //        //
+    //        //        Matrix3X x2 = _momentum;
+    //        //        std::cout << "newton" << std::endl;
+    //        //        for (int i = 0; i < 20; i++)
+    //        //        {
+    //        //            std::cout << i << " " << (calc_W( x2 ) - Wmin) / (W0 - Wmin) << std::endl;
+    //        //#pragma omp parallel for
+    //        //            for (int r = 0; r < 3; r++)
+    //        //            {
+    //        //                _g.row( r ) = ((_mass_matrix / (_cfg._dt * _cfg._dt)) * x2.row( r ).transpose() - (_mass_matrix / (_cfg._dt * _cfg._dt)) * _momentum.row( r ).transpose()).transpose();
+    //        //            }
+    //        //            for (int j = 0; j < _constraints.size(); j++)
+    //        //            {
+    //        //                auto p = _constraints[j]->GetP( x2 );
+    //        //                _g.row( 0 ) += (_CStAtAS[j] * x2.row( 0 ).transpose() - _CStAt[j] * p.row( 0 ).transpose()).transpose();
+    //        //                _g.row( 1 ) += (_CStAtAS[j] * x2.row( 1 ).transpose() - _CStAt[j] * p.row( 1 ).transpose()).transpose();
+    //        //                _g.row( 2 ) += (_CStAtAS[j] * x2.row( 2 ).transpose() - _CStAt[j] * p.row( 2 ).transpose()).transpose();
+    //        //            }
+    //        //#pragma omp parallel for
+    //        //            for (int r = 0; r < 3; r++)
+    //        //            {
+    //        //                VectorX d = _newtonllt.solve( -_g.row( r ).transpose() );
+    //        //                x2.row( r ) += d.transpose();
+    //        //            }
+    //        //        }
+    //
+    //        std::cout << "acc" << std::endl;
+    //        Matrix3X xacc = _momentum;
+    //        for (int i = 0; i < 2000; i++)
+    //        {
+    //#pragma omp parallel for
+    //            for (int j = 0; j < _constraints.size(); j++)
+    //            {
+    //                _constraints[j]->Project( xacc, _p );
+    //            }
+    //#pragma omp parallel for
+    //            for (int r = 0; r < 3; r++)
+    //            {
+    //                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
+    //                xacc.row( r ) = _llt.solve( rh_vec ).transpose();
+    //            }
+    //        }
+    //
+    //        double momentum_err = (_momentum - xacc).norm();
+    //
+    //        std::cout << "PD" << std::endl;
+    //        Matrix3X x3 = _momentum;
+    //        auto start_time = std::chrono::high_resolution_clock::now();
+    //        for (int i = 0; i < 2000; i++)
+    //        {
+    //            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    //            std::cout << i << "," << (x3 - xacc).norm() / momentum_err << "," << time << std::endl;
+    //#pragma omp parallel for
+    //            for (int j = 0; j < _constraints.size(); j++)
+    //            {
+    //                _constraints[j]->Project( x3, _p );
+    //            }
+    //#pragma omp parallel for
+    //            for (int r = 0; r < 3; r++)
+    //            {
+    //                VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / ((double)_cfg._dt * (double)_cfg._dt) * _momentum.row( r ).transpose();
+    //                x3.row( r ) = _llt.solve( rh_vec ).transpose();
+    //            }
+    //        }
+    //
+    //        //        {
+    //        //            std::cout << "Cheby" << std::endl;
+    //        //            Matrix3X x4 = _momentum;
+    //        //            float omega = 1.f;
+    //        //            _last_pos1 = x4;
+    //        //            _last_pos2 = x4;
+    //        //            for (int i = 0; i < 100; i++)
+    //        //            {
+    //        //                std::cout << i << "," << (x4 - xacc).norm() / momentum_err << std::endl;
+    //        //                if (i == 5)
+    //        //                    omega = 2.f / (2.f - _rho * _rho);
+    //        //                else if (i > 5)
+    //        //                    omega = 4.f / (4.f - _rho * _rho * omega);
+    //        //#pragma omp parallel for
+    //        //                for (int j = 0; j < _constraints.size(); j++)
+    //        //                {
+    //        //                    _constraints[j]->Project( x4, _p );
+    //        //                }
+    //        //#pragma omp parallel for
+    //        //                for (int r = 0; r < 3; r++)
+    //        //                {
+    //        //                    VectorX b = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+    //        //                    VectorX Dinvb = _Dinv * b;
+    //        //                    for (int j = 0; j < 1; j++)
+    //        //                    {
+    //        //                        x4.row( r ) = (_B * x4.row( r ).transpose() + Dinvb).transpose();
+    //        //                    }
+    //        //                    x4.row( r ) = omega * (0.9 * (x4.row( r ) - _last_pos1.row( r )) + _last_pos1.row( r ) - _last_pos2.row( r )) + _last_pos2.row( r );
+    //        //                    _last_pos2.row( r ) = _last_pos1.row( r );
+    //        //                    _last_pos1.row( r ) = x4.row( r );
+    //        //                }
+    //        //            }
+    //        //        }
+    //
+    //        {
+    //            std::cout << "GPU" << std::endl;
+    //            int len = 128;
+    //            dim3 blocksize( len, 1, 1 );
+    //            dim3 gridsize( (_cudapd.nb_points + len - 1) / len, 1, 1 );
+    //            dim3 gridsize_ball( (_host_metaball_consts.size() + len - 1) / len, 1, 1 );
+    //            dim3 gridsize_attach( (_host_attach_consts.size() + len - 1) / len, 1, 1 );
+    //            dim3 gridsize_edge( (_host_edge_consts.size() + len - 1) / len, 1, 1 );
+    //            cudaMemcpy( _cudapd.v, _v.data(), _v.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //            PDPred( gridsize, blocksize, _cudapd );
+    //
+    //            cudaMemcpy( _cudapd.q, _x.data(), _x.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //            VectorX q0 = _x.row( 0 ).transpose();
+    //            VectorX q1 = _x.row( 1 ).transpose();
+    //            VectorX q2 = _x.row( 2 ).transpose();
+    //            cudaMemcpy( _cudapd.qx, q0.data(), q0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //            cudaMemcpy( _cudapd.qy, q1.data(), q1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //            cudaMemcpy( _cudapd.qz, q2.data(), q2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //
+    //            double omega = 1.f;
+    //            PDProcessPos( gridsize, blocksize, _cudapd );
+    //            start_time = std::chrono::high_resolution_clock::now();
+    //            long long total_time = 0;
+    //            auto last_time = std::chrono::high_resolution_clock::now();
+    //            for (int i = 0; i < 2000; i++)
+    //            {
+    //                cudaMemcpy( _x.data(), _cudapd.q, _x.size() * sizeof( Real ), cudaMemcpyDeviceToHost );
+    //                cudaDeviceSynchronize();
+    //                std::cout << i << "," << (_x - xacc).norm() / momentum_err << ", " << total_time / 1000 << std::endl;
+    //
+    //                last_time = std::chrono::high_resolution_clock::now();
+    //                if (i == 3)
+    //                    omega = 2.0 / (2.0 - _rho * _rho);
+    //                else if (i > 3)
+    //                    omega = 4.0 / (4.0 - _rho * _rho * omega);
+    //                if (_host_attach_consts.size() > 0)
+    //                {
+    //                    PDProjectAttachConstraint( gridsize_attach, blocksize, _cudapd );
+    //                }
+    //                if (_cfg._const_type == 0 && _host_metaball_consts.size() > 0)
+    //                {
+    //                    PDProjectMetaballConstraint( gridsize_ball, blocksize, _cudapd );
+    //                }
+    //                cudaDeviceSynchronize();
+    //                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+    //
+    //
+    //#pragma omp parallel for
+    //                for (int j = 0; j < _constraints.size(); j++)
+    //                {
+    //                    _constraints[j]->Project( _x, _p );
+    //                }
+    //                cudaMemcpy( _cudapd.p, _p.data(), _p.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //                VectorX p0 = _p.row( 0 ).transpose();
+    //                VectorX p1 = _p.row( 1 ).transpose();
+    //                VectorX p2 = _p.row( 2 ).transpose();
+    //                cudaMemcpy( _cudapd.projx, p0.data(), p0.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //                cudaMemcpy( _cudapd.projy, p1.data(), p1.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //                cudaMemcpy( _cudapd.projz, p2.data(), p2.size() * sizeof( Real ), cudaMemcpyHostToDevice );
+    //                cudaDeviceSynchronize();
+    //
+    //                last_time = std::chrono::high_resolution_clock::now();
+    //                for (int r = 0; r < 3; r++)
+    //                {
+    //                    CUDASpmv<Real>( _d_At, _d_proj[r], _d_rhvec[r], _Spmv_buf[r].Data() );
+    //                    PDComputeRhvec( gridsize, blocksize, _d_rhvec_buf[r].Data(), _Jacobi_b_buf[r].Data(), r, _cudapd );
+    //                    CUDASpmv<Real>( _Jacobi_Dinv, _Jacobi_b[r], _Jacobi_Dinvb[r], _Spmv_buf[r].Data() );
+    //                    for (int j = 0; j < 1; j++)
+    //                    {
+    //                        CUDASpmv<Real>( _Jacobi_B, _Jacobi_x[r], _Jacobi_y[r], _Spmv_buf[r].Data() );
+    //                        CUDAvplusv( _Jacobi_y_buf[r], 1.0, _Jacobi_Dinvb_buf[r], 1.0, _d_q[r], gridsize, blocksize );
+    //                    }
+    //                    PDChebyshev( gridsize, blocksize, _cudapd, _d_q[r].Data(), r, omega );
+    //                }
+    //                cudaDeviceSynchronize();
+    //                //#pragma omp parallel for
+    //                //                for (int r = 0; r < 3; r++)
+    //                //                {
+    //                //                    VectorX rh_vec = _StAt * _p.row( r ).transpose() + _mass_matrix / (_cfg._dt * _cfg._dt) * _momentum.row( r ).transpose();
+    //                //                    _x.row( r ) = _llt.solve( rh_vec ).transpose();
+    //                //                }
+    //                total_time += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+    //            }
+    //
+    //            _x = _last_pos;
+    //            cudaMemcpy( _cudapd.q, _x.data(), _cudapd.nb_points * sizeof( Real ) * 3, cudaMemcpyHostToDevice );
+    //        }
+    //    }
 
     int len = 256;
     dim3 blocksize( len, 1, 1 );
@@ -1077,7 +1050,7 @@ void PD::PDGPUMetaballModel::CudaPhysicalUpdate()
 
 void PD::PDGPUMetaballModel::CollisionDetection()
 {
-    InstrumentationTimer timer( "CollisionDetection" );
+    //InstrumentationTimer timer( "CollisionDetection" );
     std::vector<RigidStatic*> rigid_bodys = Scene::active->GetAllChildOfType<RigidStatic>();
     std::vector<PD::PDGPUMetaballModel*> pd_models = Scene::active->GetAllChildOfType<PD::PDGPUMetaballModel>();
     std::vector<RigidSDF*> rigid_sdfs = Scene::active->GetAllChildOfType<RigidSDF>();

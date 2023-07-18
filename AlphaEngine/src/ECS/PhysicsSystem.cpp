@@ -1,6 +1,7 @@
 #include "PhysicsSystem.h"
 #include <omp.h>
 #include "PD/PDMetaballModelFC.h"
+#include "PD/PDGPUMetaballModel.h"
 
 PhysicsSystem::PhysicsSystem()
 {
@@ -10,6 +11,10 @@ PhysicsSystem::PhysicsSystem()
 void PhysicsSystem::Update()
 {
     auto pd_metaball_fc_models = EntityManager::Get().GetAllComponentOfType<PD::PDMetaballModelFC>();
+    for (auto model : pd_metaball_fc_models)
+    {
+        model->Update();
+    }
     for (int i = 0; i < _substeps; i++)
     {
 #ifdef MT
@@ -73,5 +78,37 @@ void PhysicsSystem::Update()
             }
         }
 
+    }
+
+    auto pd_gpu_models = EntityManager::Get().GetAllComponentOfType<PD::PDGPUMetaballModel>();
+    for (auto model : pd_gpu_models)
+    {
+        model->Update();
+    }
+    for (int i = 0; i < _substeps; i++)
+    {
+        for (int j = 0; j < pd_gpu_models.size(); j++)
+        {
+            if (pd_gpu_models[j]->_simulate)
+            {
+                pd_gpu_models[j]->CudaPhysicalUpdate();
+            }
+        }
+
+        for (int j = 0; j < pd_gpu_models.size(); j++)
+        {
+            if (pd_gpu_models[j]->_simulate)
+            {
+                pd_gpu_models[j]->CollisionDetection();
+            }
+        }
+
+        for (int j = 0; j < pd_gpu_models.size(); j++)
+        {
+            if (pd_gpu_models[j]->_simulate)
+            {
+                pd_gpu_models[j]->PostPhysicalUpdate();
+            }
+        }
     }
 }

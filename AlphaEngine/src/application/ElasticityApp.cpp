@@ -519,7 +519,6 @@ void ElasticityApp::Init()
     Haptic::Init( UpdateHaptics );
 #endif
 
-    _systems.push_back( std::make_unique<HalfEdgeMeshSystem>() );
     _systems.push_back( std::make_unique<RenderingSystem>() );
     _systems.push_back( std::make_unique<PhysicsSystem>() );
     auto ent0 = EntityManager::Get().AddEntity();
@@ -560,10 +559,10 @@ void ElasticityApp::Init()
     cfg._physical_step = 1;
     cfg._const_type = 0;
     cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f && v[1] > 0.3f; };
-    EntityManager::Get().AddComponent<PD::PDMetaballModelFC>( elastic_obj, cfg, nullptr );
+    EntityManager::Get().AddComponent<PD::PDGPUMetaballModel>( elastic_obj, cfg, nullptr );
     auto mat = EntityManager::Get().AddComponent<Material>( elastic_obj );
     mat->mShader = "model_pd";
-    EntityManager::Get().AddComponent<MBSkinMeshRenderer>( elastic_obj );
+    EntityManager::Get().AddComponent<MBGPUSkinMeshRenderer>( elastic_obj );
     GlobalTimer::Start();
 }
 

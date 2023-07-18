@@ -71,7 +71,11 @@ public:
     void Init();
     virtual void Update() override;
     virtual void Draw() override;
-    void DrawGUI();
+    virtual void DrawGUI() override;
+    SphereMesh<Particle>& GetMetaballModel() { return *_mesh; };
+    const SphereMesh<Particle>& GetMetaballModel() const { return *_mesh; }
+    const ShaderStorageBuffer& GetVtxSkinBuffer() const { return *_skin_vtx_buffer; }
+    const ShaderStorageBuffer& GetBallSkinBuffer() const { return *_skin_ball_buffer; }
     PDMetaballHalfEdgeMesh& Surface() { return *_surface; };
     PDMetaballModelConfig& Config() { return _cfg; };
     void SetSurface( PDMetaballHalfEdgeMesh* mesh ) { _surface = mesh; };
@@ -81,10 +85,10 @@ public:
     void CollisionDetection();
     void PostPhysicalUpdate();
     float Compare( const PDGPUMetaballModel* other );
+    void UpdateSkinInfoBuffer();
 
 private:
     void CreateSurfaceMapping();
-    void UpdateSkinInfoBuffer();
     void MapSurface();
     void SampleFromVoxel( float steplen );
     void ComputeBallOrit();

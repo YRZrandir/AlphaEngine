@@ -36,6 +36,7 @@ void RenderingSystem::OnRender()
 {
     auto all_halfedge_mesh_renderer = EntityManager::Get().GetComponentsRange<HalfEdgeMeshRenderer>();
     auto all_pdskin_mesh_renderer = EntityManager::Get().GetComponentsRange<MBSkinMeshRenderer>();
+    auto all_gpu_pdskin_mesh_renderer = EntityManager::Get().GetComponentsRange<MBGPUSkinMeshRenderer>();
 
     //shadow depth textures
     float vp[4];
@@ -57,9 +58,12 @@ void RenderingSystem::OnRender()
             renderer.RenderShadowDepth();
         }
 
-        Renderer::Get().SetTransform( glm::identity<glm::mat4>() );
-        Renderer::Get().UpdateTranformUniform();
         for (const auto& renderer : all_pdskin_mesh_renderer)
+        {
+            renderer.RenderShadowDepth();
+        }
+
+        for (const auto& renderer : all_gpu_pdskin_mesh_renderer)
         {
             renderer.RenderShadowDepth();
         }
@@ -79,9 +83,12 @@ void RenderingSystem::OnRender()
         renderer.Render();
     }
 
-    Renderer::Get().SetTransform( glm::identity<glm::mat4>() );
-    Renderer::Get().UpdateTranformUniform();
     for (const auto& renderer : all_pdskin_mesh_renderer)
+    {
+        renderer.Render();
+    }
+
+    for (const auto& renderer : all_gpu_pdskin_mesh_renderer)
     {
         renderer.Render();
     }
