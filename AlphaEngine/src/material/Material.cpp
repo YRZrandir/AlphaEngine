@@ -1,6 +1,7 @@
 ﻿#include "Material.h"
 #include "util/Shader.h"
 #include "util/util.h"
+#include "ui/ImGuiFileDialog.h"
 
 Material::Material()
 {
@@ -86,7 +87,7 @@ void Material::SetShaderUniforms( Shader& shader ) const
     shader.setVec( mName + ".diffuse", mDiffuseColor );
     shader.setVec( mName + ".specular", mSpecularColor );
     shader.setFloat( mName + ".roughness", mRoughness );
-    shader.setFloat( mName + "metallic", mMetallic );
+    shader.setFloat( mName + ".metallic", mMetallic );
     shader.setFloat( mName + ".alpha", mAlpha );
 }
 
@@ -112,10 +113,53 @@ void Material::SetDiffuseColor( float r, float g, float b )
 void Material::DrawGUI()
 {
     ImGui::Text( "Albedo" );
-    ImGui::ImageButton( reinterpret_cast<void*>(mDiffuseTexture->GetID()), { 10, 10 } );
-    ImGui::Text( "Roughness" );
-    ImGui::ImageButton( reinterpret_cast<void*>(mRoughnessTexture->GetID()), { 10, 10 } );
-    ImGui::Text( "Metallic" );
-    ImGui::ImageButton( reinterpret_cast<void*>(mMetallicTexture->GetID()), { 10, 10 } );
+    if (ImGui::ImageButton( reinterpret_cast<void*>(mDiffuseTexture->GetID()), { 20, 20 } ))
+    {
+        ImGuiFileDialog::Instance()->OpenDialog( "Choose Image1", "Choose Image", "{.jpg,.png,.bmp,.jpeg}", ".", "" );
+    }
+    if (ImGuiFileDialog::Instance()->Display( "Choose Image1" ))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            mDiffuseTexture->LoadFromFile( path );
+            mDiffuseColor = glm::vec3( 1.f );
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
+    ImGui::ColorEdit3( "Base Color", &mDiffuseColor[0] );
 
+    ImGui::Text( "Roughness" );
+    if (ImGui::ImageButton( reinterpret_cast<void*>(mRoughnessTexture->GetID()), { 20, 20 } ))
+    {
+        ImGuiFileDialog::Instance()->OpenDialog( "Choose Image2", "Choose Image", "{.jpg,.png,.bmp,.jpeg}", ".", "" );
+    }
+    if (ImGuiFileDialog::Instance()->Display( "Choose Image2" ))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            mRoughnessTexture->LoadFromFile( path );
+            mRoughness = 1.f;
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
+    ImGui::DragFloat( "Roughness", &mRoughness, 0.01f, 0.f, 1.f );
+
+    ImGui::Text( "Metallic" );
+    if (ImGui::ImageButton( reinterpret_cast<void*>(mMetallicTexture->GetID()), { 20, 20 } ))
+    {
+        ImGuiFileDialog::Instance()->OpenDialog( "Choose Image3", "Choose Image", "{.jpg,.png,.bmp,.jpeg}", ".", "" );
+    }
+    if (ImGuiFileDialog::Instance()->Display( "Choose Image3" ))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            mMetallicTexture->LoadFromFile( path );
+            mMetallic = 1.f;
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
+    ImGui::DragFloat( "Metallic", &mMetallic, 0.01f, 0.f, 1.f );
 }

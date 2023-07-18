@@ -543,7 +543,7 @@ void ElasticityApp::Init()
     EntityManager::Get().AddComponent<DirLight>( ent_light, glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
 
     auto elastic_obj = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<PDMetaballHalfEdgeMesh>( elastic_obj, "D:/models/arma/armadillo_coarse.obj" );
+    EntityManager::Get().AddComponent<PDMetaballHalfEdgeMesh>( elastic_obj, "D:/models/arma/armadillo.obj" );
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;
     cfg._coarse_surface = "D:/models/arma/armadillo_coarse.obj";

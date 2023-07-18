@@ -24,15 +24,6 @@ PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PD
 {
     Instrumentor::Get().BeginSession( "PDGPUMetaballModel", "PDGPUMetaballModel.json" );
     _line_segments = std::make_unique<GLLineSegment>();
-    //_surface = ModelLoader::LoadPDMetaballHalfEdgeMesh( cfg._fine_surface );
-    //for (auto& v : _surface->_vertices)
-    //{
-    //    v.pos += _cfg._displacement;
-    //    v.rest_pos += _cfg._displacement;
-    //}
-    //_surface->UpdatePosBuffer();
-    //_surface->UpdateNormal();
-    //_surface->UpdateAttrBuffer();
 
     _simple_ball = std::make_unique<HalfEdgeMesh>( "res/models/ball960.obj" );
     _simple_ball->_material_main->SetDiffuseColor( 0.8f, 0.f, 0.f );
@@ -136,6 +127,11 @@ PD::PDGPUMetaballModel::PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PD
 PD::PDGPUMetaballModel::~PDGPUMetaballModel()
 {
     Instrumentor::Get().EndSession();
+}
+
+void PD::PDGPUMetaballModel::Start()
+{
+
 }
 
 void PD::PDGPUMetaballModel::Init()

@@ -81,6 +81,27 @@ Texture::~Texture()
     glDeleteTextures( 1, &_id );
 }
 
+void Texture::LoadFromFile( const std::string& path )
+{
+    glCreateTextures( GL_TEXTURE_2D, 1, &_id );
+    Bind();
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+    try
+    {
+        _img = LoadImageFile( path );
+    }
+    catch (std::exception)
+    {
+        _img = LoadImageFile( "res/img/default.jpg" );
+    }
+
+    UpdateData();
+}
+
 GLuint Texture::GetID() const noexcept
 {
     return _id;

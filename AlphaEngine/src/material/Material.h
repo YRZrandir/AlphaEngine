@@ -6,9 +6,7 @@
 #include "Texture.h"
 #include "ECS/ECS.h"
 
-class aiMaterial;
 class Shader;
-enum aiTextureType : int;
 
 const glm::vec3		DEFAULT_AMBIENT_COLOR( 0, 1, 0 );
 const glm::vec3		DEFAULT_DIFFUSE_COLOR( 0, 0.6, 1 );

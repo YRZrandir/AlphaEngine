@@ -2,12 +2,13 @@
 #include "PDMetaballModel.h"
 #include "util/CudaMatrixHelpers.h"
 #include "CudaPDSolver.cuh"
+#include "ECS/ECS.h"
 
 namespace PD
 {
 
 class PDGPUMetaballModel :
-    public SceneObject
+    public SceneObject, public Component
 {
 public:
     using Real = double;
@@ -65,8 +66,9 @@ public:
 
     PDGPUMetaballModel( const PDMetaballModelConfig& cfg, PDMetaballHalfEdgeMesh* mesh );
     virtual ~PDGPUMetaballModel() override;
-    void Init();
 
+    virtual void Start();
+    void Init();
     virtual void Update() override;
     virtual void Draw() override;
     void DrawGUI();

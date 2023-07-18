@@ -21,6 +21,7 @@ public:
     Texture&& operator==( Texture&& rh ) = delete;
     virtual ~Texture();
 
+    virtual void LoadFromFile( const std::string& path );
     Types			GetType() const noexcept;
     GLuint			GetID() const noexcept;
     std::string		GetPath() const noexcept;
@@ -51,6 +52,7 @@ class TextureDepth : public Texture
 public:
     TextureDepth( int width, int height );
     virtual void UpdateData() noexcept override;
+    virtual void LoadFromFile( const std::string& path ) override {};
 };
 
 class TextureDepthStencil : public Texture
@@ -58,6 +60,7 @@ class TextureDepthStencil : public Texture
 public:
     TextureDepthStencil( int width, int height );
     virtual void UpdateData() noexcept override;
+    virtual void LoadFromFile( const std::string& path ) override {};
 };
 
 class Texture2DArray : public Texture
@@ -66,6 +69,7 @@ public:
     Texture2DArray( int width, int height, int nb_channel, int nb_layer, unsigned char* data );
     Texture2DArray( int width, int height, int nb_channel, int nb_layer );
 
+    virtual void LoadFromFile( const std::string& path ) override {};
     virtual void Bind() const noexcept override;
     virtual void UpdateData() noexcept override;
     int GetNbLayer() const;
