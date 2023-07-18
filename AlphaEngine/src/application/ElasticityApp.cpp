@@ -6,6 +6,7 @@
 #include <string>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/type_index.hpp>
 
 #include "input/Input.h"
 #include "lighting/Light.h"
@@ -44,6 +45,8 @@
 #include "ECS/ECS.h"
 #include "ECS/RenderingSystem.h"
 #include "gl/HalfEdgeMeshRenderer.h"
+#include "gl/MBSkinMeshRenderer.h"
+#include "ECS/PhysicsSystem.h"
 
 namespace
 {
@@ -192,9 +195,6 @@ void ElasticityApp::Init()
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "GLLineSegments.glsl" ), "GLLineSegments" );
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "GLPoints.glsl" ), "GLPoints" );
     Shader::Add( std::make_unique<Shader>( SHADER_PATH + "bvh.glsl" ), "bvh" );
-
-
-    Shader::Find( "model" )->PrintShaderInfo();
 
 #ifdef EXAMPLE_COMPARE
     PD::PDMetaballModelConfig cfg{};
@@ -521,6 +521,7 @@ void ElasticityApp::Init()
 
     _systems.push_back( std::make_unique<HalfEdgeMeshSystem>() );
     _systems.push_back( std::make_unique<RenderingSystem>() );
+    _systems.push_back( std::make_unique<PhysicsSystem>() );
     auto ent0 = EntityManager::Get().AddEntity();
     EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
     EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
@@ -539,12 +540,30 @@ void ElasticityApp::Init()
     light_renderer->SetCastShadow( false );
     EntityManager::Get().AddComponent<Transform>( ent_light, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
     EntityManager::Get().AddComponent<Material>( ent_light );
-    EntityManager::Get().AddComponent<DirLight>( ent_light, "dirlight", glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
+    EntityManager::Get().AddComponent<DirLight>( ent_light, glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
 
-    auto ent_light2 = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<Transform>( ent_light2, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
-    EntityManager::Get().AddComponent<DirLight>( ent_light2, "dirlight2", glm::vec3( 0.5, -1, 0.5 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
-
+    auto elastic_obj = EntityManager::Get().AddEntity();
+    EntityManager::Get().AddComponent<PDMetaballHalfEdgeMesh>( elastic_obj, "D:/models/arma/armadillo_coarse.obj" );
+    PD::PDMetaballModelConfig cfg{};
+    cfg._method = 0;
+    cfg._coarse_surface = "D:/models/arma/armadillo_coarse.obj";
+    cfg._fine_surface = "res/models/cactus.obj";
+    cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
+    cfg._density = 1.0f;
+    cfg._sample_dx = 0.06f;
+    cfg._nb_lloyd = 5;
+    cfg._k_attach = 1000.0f;
+    cfg._k_stiff = 100.0f;
+    cfg._nb_points = 1000;
+    cfg._dt = 0.01f;
+    cfg._nb_solve = 5;
+    cfg._physical_step = 1;
+    cfg._const_type = 0;
+    cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f && v[1] > 0.3f; };
+    EntityManager::Get().AddComponent<PD::PDMetaballModelFC>( elastic_obj, cfg, nullptr );
+    auto mat = EntityManager::Get().AddComponent<Material>( elastic_obj );
+    mat->mShader = "model_pd";
+    EntityManager::Get().AddComponent<MBSkinMeshRenderer>( elastic_obj );
     GlobalTimer::Start();
 }
 
@@ -579,7 +598,7 @@ void ElasticityApp::PreDraw()
         {
             Scene::active->GetChild<HalfEdgeMesh>( "cy1" )->mTransform.Translate( glm::vec3( 0, -0.01, 0 ) );
             Scene::active->GetChild<HalfEdgeMesh>( "cy2" )->mTransform.Translate( glm::vec3( 0, -0.01, 0 ) );
-}
+        }
         rad += 0.01f;
     }
 #endif
@@ -661,75 +680,27 @@ void ElasticityApp::DrawGUI()
         ImGuiFileDialog::Instance()->Close();
     }
 
-    auto fem = Scene::active->GetChild<FEMSolver<double>>();
-    if (fem)
+    static unsigned selected_ent = 0;
+    if (Input::IsKeyDown( Input::Key::UP ))
     {
-        fem->DrawGUI();
+        selected_ent++;
+        selected_ent %= (EntityManager::Get().NumberOfEntities() + 1);
     }
 
-    auto metaballpd = Scene::active->GetChild<PD::PDMetaballModel>();
-    if (metaballpd)
+    if (selected_ent != 0)
     {
-        metaballpd->DrawGUI();
-
-        if (metaballpd->_simulate)
+        auto all_components = EntityManager::Get().GetComponentsOfEntity( selected_ent );
+        ImGui::Begin( "Components" );
+        for (Component& c : all_components)
         {
-            static int counter = 0;
-            static float fps = 0.f;
-            if (counter < 1000)
-            {
-                fps += GetIO().DeltaTime;
-                counter++;
-            }
-            else if (counter == 1000)
-            {
-                fps /= 1000;
-                fps = 1.f / fps;
-                std::cout << "Average FPS: " << fps << std::endl;
-                counter++;
-            }
+            std::string name = boost::typeindex::type_id_runtime( c ).pretty_name();
+            auto cutpos = name.rfind( ' ' );
+            if (cutpos != std::string::npos)
+                name = name.substr( name.rfind( ' ' ) + 1 );
+            ImGui::SeparatorText( name.c_str() );
+            c.DrawGUI();
         }
-    }
-
-    auto metaballpd2 = Scene::active->GetChild<PD::PDGPUMetaballModel>();
-    if (metaballpd2)
-    {
-        metaballpd2->DrawGUI();
-
-        if (metaballpd2->_simulate)
-        {
-            static int counter = 0;
-            static float fps = 0.f;
-            if (counter < 1000)
-            {
-                fps += GetIO().DeltaTime;
-                counter++;
-            }
-            else if (counter == 1000)
-            {
-                fps /= 1000;
-                fps = 1.f / fps;
-                std::cout << "Average FPS: " << fps << std::endl;
-                counter++;
-            }
-        }
-    }
-
-    auto metaballpbd = Scene::active->GetChild<PBD::MetaballModel>();
-    if (metaballpbd)
-    {
-        metaballpbd->DrawGUI();
-    }
-
-    auto tetpd = Scene::active->GetChild<PD::PDTetraModel>();
-    if (tetpd)
-    {
-        tetpd->DrawGUI();
-    }
-
-    for (auto cam : Scene::active->GetAllChildOfType<Camera>())
-    {
-        //cam->DrawGUI();
+        ImGui::End();
     }
 }
 

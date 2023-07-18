@@ -42,12 +42,12 @@ unsigned int ShaderStorageBuffer::GetSize() const
     return mSize;
 }
 
-void ShaderStorageBuffer::Bind()
+void ShaderStorageBuffer::Bind() const
 {
     glBindBuffer( GL_SHADER_STORAGE_BUFFER, mID );
 }
 
-void ShaderStorageBuffer::BindBufferBase( unsigned int index )
+void ShaderStorageBuffer::BindBufferBase( unsigned int index ) const
 {
     glBindBufferBase( GL_SHADER_STORAGE_BUFFER, index, mID );
 }

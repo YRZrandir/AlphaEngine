@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include <imgui/imgui.h>
 
 Transform::Transform()
     :mPos( 0.f, 0.f, 0.f ),
@@ -165,4 +166,17 @@ glm::mat4 Transform::GetScaleMat() const
 glm::vec3 Transform::GetScale() const
 {
     return mScale;
+}
+
+void Transform::DrawGUI()
+{
+    bool act0 = ImGui::DragFloat3( "position", &mPos.x, 1.f, -FLT_MAX, FLT_MAX );
+    bool act1 = ImGui::DragFloat3( "scale", &mScale.x, 1.f, -FLT_MAX, FLT_MAX );
+    glm::vec3 eulers = GetEulerAngleRadian();
+    bool act2 = ImGui::DragFloat3( "rotation", &eulers.x, 0.1f, -glm::pi<float>(), glm::pi<float>() );
+    if (act2)
+        mRotation = glm::toQuat( glm::orientate4( eulers ) );
+    if (act0 || act1 || act2)
+        UpdateModelMat();
+
 }

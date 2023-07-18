@@ -108,3 +108,14 @@ void Material::SetDiffuseColor( float r, float g, float b )
     p[2] = static_cast<unsigned char>(b * 255);
     mDiffuseTexture->UpdateData();
 }
+
+void Material::DrawGUI()
+{
+    ImGui::Text( "Albedo" );
+    ImGui::ImageButton( reinterpret_cast<void*>(mDiffuseTexture->GetID()), { 10, 10 } );
+    ImGui::Text( "Roughness" );
+    ImGui::ImageButton( reinterpret_cast<void*>(mRoughnessTexture->GetID()), { 10, 10 } );
+    ImGui::Text( "Metallic" );
+    ImGui::ImageButton( reinterpret_cast<void*>(mMetallicTexture->GetID()), { 10, 10 } );
+
+}

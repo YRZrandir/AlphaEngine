@@ -42,8 +42,8 @@ public:
     void SetShaderUniforms( Shader& shader ) const;
     void UpdateTextureUnits( GLuint minUnit );
     GLuint GetTextureUnitUsage() const;
-
     void SetDiffuseColor( float r, float g, float b );
+    virtual void DrawGUI();
 
     std::unique_ptr<Texture>	mDiffuseTexture = nullptr;
     std::unique_ptr<Texture>	mSpecularTexture = nullptr;

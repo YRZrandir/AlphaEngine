@@ -40,7 +40,7 @@ void CutManager::CutMesh()
 
     std::unordered_set<IntersectInfo, IntersectInfo::Hash, IntersectInfo::Pred> intersect_infos;
     bool point_on_lineseg[4] = { false, false, false, false };
-    for (int i = 0, s = _surface->GetFaceNumber(); i < s; i++)
+    for (size_t i = 0, s = _surface->GetFaceNumber(); i < s; i++)
     {
         auto& f = _surface->_faces[i];
         if (f.edge == -1)
@@ -259,7 +259,7 @@ void CutManager::CutMesh()
     Triangulation2d( all_points2d, &out_triangles, &out_points2d );
     std::vector<Triangle> out_triangles_lower = out_triangles;
 
-    int idx_start = _surface->_vertices.size();
+    size_t idx_start = _surface->_vertices.size();
     for (auto& tri : out_triangles)
     {
         tri.a += idx_start;
@@ -313,7 +313,7 @@ void CutManager::CutMesh()
         //std::cout << tri.a << ", " << tri.b << " , " << tri.c << "\n";
     }
 
-    int idx_start2 = _surface->_vertices.size();
+    size_t idx_start2 = _surface->_vertices.size();
     for (auto& tri : out_triangles_lower)
     {
         tri.a += idx_start2;

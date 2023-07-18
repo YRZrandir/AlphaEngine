@@ -4,8 +4,8 @@
 #include "util/util.h"
 #include "input/Input.h"
 
-Light::Light( const std::string& name )
-    :SceneObject( name )
+Light::Light()
+    :SceneObject()
 {
 }
 
@@ -23,8 +23,8 @@ void Light::SetAllLightUniforms( Shader& shader )
 std::unique_ptr<Texture2DArray> DirLight::_shadow_depth_texarray = nullptr;
 int DirLight::_instance_count = 0;
 
-DirLight::DirLight( const std::string& name, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular )
-    : Light( name ), dir( dir ), ambient( ambient ), diffuse( diffuse ), specular( specular ), intensity( intensity )
+DirLight::DirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular )
+    :dir( dir ), ambient( ambient ), diffuse( diffuse ), specular( specular ), intensity( intensity )
 {
     if (_shadow_depth_texarray == nullptr)
     {
@@ -110,8 +110,8 @@ void DirLight::CastShadow( bool value )
     _cast_shadow = value;
 }
 
-PointLight::PointLight( const std::string& name, glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp )
-    :Light( name ), _color( color ), _intensity( intensity ), _att_const( att_const ), _att_linear( att_linear ), _att_exp( att_exp )
+PointLight::PointLight( glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp )
+    :_color( color ), _intensity( intensity ), _att_const( att_const ), _att_linear( att_linear ), _att_exp( att_exp )
 {
     mTransform.SetPos( pos );
 }

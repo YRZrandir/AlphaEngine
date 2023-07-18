@@ -171,6 +171,7 @@ void ApplicationBase::ImguiInit()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL( _window, true );
     ImGui_ImplOpenGL3_Init( "#version 450" );

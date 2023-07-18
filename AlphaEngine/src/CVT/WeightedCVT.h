@@ -352,14 +352,14 @@ public:
                     RVD_.for_each_triangle(
                         ComputeCentroidsWeighted<Process::SpinLockArray>(
                             mg, m, master_->spinlocks_
-                            )
+                        )
                     );
                 }
                 else {
                     RVD_.for_each_triangle(
                         ComputeCentroids<Process::SpinLockArray>(
                             mg, m, master_->spinlocks_
-                            )
+                        )
                     );
                 }
             }
@@ -369,7 +369,7 @@ public:
                     RVD_.for_each_triangle(
                         ComputeCentroidsWeighted<NoLocks>(
                             mg, m, nolocks
-                            )
+                        )
                     );
                 }
                 else {
@@ -480,7 +480,7 @@ public:
                 }
                 else
                 {
-                    w[i] = 0.0001;
+                    w[i] = 0.0001f;
                 }
             }
 
@@ -501,7 +501,7 @@ public:
             geo_argused( t_adj );
             double cur_m = std::abs( Geom::tetra_volume<DIM>(
                 p0, p1, p2, p3
-                ) );
+            ) );
             locks_.acquire_spinlock( v );
             m_[v] += cur_m;
             WeightedCVT::_weights[v] += cur_m * wcm;
@@ -530,7 +530,7 @@ public:
                 RVD_.for_each_tetrahedron(
                     ComputeCentroidsVolumetric<Process::SpinLockArray>(
                         mg, m, RVD_.delaunay(), master_->spinlocks_
-                        )
+                    )
                 );
             }
             else {
@@ -538,7 +538,7 @@ public:
                 RVD_.for_each_tetrahedron(
                     ComputeCentroidsVolumetric<NoLocks>(
                         mg, m, RVD_.delaunay(), nolocks
-                        )
+                    )
                 );
             }
         }
@@ -759,14 +759,14 @@ public:
                     RVD_.for_each_triangle(
                         ComputeCVTFuncGradWeighted<Process::SpinLockArray>(
                             RVD_, f, g, master_->spinlocks_
-                            )
+                        )
                     );
                 }
                 else {
                     RVD_.for_each_triangle(
                         ComputeCVTFuncGrad<Process::SpinLockArray>(
                             RVD_, f, g, master_->spinlocks_
-                            )
+                        )
                     );
                 }
             }
@@ -776,14 +776,14 @@ public:
                     RVD_.for_each_triangle(
                         ComputeCVTFuncGradWeighted<NoLocks>(
                             RVD_, f, g, nolocks
-                            )
+                        )
                     );
                 }
                 else {
                     RVD_.for_each_triangle(
                         ComputeCVTFuncGrad<NoLocks>(
                             RVD_, f, g, nolocks
-                            )
+                        )
                     );
                 }
             }
@@ -914,7 +914,7 @@ public:
                 RVD_.for_each_volumetric_integration_simplex(
                     ComputeCVTFuncGradVolumetric<Process::SpinLockArray>(
                         RVD_, f, g, master_->spinlocks_
-                        )
+                    )
                 );
             }
             else {
@@ -922,7 +922,7 @@ public:
                 RVD_.for_each_volumetric_integration_simplex(
                     ComputeCVTFuncGradVolumetric<NoLocks>(
                         RVD_, f, g, nolocks
-                        )
+                    )
                 );
             }
         }
@@ -1720,7 +1720,7 @@ public:
 
         return mesh_generate_random_samples_on_surface<DIM>(
             *mesh_, p, nb_points, vertex_weight_, facets_begin_, facets_end_
-            );
+        );
     }
 
     bool compute_initial_sampling_in_volume(
@@ -1741,7 +1741,7 @@ public:
 
         return mesh_generate_random_samples_in_volume<DIM>(
             *mesh_, p, nb_points, vertex_weight_, tets_begin_, tets_end_
-            );
+        );
     }
 
     /**

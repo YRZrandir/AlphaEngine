@@ -241,6 +241,12 @@
     <ClCompile Include="src\ECS\RenderingSystem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\ECS\PhysicsSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gl\MBSkinMeshRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\acceleration\AABB.h">
@@ -514,6 +520,12 @@
     <ClInclude Include="src\ECS\RenderingSystem.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\ECS\PhysicsSystem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gl\MBSkinMeshRenderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\polar_decom\polar_decomposition_3x3.inl">
@@ -526,7 +538,6 @@
     <None Include="res\shaders\common\Material.glsl" />
     <None Include="res\shaders\common\Shadow.glsl" />
     <None Include="res\shaders\depth_pd.glsl" />
-    <None Include="..\..\QtCuttingSimulation\QtCuttingSimulation\res\shaders\line_segments.glsl" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\PBD\CudaPbdSolver.cu" />

@@ -29,7 +29,7 @@ void PBD::MetaballCutter::ProcessTotalCutRect( const Rect& rect )
 {
     std::cout << "Start Cut Metaball" << std::endl;
     std::vector<glm::vec3> ball_points = SamplePointsOnRemovedBallSurface();
-    std::vector<glm::vec3> rect_points = SamplePointsOnRect( rect, 0.01 );
+    std::vector<glm::vec3> rect_points = SamplePointsOnRect( rect, 0.01f );
     auto point_not_in_any_ball = [&]( glm::vec3& p ) {
         return !std::any_of( _model->BallList().begin(), _model->BallList().end(),
             [&]( Metaball& ball ) {

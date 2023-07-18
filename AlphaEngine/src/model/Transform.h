@@ -48,4 +48,6 @@ public:
     glm::vec3 GetPosition() const;
     glm::mat4 GetScaleMat() const;
     glm::vec3 GetScale() const;
+
+    virtual void DrawGUI();
 };

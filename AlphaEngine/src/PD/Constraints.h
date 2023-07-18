@@ -289,9 +289,9 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
             continue;
         Eigen::Vector3<T> xij = positions.col( j ) - positions.col( indices[0] );
 
-        float wij = 0.f;
-        float r = xij.norm();
-        float h = _avg_dist * 3;
+        T wij = 0.f;
+        T r = xij.norm();
+        T h = _avg_dist * 3;
         if (r < h)
             wij = ComputeW( r, h ) * _sphere_mesh->Ball( j ).m;
 
@@ -302,7 +302,7 @@ PD::MeshlessStrainConstraint<Sphere, T>::MeshlessStrainConstraint( const std::ve
     }
     A /= _wsum;
 
-    double detA = A.determinant();
+    T detA = A.determinant();
 
     if (std::abs( detA ) < 1e-8)
     {

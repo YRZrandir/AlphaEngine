@@ -179,10 +179,13 @@ public:
     void UpdateNormal();
     void UpdateAttrBuffer();
     void UpdatePosBuffer();
+    VertexArray& GetVAO();
+    const VertexArray& GetVAO() const;
 
     virtual void Update() override;
     virtual void Draw() override;
     virtual void DrawShadowDepth() override;
+    virtual void DrawGUI() override;
 
 protected:
     void InitOpenglObjects();

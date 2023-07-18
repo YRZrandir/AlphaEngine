@@ -1,11 +1,12 @@
 #pragma once
 #include "PDMetaballModel.h"
+#include "ECS/ECS.h"
 
 namespace PD
 {
 class SpatialHash;
 
-class PDMetaballModelFC : public SceneObject
+class PDMetaballModelFC : public SceneObject, public Component
 {
 public:
     using Real = float;
@@ -95,6 +96,7 @@ public:
     friend class PBDScene;
 
     PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
+    virtual void Start() override;
     void Init();
     void PhysicalUpdate();
     void UpdateSn();
@@ -104,11 +106,15 @@ public:
     virtual void Update() override;
     virtual void DrawShadowDepth() override;
     virtual void Draw() override;
-    void DrawGUI();
+    virtual void DrawGUI() override;
+    SphereMesh<Particle>& GetMetaballModel();
+    const SphereMesh<Particle>& GetMetaballModel() const;
+    const ShaderStorageBuffer& GetVtxSkinBuffer() const;
+    const ShaderStorageBuffer& GetBallSkinBuffer() const;
+    void UpdateSkinInfoBuffer();
 
 protected:
     void CreateSurfaceMapping();
-    void UpdateSkinInfoBuffer();
     void ComputeAinvForEdgeConsts();
 
 public:

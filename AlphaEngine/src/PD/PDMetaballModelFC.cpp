@@ -28,6 +28,12 @@ namespace PD
 PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface )
     :_cfg( config ), _surface( surface )
 {
+
+}
+
+void PDMetaballModelFC::Start()
+{
+    _surface = GetComponent<PDMetaballHalfEdgeMesh>();
     _mesh = std::make_unique<SphereMesh<Particle>>();
     _coarse_surface = std::make_unique<HalfEdgeMesh>( _cfg._coarse_surface );
 
@@ -72,7 +78,6 @@ PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHa
         r_avg += r;
     }
     r_avg /= _mesh->BallsNum();
-    std::cout << "avg r = " << r_avg << std::endl;
     for (int i = 0; i < _mesh->BallsNum(); ++i)
     {
         _mesh->Ball( i ).m_rel = _mesh->Ball( i ).m / m_max;
@@ -98,7 +103,7 @@ PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHa
     _color = COLORS[rand() % _countof( COLORS )] / 255.f;
 }
 
-void PD::PDMetaballModelFC::Init()
+void PDMetaballModelFC::Init()
 {
     int nb_points = _mesh->BallsNum();
     std::vector<Eigen::Triplet<Real, int>> m_triplets;
@@ -424,7 +429,6 @@ void PDMetaballModelFC::DrawShadowDepth()
 
 void PDMetaballModelFC::DrawGUI()
 {
-    ImGui::Begin( "metaball pd frictional contact" );
     if (ImGui::Button( "Init" ))
     {
         Init();
@@ -446,7 +450,16 @@ void PDMetaballModelFC::DrawGUI()
     //{
     //    _array_ext_forces.clear();
     //}
-    ImGui::End();
+}
+
+SphereMesh<PDMetaballModelFC::Particle>& PDMetaballModelFC::GetMetaballModel()
+{
+    return *_mesh;
+}
+
+const SphereMesh<PDMetaballModelFC::Particle>& PDMetaballModelFC::GetMetaballModel() const
+{
+    return *_mesh;
 }
 
 void PDMetaballModelFC::PhysicalUpdate()
@@ -1001,6 +1014,16 @@ void PD::PDMetaballModelFC::ComputeAinvForEdgeConsts()
             _Ainv_for_edge_consts[i] = A.inverse();
         }
     }
+}
+
+const ShaderStorageBuffer& PDMetaballModelFC::GetVtxSkinBuffer() const
+{
+    return *_skin_vtx_buffer;
+}
+
+const ShaderStorageBuffer& PDMetaballModelFC::GetBallSkinBuffer() const
+{
+    return *_skin_ball_buffer;
 }
 
 SpatialHash::SpatialHash( float dx )

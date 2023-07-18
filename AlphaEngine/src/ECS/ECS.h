@@ -8,6 +8,7 @@
 #include <string>
 #include <typeindex>
 #include <ranges>
+#include <imgui/imgui.h>
 #include "ECS.h"
 
 class Component;
@@ -228,6 +229,18 @@ public:
         return results;
     }
 
+    std::vector<std::reference_wrapper<Component>> GetComponentsOfEntity( unsigned ent ) const
+    {
+        if (!_entities.contains( ent ))
+            return {};
+        std::vector<std::reference_wrapper<Component>> result;
+        for (const auto& [tid, component] : _entities.at( ent )._components)
+        {
+            result.emplace_back( *component );
+        }
+        return result;
+    }
+
     void EraseEntity( unsigned ent )
     {
         for (auto& [ctype, ctable] : _components)
@@ -236,6 +249,11 @@ public:
         }
         _entity_readable_names.erase( ent );
         _entities.erase( ent );
+    }
+
+    size_t NumberOfEntities() const
+    {
+        return _entities.size();
     }
 
 protected:
@@ -266,6 +284,7 @@ public:
         return EntityManager::Get().GetComponent<ComponentType>( _ent );
     }
 
+    virtual void DrawGUI() {};
 protected:
     friend class EntityManager;
     Component() = default;

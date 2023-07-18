@@ -156,7 +156,7 @@ void FEMSolver<T>::PhysicalUpdate()
         Ds.col( 2 ) = _x.col( c ) - _x.col( d );
         Matrix3 F = Ds * _invDm[i];
 
-        float det = F.determinant();
+        auto det = F.determinant();
 
         Eigen::JacobiSVD<Matrix3> svd( F, Eigen::ComputeFullU | Eigen::ComputeFullV );
         Matrix3 R = svd.matrixU() * svd.matrixV().transpose();
@@ -216,7 +216,7 @@ void FEMSolver<T>::PhysicalUpdate()
             _f.col( i ) = Vector3( 0, 0, 0 );
         }
     }
-    rad += _config.dt * 0.1;
+    rad += _config.dt * 0.1f;
 
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start) << std::endl;
 

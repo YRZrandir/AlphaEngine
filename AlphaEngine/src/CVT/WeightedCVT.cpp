@@ -377,7 +377,7 @@ void WeightedCVT::WeightedLloyd( int nb_iter )
     int cur = 0;
     for (int j = 0; j < nb_points; j++) {
         _pts.push_back( glm::vec3( points_[cur], points_[cur + 1], points_[cur + 2] ) );
-        _radius.push_back( std::pow( m[j] * 3 / 4 / 3.14, 1.0 / 3.0 ) );
+        _radius.push_back( std::pow( m[j] * 3.f / 4.f / 3.14f, 1.f / 3.f ) );
 
         cur += dimension_;
     }
@@ -409,7 +409,7 @@ void WeightedCVT::WeightedLloyd( int nb_iter )
 
             glm::vec3 p = glm::vec3( points_[cur], points_[cur + 1], points_[cur + 2] );
             _pts.push_back( p );
-            _radius.push_back( std::pow( m[j] * 3 / 4 / 3.14, 1.0 / 3.0 ) );
+            _radius.push_back( std::pow( m[j] * 3.f / 4.f / 3.14f, 1.f / 3.f ) );
             cur += dimension_;
         }
 

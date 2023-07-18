@@ -1,6 +1,7 @@
 #include "RenderingSystem.h"
 #include "gl/Renderer.h"
 #include "gl/HalfEdgeMeshRenderer.h"
+#include "gl/MBSkinMeshRenderer.h"
 
 void RenderingSystem::Start()
 {
@@ -34,7 +35,9 @@ void RenderingSystem::OnPreRender()
 void RenderingSystem::OnRender()
 {
     auto all_halfedge_mesh_renderer = EntityManager::Get().GetComponentsRange<HalfEdgeMeshRenderer>();
+    auto all_pdskin_mesh_renderer = EntityManager::Get().GetComponentsRange<MBSkinMeshRenderer>();
 
+    //shadow depth textures
     float vp[4];
     glGetFloati_v( GL_VIEWPORT, 0, vp );
     glm::vec2 viewport_size = glm::vec2( vp[2], vp[3] );
@@ -53,18 +56,33 @@ void RenderingSystem::OnRender()
             Renderer::Get().UpdateTranformUniform();
             renderer.RenderShadowDepth();
         }
+
+        Renderer::Get().SetTransform( glm::identity<glm::mat4>() );
+        Renderer::Get().UpdateTranformUniform();
+        for (const auto& renderer : all_pdskin_mesh_renderer)
+        {
+            renderer.RenderShadowDepth();
+        }
     }
 
+    //rendering
     FrameBuffer::Unbind();
     Renderer::Get().SetCamera( Camera::current->mTransform.GetPosition(), Camera::current->GetViewMatrix(), Camera::current->GetProjectionMatrix() );
     Renderer::Get().UpdateCameraUniform();
-    glViewport( 0, 0, viewport_size.x, viewport_size.y );
+    glViewport( 0, 0, static_cast<GLsizei>(viewport_size.x), static_cast<GLsizei>(viewport_size.y) );
 
     for (const auto& renderer : all_halfedge_mesh_renderer)
     {
         auto transform = renderer.GetComponent<Transform>();
         Renderer::Get().SetTransform( transform->GetModelMat() );
         Renderer::Get().UpdateTranformUniform();
+        renderer.Render();
+    }
+
+    Renderer::Get().SetTransform( glm::identity<glm::mat4>() );
+    Renderer::Get().UpdateTranformUniform();
+    for (const auto& renderer : all_pdskin_mesh_renderer)
+    {
         renderer.Render();
     }
 }

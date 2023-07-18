@@ -171,6 +171,8 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\gl\MBSkinMeshRenderer.cpp" />
+    <ClCompile Include="src\ECS\PhysicsSystem.cpp" />
     <ClCompile Include="src\ECS\RenderingSystem.cpp" />
     <ClCompile Include="src\ECS\ECS.cpp" />
     <ClCompile Include="src\ECS\HalfEdgeMeshSystem.cpp" />
@@ -248,6 +250,8 @@
     <ClCompile Include="src\vr\OpenVRWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gl\MBSkinMeshRenderer.h" />
+    <ClInclude Include="src\ECS\PhysicsSystem.h" />
     <ClInclude Include="src\ECS\RenderingSystem.h" />
     <ClInclude Include="src\ECS\HalfEdgeMeshSystem.h" />
     <ClInclude Include="src\acceleration\AABB.h" />
@@ -349,7 +353,6 @@
     <CudaCompile Include="src\PD\CudaPDSolver.cu" />
     <ClCompile Include="src\util\CudaMatrixHelpers.cpp" />
     <CudaCompile Include="src\util\CudaVecHelper.cu" />
-    <None Include="..\..\QtCuttingSimulation\QtCuttingSimulation\res\shaders\line_segments.glsl" />
     <None Include="res\shaders\common\Material.glsl" />
     <None Include="res\shaders\common\Shadow.glsl" />
     <None Include="res\shaders\depth_pd.glsl" />

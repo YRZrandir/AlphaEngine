@@ -18,8 +18,8 @@ public:
 
     unsigned int GetID() const;
     unsigned int GetSize() const;
-    void Bind();
-    void BindBufferBase( unsigned int index );
+    void Bind() const;
+    void BindBufferBase( unsigned int index ) const;
     static void Unbind();
     void UpdateData( const void* data, unsigned int size, GLenum usage = GL_DYNAMIC_READ );
     void UpdateSubData( const void* data, unsigned int offset, unsigned int size );

@@ -68,7 +68,7 @@ struct CudaPDSystem
 {
     Real dt;
     int nb_points;
-    float gravity = 9.8;
+    float gravity = 9.8f;
 
     Real* m;
     vec3* q0;

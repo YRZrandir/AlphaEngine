@@ -13,7 +13,7 @@ class Shader;
 class Light : public SceneObject, public Component
 {
 public:
-    Light( const std::string& name );
+    Light();
     virtual void SetShaderUniforms( Shader& shader ) = 0;
     virtual void Update() = 0;
     virtual void Draw() = 0;
@@ -27,7 +27,7 @@ public:
 class DirLight : public Light
 {
 public:
-    DirLight( const std::string& name, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular );
+    DirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular );
     // 通过 Light 继承
     virtual void SetShaderUniforms( Shader& shader ) override;
     virtual void Update() override;
@@ -57,7 +57,7 @@ protected:
 class PointLight : public Light
 {
 public:
-    PointLight( const std::string& name, glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );
+    PointLight( glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );
     virtual void SetShaderUniforms( Shader& shader ) override;
     virtual void Update() override;
     virtual void Draw() override;

@@ -1526,6 +1526,21 @@ void HalfEdgeMesh::DrawShadowDepth()
     glDrawArrays( GL_TRIANGLES, 0, mRenderingVtxCount );
 }
 
+void HalfEdgeMesh::DrawGUI()
+{
+    ImGui::Text( "Vertices=%d; Faces=%d;", GetVertexNumber(), GetFaceNumber() );
+}
+
+VertexArray& HalfEdgeMesh::GetVAO()
+{
+    return *_vao;
+}
+
+const VertexArray& HalfEdgeMesh::GetVAO() const
+{
+    return *_vao;
+}
+
 HalfEdgeMesh::VertexAttr operator*( float s, const HalfEdgeMesh::VertexAttr& a )
 {
     return HalfEdgeMesh::VertexAttr{ a.normal* s, a.texcoord* s, a.color* s, a.tangent* s };
