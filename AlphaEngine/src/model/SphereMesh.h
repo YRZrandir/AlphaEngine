@@ -405,7 +405,7 @@ inline void SphereMesh<Sphere>::CreateFromSurfaceVoroOptimize( HalfEdgeMesh* mes
     for (int i = 0; i < pts.size(); i++)
     {
         float r = radius[i];
-        AddBall( pts[i], r );
+        AddBall( pts[i], r * 1.4 );
         _balls.back().neighbors = nei_lists[i];
         _balls.back().isborder = is_border[i] == -1;
         _balls.back().sdf = sdf[i];
@@ -521,8 +521,6 @@ inline void SphereMesh<Sphere>::CreateFromSurfaceUniform( HalfEdgeMesh* mesh, fl
             }
         }
     }
-
-    std::cout << "ParticleNum=" << BallsNum() << std::endl;
 
     for (int i = 0; i < BallsNum(); i++)
     {

@@ -10,13 +10,11 @@
 
 class Shader;
 
-class Light : public SceneObject, public Component
+class Light : public Component
 {
 public:
-    Light();
     virtual void SetShaderUniforms( Shader& shader ) = 0;
-    virtual void Update() = 0;
-    virtual void Draw() = 0;
+
     virtual glm::mat4 GetLightSpaceMat() const = 0;
     virtual glm::mat4 GetLightSpaceViewMat() const = 0;
     virtual glm::mat4 GetLightSpaceProjMat() const = 0;
@@ -27,11 +25,10 @@ public:
 class DirLight : public Light
 {
 public:
-    DirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::vec3 specular );
+    DirLight( glm::vec3 ambient, glm::vec3 diffuse, float intensity );
     // 通过 Light 继承
     virtual void SetShaderUniforms( Shader& shader ) override;
-    virtual void Update() override;
-    virtual void Draw() override;
+    virtual void DrawGUI() override;
     virtual glm::mat4 GetLightSpaceMat() const override;
     virtual glm::mat4 GetLightSpaceViewMat() const override;
     virtual glm::mat4 GetLightSpaceProjMat() const override;
@@ -39,11 +36,9 @@ public:
     bool CastShadow() const;
     void CastShadow( bool value );
 
-    glm::vec3 dir = glm::vec3( 0, -1, 0 );
     glm::vec3 ambient = glm::vec3( 0.04f );
     glm::vec3 diffuse = glm::vec3( 0.8f );
-    glm::vec3 specular = glm::vec3( 1.0f );
-    float intensity = 1.0f;
+    float _intensity = 1.0f;
     int id = 0;
 protected:
     friend class Light;
@@ -57,10 +52,8 @@ protected:
 class PointLight : public Light
 {
 public:
-    PointLight( glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );
+    PointLight( glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );
     virtual void SetShaderUniforms( Shader& shader ) override;
-    virtual void Update() override;
-    virtual void Draw() override;
     virtual glm::mat4 GetLightSpaceMat() const override;
     virtual glm::mat4 GetLightSpaceViewMat() const override;
     virtual glm::mat4 GetLightSpaceProjMat() const override;

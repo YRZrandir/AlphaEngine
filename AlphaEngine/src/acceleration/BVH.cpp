@@ -68,8 +68,8 @@ void BVHNode::Init()
         return;
     }
     BVHNode::sInit = true;
-    sVBO = std::make_unique<VertexBuffer>( sVertexData.data(), sVertexData.size() * sizeof( glm::vec3 ) );
-    sIBO = std::make_unique<IndexBuffer>( sIndexData.data(), sIndexData.size() );
+    sVBO = std::make_unique<VertexBuffer>( sVertexData.data(), static_cast<unsigned int>(sVertexData.size() * sizeof( glm::vec3 )) );
+    sIBO = std::make_unique<IndexBuffer>( sIndexData.data(), static_cast<unsigned>(sIndexData.size()) );
     VertexBufferLayout layout;
     layout.Push( GL_FLOAT, 3, 0 );
     sVBO->SetLayout( layout );

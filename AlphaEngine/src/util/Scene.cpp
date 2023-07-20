@@ -50,13 +50,13 @@ void Scene::SetUniformBuffers()
     Renderer::Get().ClearDirLights();
     for (const auto& light : dir_lights)
     {
-        Renderer::Get().AddDirLight( light->dir, light->ambient, light->diffuse, light->specular, light->intensity, light->GetLightSpaceMat() );
+        Renderer::Get().AddDirLight( light->GetComponent<Transform>()->Forward(), light->ambient, light->diffuse, light->_intensity, light->GetLightSpaceMat() );
     }
 
     auto point_lights = GetAllChildOfType<PointLight>();
     for (const auto& light : point_lights)
     {
-        Renderer::Get().AddPointLight( light->mTransform.GetPosition(), light->_color, light->_intensity, light->_att_const, light->_att_linear, light->_att_exp );
+        Renderer::Get().AddPointLight( light->GetComponent<Transform>()->GetPosition(), light->_color, light->_intensity, light->_att_const, light->_att_linear, light->_att_exp );
     }
 
     Renderer::Get().UpdateEnvUniforms();
@@ -82,7 +82,7 @@ void Scene::DrawShadowDepthBuffer()
         light->GetShadowDepthBuffer()->Bind();
         light->GetShadowDepthBuffer()->Clear();
 
-        Renderer::Get().SetCamera( light->mTransform.GetPosition(), light->GetLightSpaceViewMat(), light->GetLightSpaceProjMat() );
+        Renderer::Get().SetCamera( light->GetComponent<Transform>()->GetPosition(), light->GetLightSpaceViewMat(), light->GetLightSpaceProjMat() );
         Renderer::Get().UpdateCameraUniform();
 
         glViewport( 0, 0, light->GetShadowDepthBuffer()->Width(), light->GetShadowDepthBuffer()->Height() );
@@ -91,7 +91,6 @@ void Scene::DrawShadowDepthBuffer()
             SetUniformBuffersForObject( *child );
             child->DrawShadowDepth();
         }
-
     }
     FrameBuffer::Unbind();
     glViewport( 0, 0, viewport_size.x, viewport_size.y );

@@ -193,3 +193,36 @@ void PolarDecomposition( const Eigen::Matrix3<T>& A, Eigen::Matrix3<T>* R, Eigen
     }
 }
 
+template <typename FT>
+glm::vec<3, FT> GetAnyOrthoVec( glm::vec<3, FT> v )
+{
+    if (std::abs( v.x ) <= std::abs( v.y ) && std::abs( v.x ) <= std::abs( v.z ))
+    {
+        return glm::vec<3, FT>( 0, -v.z, v.y );
+    }
+    else if (std::abs( v.y ) <= std::abs( v.z ) && std::abs( v.y ) <= std::abs( v.x ))
+    {
+        return glm::vec<3, FT>( -v.z, 0, v.x );
+    }
+    else
+    {
+        return glm::vec<3, FT>( -v.y, v.x, 0 );
+    }
+}
+
+template <typename FT>
+Eigen::Vector3<FT> GetAnyOrthoVec( Eigen::Vector3<FT> v )
+{
+    if (std::abs( v.x() ) <= std::abs( v.y() ) && std::abs( v.x() ) <= std::abs( v.z() ))
+    {
+        return Eigen::Vector3<FT>( 0, -v.z(), v.y() );
+    }
+    else if (std::abs( v.y() ) <= std::abs( v.z() ) && std::abs( v.y() ) <= std::abs( v.x() ))
+    {
+        return Eigen::Vector3<FT>( -v.z(), 0, v.x() );
+    }
+    else
+    {
+        return Eigen::Vector3<FT>( -v.y(), v.x(), 0 );
+    }
+}

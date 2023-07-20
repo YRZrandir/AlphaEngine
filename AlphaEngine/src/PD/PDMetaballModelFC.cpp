@@ -25,8 +25,8 @@
 
 namespace PD
 {
-PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface )
-    :_cfg( config ), _surface( surface )
+PDMetaballModelFC::PDMetaballModelFC( PDMetaballModelConfig config )
+    :_cfg( config )
 {
 
 }
@@ -139,6 +139,7 @@ void PDMetaballModelFC::Init()
     {
         _mesh->Ball( i ).gu = Matrix3::Identity();
         _mesh->Ball( i ).R = Matrix3::Identity();
+        _mesh->Ball( i ).pmodel = this;
     }
     //for (int i = 0; i < _mesh->BallsNum(); i++)
     //{
@@ -630,13 +631,13 @@ void PDMetaballModelFC::PDSolve()
                 if (djn < 0)
                 {
                     rj.y() = -djn;
-                    if (djt.norm() <= -djn * 0.4f)
+                    if (djt.norm() <= -djn * 0.5f)
                     {
                         rj += -djt;
                     }
                     else
                     {
-                        rj += -0.4f * (-djn) * djt.normalized();
+                        rj += -0.5f * (-djn) * djt.normalized();
                     }
                 }
                 _ksi.col( contact.id ) += contact.R * rj;
@@ -680,22 +681,22 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 
     _contacts.clear();
 
-    //for (int i = 0; i < _mesh->BallsNum(); i++)
-    //{
-    //    Vector3 p = _x.col( i );
-    //    float r = _mesh->Ball( i ).r;
+    for (int i = 0; i < _mesh->BallsNum(); i++)
+    {
+        Vector3 p = _x.col( i );
+        float r = _mesh->Ball( i ).r;
 
-    //    Vector3 plane( 0, -1.0, 0 );
-    //    Vector3 plane_n( 0.0, 1, 0 );
-    //    plane_n.normalize();
+        Vector3 plane( 0, -1.0, 0 );
+        Vector3 plane_n( 0.0, 1, 0 );
+        plane_n.normalize();
 
-    //    float test = (p - plane).dot( plane_n );
-    //    if (test < r)
-    //    {
-    //        _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
-    //        _contacts.back().p = p + plane_n * (r - test);
-    //    }
-    //}
+        float test = (p - plane).dot( plane_n );
+        if (test < r)
+        {
+            _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
+            _contacts.back().p = p + plane_n * (r - test);
+        }
+    }
 
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
@@ -710,7 +711,8 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             if (ret.has_value())
             {
                 Vector3 n = ToEigen( ret->nc );
-                Vector3 tan = n.cross( Vector3( 1.1, 2.3, 4.5 ) ).normalized();
+                //Vector3 tan = n.cross( Vector3( 1.1, 2.3, 4.5 ) ).normalized();
+                Vector3 tan = GetAnyOrthoVec( n ).normalized();
 #pragma omp critical
                 {
                     _contacts.emplace_back( n, tan, i, 0 );
@@ -734,7 +736,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
         _contacts_vis->UpdateMem();
     }
 
-
+#pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
     {
         Vector3 p = _x.col( i );
@@ -745,8 +747,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             if (glm::distance2( rigid->GetPos(), ToGLM( p ) ) < (r + rigid->GetRadius()) * (r + rigid->GetRadius()))
             {
                 Vector3 n = (p - ToEigen( rigid->GetPos() )).normalized();
-                Vector3 test( 1.1f, 2.2f, 3.4f );
-                Vector3 t = n.cross( Vector3( 1.1f, 2.2f, 3.4f ) ).normalized();
+                Vector3 t = GetAnyOrthoVec( n ).normalized();
 #pragma omp critical
                 {
                     _contacts.emplace_back( n, t, i, 0 );
@@ -755,7 +756,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             }
         }
     }
-    return;
+    //return;
     if (table != nullptr)
     {
 #pragma omp parallel for
@@ -772,6 +773,8 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             {
                 if (si == sj)
                     continue;
+                if (si->pmodel == sj->pmodel)
+                    continue;
                 if (glm::distance( si->x0, sj->x0 ) < (si->r * 1.1f + sj->r * 1.1f))
                     continue;
                 if (std::any_of( si->neighbors.cbegin(), si->neighbors.cend(), [this, sj]( int nei ) { return &(_mesh->Ball( nei )) == sj; } ))
@@ -786,8 +789,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
                     Vector3 pci = pi0 + t * (pi - pi0);
                     Vector3 pcj = pj0 + t * (pj - pj0);
                     Vector3 n = (pci - pcj).normalized();
-                    Vector3 test( 1.1, 2.2, 3.4 );
-                    Vector3 tan = n.cross( test ).normalized();
+                    Vector3 tan = GetAnyOrthoVec( n ).normalized();
                     si->color = glm::vec3( 1, 0, 0 );
 #pragma omp critical
                     {
@@ -834,8 +836,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
                         Vector3 pci = pi0 + t * (pi - pi0);
                         Vector3 pcj = pj0 + t * (pj - pj0);
                         Vector3 n = (pci - pcj).normalized();
-                        Vector3 test( 1.1, 2.2, 3.4 );
-                        Vector3 tan = n.cross( test ).normalized();
+                        Vector3 tan = GetAnyOrthoVec( n ).normalized();
                         si->color = glm::vec3( 1, 0, 0 );
 #pragma omp critical
                         {
@@ -848,7 +849,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
                     //                    if (ret.has_value())
                     //                    {
                     //                        Vector3 n = (pi - pj).normalized();
-                    //                        Vector3 t = n.cross( Vector3( 1.1, 2.3, 3.7 ) ).normalized();
+                    //                        Vector3 t = GetAnyOrthoVec(n).normalized();
                     //#pragma omp critical
                     //                        {
                     //                            _contacts.emplace_back( n, t, i, 1 );

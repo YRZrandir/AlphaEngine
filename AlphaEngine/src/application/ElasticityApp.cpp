@@ -102,7 +102,7 @@ void UpdateHaptics2()
 
     glm::vec3 force( 0.f );
     float max_d = -1.f;
-    for (int hf = 0; hf < mesh->GetBorderFaceNum(); hf++)
+    for (unsigned hf = 0; hf < mesh->GetBorderFaceNum(); hf++)
     {
         const auto& face = mesh->mBorderFaces[hf];
         glm::vec3 p0 = points[face.a];
@@ -159,7 +159,7 @@ void ElasticityApp::Init()
     auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
     Camera::main = cam;
     Camera::current = Camera::main;
-    cam->mTransform.SetPos( glm::vec3( 0.0, 0.397, -1.0 ) );
+    cam->mTransform.SetPos( glm::vec3( 0.0, 1.0, -1.0 ) );
     cam->_yaw = 0.0f;
     cam->_pitch = 35.4f;
     //cam->mTransform.SetPos( glm::vec3( 0.582, -1.04, -3.09 ) );
@@ -501,7 +501,7 @@ void ElasticityApp::Init()
         }
     }
 
-    Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cube.obj" ) );
+
 #endif
 #ifdef TEST_HAPTIC
     auto rigid_box = Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cylinder.obj" ) );
@@ -527,42 +527,49 @@ void ElasticityApp::Init()
     EntityManager::Get().AddComponent<Transform>( ent0 );
     EntityManager::Get().AddComponent<Material>( ent0 );
 
-    auto ent1 = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent1, "D:/models/floor.obj" );
-    EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent1 );
-    EntityManager::Get().AddComponent<Transform>( ent1, glm::vec3( 0, -0.5, 0 ), glm::vec3( 2.f ), glm::quat() );
-    EntityManager::Get().AddComponent<Material>( ent1 );
+    //auto ent1 = EntityManager::Get().AddEntity();
+    //EntityManager::Get().AddComponent<HalfEdgeMesh>( ent1, "D:/models/box.obj" );
+    //EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent1 );
+    //EntityManager::Get().AddComponent<Transform>( ent1, glm::vec3( 0, 0, 0 ), glm::vec3( 1.f ), glm::quat() );
+    //EntityManager::Get().AddComponent<Material>( ent1 );
 
     auto ent_light = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent_light, "D:/models/ball.obj" );
-    auto light_renderer = EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent_light );
-    light_renderer->SetCastShadow( false );
     EntityManager::Get().AddComponent<Transform>( ent_light, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
-    EntityManager::Get().AddComponent<Material>( ent_light );
-    EntityManager::Get().AddComponent<DirLight>( ent_light, glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 0.f ), glm::vec3( 1.f ), 1.0f, glm::vec3( 1.f ) );
+    EntityManager::Get().AddComponent<DirLight>( ent_light, glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 1.f ), 1.0f );
 
-    auto elastic_obj = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<PDMetaballHalfEdgeMesh>( elastic_obj, "D:/models/arma/armadillo.obj" );
+
+    //Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/box.obj" ) );
     PD::PDMetaballModelConfig cfg{};
     cfg._method = 0;
-    cfg._coarse_surface = "D:/models/arma/armadillo_coarse.obj";
-    cfg._fine_surface = "res/models/cactus.obj";
+    cfg._coarse_surface = "D:/models/bunny/bunny.obj";
     cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
     cfg._density = 1.0f;
-    cfg._sample_dx = 0.06f;
-    cfg._nb_lloyd = 5;
-    cfg._k_attach = 1000.0f;
-    cfg._k_stiff = 100.0f;
-    cfg._nb_points = 1000;
-    cfg._dt = 0.01f;
-    cfg._nb_solve = 5;
-    cfg._physical_step = 1;
+    cfg._sample_dx = 0.03f;
+    cfg._nb_lloyd = 0;
+    cfg._k_attach = 200.0f;
+    cfg._k_stiff = 30.0f;
+    cfg._nb_points = 100;
+    cfg._dt = 0.005f;
+    cfg._nb_solve = 20;
     cfg._const_type = 0;
-    cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f && v[1] > 0.3f; };
-    EntityManager::Get().AddComponent<PD::PDGPUMetaballModel>( elastic_obj, cfg, nullptr );
-    auto mat = EntityManager::Get().AddComponent<Material>( elastic_obj );
-    mat->mShader = "model_pd";
-    EntityManager::Get().AddComponent<MBGPUSkinMeshRenderer>( elastic_obj );
+    //cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f && v[1] > 0.3f; };
+    for (int i = -1; i <= 0; i++)
+    {
+        for (int j = -1; j <= 0; j++)
+        {
+            for (int k = 1; k <= 2; k++)
+            {
+                cfg._displacement = glm::vec3( i, k, j ) * 0.5f;
+                cfg._displacement.y += 1.0f;
+                auto elastic_obj = EntityManager::Get().AddEntity();
+                EntityManager::Get().AddComponent<PDMetaballHalfEdgeMesh>( elastic_obj, "D:/models/bunny/bunnys.obj" );
+                EntityManager::Get().AddComponent<PD::PDMetaballModelFC>( elastic_obj, cfg );
+                auto mat = EntityManager::Get().AddComponent<Material>( elastic_obj );
+                mat->mShader = "model_pd";
+                EntityManager::Get().AddComponent<MBSkinMeshRenderer>( elastic_obj );
+            }
+        }
+    }
     GlobalTimer::Start();
 }
 
@@ -836,7 +843,7 @@ PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElemen
 
     auto surface = LoadPDMetaballHalfEdgeMesh( root->FirstChildElement( "FineSurface" ) );
 
-    auto model = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( config, surface ) );
+    auto model = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( config ) );
     if (root->FirstChildElement( "Name" ) != nullptr)
     {
         std::string name = get_elem_text( root, "Name" );

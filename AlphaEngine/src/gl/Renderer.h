@@ -26,15 +26,11 @@ protected:
 
     struct DirLightUniformBlock
     {
-        glm::vec3 dir;
-        float padding0;
-        glm::vec3 ambient;
-        float padding1;
-        glm::vec3 diffuse;
-        float padding2;
-        glm::vec3 specular;
-        float intensity;
         glm::mat4 light_space_mat;
+        glm::vec4 dir;
+        glm::vec4 ambient;
+        glm::vec4 diffuse;
+        float intensity;
     };
 
     struct PointLightUniformBlock
@@ -67,8 +63,8 @@ public:
     void UpdateTranformUniform();
     void UpdateCameraUniform();
 
-    void AddDirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float intensity, glm::mat4 light_space_mat );
-    void SetDirLight( unsigned id, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float intensity, glm::mat4 light_space_mat );
+    void AddDirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::mat4 light_space_mat );
+    void SetDirLight( unsigned id, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::mat4 light_space_mat );
     void ClearDirLights();
     void AddPointLight( glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );
     void SetPointLight( unsigned id, glm::vec3 pos, glm::vec3 color, float intensity, float att_const, float att_linear, float att_exp );

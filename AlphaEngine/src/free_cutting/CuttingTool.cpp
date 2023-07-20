@@ -81,9 +81,9 @@ glm::vec3 CuttingTool::LineIntersection( glm::vec3 ori, glm::vec3 end ) const
     float diff_x = end.x - ori.x;
     float diff_z = end.z - ori.z;
     if (glm::FloatEqual( diff_x, 0.0f ))
-        diff_x = 0.001 * glm::sign( diff_x );
+        diff_x = 0.001f * glm::sign( diff_x );
     if (glm::FloatEqual( diff_z, 0.0f ))
-        diff_z = 0.001 * glm::sign( diff_z );
+        diff_z = 0.001f * glm::sign( diff_z );
     float t[4] = {
         (width * 0.5f - ori.x) / diff_x,
         (-width * 0.5f - ori.x) / diff_x,
@@ -94,7 +94,7 @@ glm::vec3 CuttingTool::LineIntersection( glm::vec3 ori, glm::vec3 end ) const
     for (size_t i = 0; i < _countof( t ); i++)
     {
         if ((t[i] >= 0 && t[i] < t[idx]) || t[idx] < 0)
-            idx = i;
+            idx = static_cast<int>(i);
     }
 
     return ori + t[idx] * (end - ori);

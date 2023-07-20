@@ -89,7 +89,7 @@ inline void PolyhedronObjBulider<HDS, Item, Kernel>::operator()( HDS& hds )
     {
         typename HDS::Vertex_handle vh = builder.add_vertex( CGAL::Point_3<Kernel>( vertices[i], vertices[i + 1], vertices[i + 2] ) );
         vh->color = typename Kernel::Vector_3{ colors[i], colors[i + 1], colors[i + 2] };
-        vh->index = i / 3;
+        vh->index = static_cast<int>(i / 3);
     }
 
     for (size_t f = 0, size = shape.mesh.num_face_vertices.size(); f < size; ++f)
@@ -283,7 +283,7 @@ void CHalfEdgeMesh<Item, Kernel>::Draw()
     set_uniforms( *shader, &mTransform, _mat_main.get() );
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glDisable( GL_POLYGON_OFFSET_FILL );
-    glDrawArrays( GL_TRIANGLES, 0, this->size_of_facets() * 3 );
+    glDrawArrays( GL_TRIANGLES, 0, static_cast<GLsizei>(this->size_of_facets() * 3) );
     glDepthMask( true );
 }
 
@@ -317,12 +317,12 @@ void CHalfEdgeMesh<Item, Kernel>::UpdateBuffer()
         }
     }
 
-    _pos_vbo->UpdateData( _pos_buffer.data(), _pos_buffer.size() * sizeof( _pos_buffer[0] ) );
-    _normal_vbo->UpdateData( _normal_buffer.data(), _normal_buffer.size() * sizeof( _normal_buffer[0] ) );
-    _color_vbo->UpdateData( _color_buffer.data(), _color_buffer.size() * sizeof( _color_buffer[0] ) );
-    _tangent_vbo->UpdateData( _tangent_buffer.data(), _tangent_buffer.size() * sizeof( _tangent_buffer[0] ) );
-    _texcoord_vbo->UpdateData( _texcoord_buffer.data(), _texcoord_buffer.size() * sizeof( _texcoord_buffer[0] ) );
-    _index_vbo->UpdateData( _index_buffer.data(), _index_buffer.size() * sizeof( _index_buffer[0] ) );
+    _pos_vbo->UpdateData( _pos_buffer.data(), static_cast<unsigned>(_pos_buffer.size() * sizeof( _pos_buffer[0] )) );
+    _normal_vbo->UpdateData( _normal_buffer.data(), static_cast<unsigned>(_normal_buffer.size() * sizeof( _normal_buffer[0] )) );
+    _color_vbo->UpdateData( _color_buffer.data(), static_cast<unsigned>(_color_buffer.size() * sizeof( _color_buffer[0] )) );
+    _tangent_vbo->UpdateData( _tangent_buffer.data(), static_cast<unsigned>(_tangent_buffer.size() * sizeof( _tangent_buffer[0] )) );
+    _texcoord_vbo->UpdateData( _texcoord_buffer.data(), static_cast<unsigned>(_texcoord_buffer.size() * sizeof( _texcoord_buffer[0] )) );
+    _index_vbo->UpdateData( _index_buffer.data(), static_cast<unsigned>(_index_buffer.size() * sizeof( _index_buffer[0] )) );
 }
 
 template <ItemType Item, typename Kernel>
@@ -345,7 +345,7 @@ void CHalfEdgeMesh<Item, Kernel>::UpdateBuffer( BufferType type )
                 hh = hh->next();
             }
         }
-        _pos_vbo->UpdateData( _pos_buffer.data(), _pos_buffer.size() * sizeof( _pos_buffer[0] ) );
+        _pos_vbo->UpdateData( _pos_buffer.data(), static_cast<unsigned>(_pos_buffer.size() * sizeof( _pos_buffer[0] )) );
         break;
     }
     case CHalfEdgeMesh::BufferType::Normal:
@@ -361,7 +361,7 @@ void CHalfEdgeMesh<Item, Kernel>::UpdateBuffer( BufferType type )
                 hh = hh->next();
             }
         }
-        _normal_vbo->UpdateData( _normal_buffer.data(), _normal_buffer.size() * sizeof( _normal_buffer[0] ) );
+        _normal_vbo->UpdateData( _normal_buffer.data(), static_cast<unsigned>(_normal_buffer.size() * sizeof( _normal_buffer[0] )) );
         break;
     }
     case CHalfEdgeMesh::BufferType::Texcoord:

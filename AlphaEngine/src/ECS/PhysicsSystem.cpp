@@ -2,7 +2,7 @@
 #include <omp.h>
 #include "PD/PDMetaballModelFC.h"
 #include "PD/PDGPUMetaballModel.h"
-
+#define MT
 PhysicsSystem::PhysicsSystem()
 {
     _spatial_hash = std::make_unique<PD::SpatialHash>( 0.1 );

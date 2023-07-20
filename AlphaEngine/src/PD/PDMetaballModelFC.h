@@ -95,7 +95,7 @@ public:
 
     friend class PBDScene;
 
-    PDMetaballModelFC( PDMetaballModelConfig config, PDMetaballHalfEdgeMesh* surface );
+    PDMetaballModelFC( PDMetaballModelConfig config );
     virtual void Start() override;
     void Init();
     void PhysicalUpdate();
@@ -118,7 +118,7 @@ protected:
     void ComputeAinvForEdgeConsts();
 
 public:
-    bool _simulate = false;
+    bool _simulate = true;
 
 protected:
     friend class PD::SpatialHash;
@@ -128,8 +128,7 @@ protected:
     Matrix3X _x0;          //3*n
     SparseMatrix _M; //3n*3n
     SparseMatrix _Minv; //3n*3n
-
-    Matrix3X _x_last;;
+    Matrix3X _x_last;
     Matrix3X _x;       //3*n
     Matrix3X _v;       //3*n
     Matrix3X _pene;
@@ -155,7 +154,7 @@ protected:
     std::unique_ptr<HalfEdgeMesh> _coarse_surface;
 
     PDMetaballHalfEdgeMesh* _surface;
-    glm::vec3 _color;
+    glm::vec3 _color = glm::vec3{ 0, 0, 1 };
     std::vector<VtxSkinningInfo>        _vtx_skinning_table;
     std::vector<BallSkinningInfo>       _ball_skinning_infos;
     std::unique_ptr<ShaderStorageBuffer> _skin_vtx_buffer;
@@ -169,7 +168,7 @@ protected:
     std::vector<int> _attached_balls;
 
     int _hold_idx = -1;
-    glm::vec2 _init_cursor;
+    glm::vec2 _init_cursor = glm::vec2{ 0, 0 };
     std::unordered_map<int, Vector3> _ext_forces;
 
     bool _show_surface = true;

@@ -517,7 +517,7 @@ void SurfaceCurve::Clear()
 
 void SurfaceCurve::UpdateGPUMem()
 {
-    mVBO->UpdateData( mPoints.data(), mPoints.size() * sizeof( glm::vec3 ) );
+    mVBO->UpdateData( mPoints.data(), static_cast<unsigned>(mPoints.size() * sizeof( glm::vec3 )) );
 }
 
 void SurfaceCurve::Update()
@@ -536,11 +536,11 @@ void SurfaceCurve::Draw()
     shader->setMat( "uProjectionMat", Camera::current->GetProjectionMatrix() );
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     glLineWidth( 5.0f );
-    glDrawArrays( GL_LINE_STRIP, 0, mPoints.size() );
+    glDrawArrays( GL_LINE_STRIP, 0, static_cast<GLsizei>(mPoints.size()) );
     glLineWidth( 1.0f );
     shader->setVec( "uColor", glm::vec3( 1.0, 0.0, 0.0 ) );
     glPointSize( 5.0f );
-    glDrawArrays( GL_POINTS, 0, mPoints.size() );
+    glDrawArrays( GL_POINTS, 0, static_cast<GLsizei>(mPoints.size()) );
     glPointSize( 1.0f );
     glDisable( GL_POLYGON_OFFSET_LINE );
 }

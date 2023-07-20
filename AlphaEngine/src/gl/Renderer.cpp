@@ -56,29 +56,27 @@ void Renderer::UpdateCameraUniform()
     _camera_ubo->SetData( sizeof( CameraUniformBlock ), static_cast<void*>(&_camera_ubo_info), GL_DYNAMIC_DRAW );
 }
 
-void Renderer::AddDirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float intensity, glm::mat4 light_space_mat )
+void Renderer::AddDirLight( glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::mat4 light_space_mat )
 {
     if (_lights_ubo_info.nb_dirlights >= _lights_ubo_info.dirlights.size())
         return;
     auto& light = _lights_ubo_info.dirlights[_lights_ubo_info.nb_dirlights];
-    light.dir = dir;
-    light.ambient = ambient;
-    light.diffuse = diffuse;
-    light.specular = specular;
+    light.dir = glm::vec4( dir, 1.f );
+    light.ambient = glm::vec4( ambient, 1.f );
+    light.diffuse = glm::vec4( diffuse, 1.f );
     light.intensity = intensity;
     light.light_space_mat = light_space_mat;
     _lights_ubo_info.nb_dirlights++;
 }
 
-void Renderer::SetDirLight( unsigned id, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float intensity, glm::mat4 light_space_mat )
+void Renderer::SetDirLight( unsigned id, glm::vec3 dir, glm::vec3 ambient, glm::vec3 diffuse, float intensity, glm::mat4 light_space_mat )
 {
     if (id >= _lights_ubo_info.nb_dirlights)
         return;
     auto& light = _lights_ubo_info.dirlights[id];
-    light.dir = dir;
-    light.ambient = ambient;
-    light.diffuse = diffuse;
-    light.specular = specular;
+    light.dir = glm::vec4( dir, 1.f );
+    light.ambient = glm::vec4( ambient, 1.f );
+    light.diffuse = glm::vec4( diffuse, 1.f );
     light.intensity = intensity;
     light.light_space_mat = light_space_mat;
 }
