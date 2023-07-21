@@ -109,8 +109,6 @@ private:
     Matrix3X _last_pos2;
     Matrix3X _x;       //3*n
     Matrix3X _v;       //3*n
-    Matrix3X _pene;
-    Matrix3X _friction;
     Matrix3X _momentum;         //3*n
     Matrix3X _f_ext;    //3*n
     std::vector<std::unique_ptr<Constraint<Real>>> _constraints;

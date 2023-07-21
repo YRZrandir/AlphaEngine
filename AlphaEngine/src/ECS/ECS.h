@@ -9,9 +9,9 @@
 #include <typeindex>
 #include <ranges>
 #include <imgui/imgui.h>
-#include "ECS.h"
 
 class Component;
+class Behavior;
 
 class Entity
 {
@@ -241,6 +241,8 @@ public:
         return result;
     }
 
+    std::vector<Behavior*> GetBehaviors() const;
+
     void EraseEntity( unsigned ent )
     {
         for (auto& [ctype, ctable] : _components)
@@ -295,6 +297,19 @@ private:
     unsigned _ent{ 0 };
 };
 
+class Behavior :
+    public Component
+{
+public:
+    virtual void Update() {}
+    virtual void OnPreRender() {}
+    virtual void OnRender() {}
+    virtual void OnPostRender() {}
+
+protected:
+    virtual void Start() override {}
+};
+
 class System
 {
 public:
@@ -304,4 +319,14 @@ public:
     virtual void OnPreRender() {};
     virtual void OnRender() {};
     virtual void OnPostRender() {};
+};
+
+class BehaviorSystem : public System
+{
+public:
+    virtual void Start();
+    virtual void Update();
+    virtual void OnPreRender();
+    virtual void OnRender();
+    virtual void OnPostRender();
 };

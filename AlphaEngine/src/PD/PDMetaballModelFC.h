@@ -6,7 +6,7 @@ namespace PD
 {
 class SpatialHash;
 
-class PDMetaballModelFC : public SceneObject, public Component
+class PDMetaballModelFC : public Component
 {
 public:
     using Real = float;
@@ -103,9 +103,20 @@ public:
     void PDSolve();
     void CollisionDetection( SpatialHash* table );
     void PostPhysicalUpdate();
-    virtual void Update() override;
-    virtual void DrawShadowDepth() override;
-    virtual void Draw() override;
+
+    void StartSimulation();
+    void StopSimulation();
+    bool IsSimulating() const;
+    void SimulateOneStep();
+    void AddExtForce( int ball_id, Vector3 f );
+    void SetExtForce( int ball_id, Vector3 f );
+    PDMetaballModelConfig& GetConfig();
+    const PDMetaballModelConfig& GetConfig() const;
+    const Matrix3X& GetRestPos() const;
+    const Matrix3X& GetCurrPos() const;
+    void ClearAttachConstraints();
+    void AddAttachConstraints( int ball_id );
+
     virtual void DrawGUI() override;
     SphereMesh<Particle>& GetMetaballModel();
     const SphereMesh<Particle>& GetMetaballModel() const;
@@ -125,17 +136,13 @@ protected:
     PDMetaballModelConfig _cfg;
 
     std::unique_ptr<SphereMesh<Particle>> _mesh;
-    Matrix3X _x0;          //3*n
     SparseMatrix _M; //3n*3n
-    SparseMatrix _Minv; //3n*3n
+    Matrix3X _x0; //3*n
     Matrix3X _x_last;
-    Matrix3X _x;       //3*n
-    Matrix3X _v;       //3*n
-    Matrix3X _pene;
-    Matrix3X _friction;
-    Matrix3X _momentum;         //3*n
-    Matrix3X _fext;    //3*n
-    Eigen::SimplicialLDLT<SparseMatrix> _llt;
+    Matrix3X _x; //3*n
+    Matrix3X _v; //3*n
+    Matrix3X _momentum; //3*n
+    Matrix3X _fext; //3*n
     SparseMatrix _AS;
     SparseMatrix _StAt;
     SparseMatrix _C;
@@ -144,34 +151,22 @@ protected:
     Matrix3X _bn_tilde;
     Matrix3X _f;
     Matrix3X _ksi;
-    Matrix3X _r;
-    MatrixX _J;
-
-    SparseMatrix _Dinv;
-    SparseMatrix _LU;
-    SparseMatrix _B;
+    Eigen::SimplicialLDLT<SparseMatrix> _llt;
 
     std::unique_ptr<HalfEdgeMesh> _coarse_surface;
 
-    PDMetaballHalfEdgeMesh* _surface;
-    glm::vec3 _color = glm::vec3{ 0, 0, 1 };
-    std::vector<VtxSkinningInfo>        _vtx_skinning_table;
-    std::vector<BallSkinningInfo>       _ball_skinning_infos;
+    PDMetaballHalfEdgeMesh* _surface{ nullptr };
+    std::vector<VtxSkinningInfo> _vtx_skinning_table;
+    std::vector<BallSkinningInfo> _ball_skinning_infos;
     std::unique_ptr<ShaderStorageBuffer> _skin_vtx_buffer;
     std::unique_ptr<ShaderStorageBuffer> _skin_ball_buffer;
 
     std::vector<std::unique_ptr<Constraint<Real>>> _constraints;
     std::vector<Matrix3> _Ainv_for_edge_consts;
     std::vector<std::vector<float>> _weights_for_edge_consts;
-
-    std::unordered_set<int> _select_balls;
-    std::vector<int> _attached_balls;
-
-    int _hold_idx = -1;
-    glm::vec2 _init_cursor = glm::vec2{ 0, 0 };
+    std::unordered_set<int> _attached_balls;
     std::unordered_map<int, Vector3> _ext_forces;
 
-    bool _show_surface = true;
     bool _show_balls = false;
     bool _show_contacts = false;
 
@@ -181,6 +176,32 @@ protected:
     std::vector<std::vector<int>> _contact_bylayer;
     std::vector<int> _contact_counter;
     std::unique_ptr<GLLineSegment> _contacts_vis;
+};
+
+class PDMetaballFCBehavior : public Behavior
+{
+public:
+    using Real = PDMetaballModelFC::Real;
+    using Vector2 = Eigen::Vector2<Real>;
+    using Vector3 = Eigen::Vector3<Real>;
+    using Vector4 = Eigen::Vector4<Real>;
+    using Matrix3 = Eigen::Matrix3<Real>;
+    using Matrix4 = Eigen::Matrix4<Real>;
+    using VectorX = Eigen::VectorX<Real>;
+    using MatrixX = Eigen::MatrixX<Real>;
+    using Matrix3X = Eigen::Matrix3X<Real>;
+    using MatrixX3 = Eigen::MatrixX3<Real>;
+    using SparseMatrix = Eigen::SparseMatrix<Real>;
+
+    virtual void Start() override;
+    virtual void Update() override;
+    virtual void DrawGUI() override;
+protected:
+    PDMetaballModelFC* _model{ nullptr };
+    int _hold_idx = -1;
+    glm::vec2 _init_cursor = glm::vec2{ 0, 0 };
+    std::unordered_set<int> _select_balls;
+
 };
 
 class SpatialHash

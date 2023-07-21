@@ -85,22 +85,6 @@ void PDMetaballModelFC::Start()
     Init();
 
     _contacts_vis = std::make_unique<GLLineSegment>();
-
-    const static glm::vec3 COLORS[] = {
-        glm::vec3( 99, 178, 238 ),
-        glm::vec3( 118, 218, 145 ),
-        glm::vec3( 248, 203, 127 ),
-        glm::vec3( 248, 149, 136 ),
-        glm::vec3( 124, 214, 207 ),
-        glm::vec3( 120, 152, 225 ),
-        glm::vec3( 239, 166, 102 ),
-        glm::vec3( 237, 221, 134 ),
-        glm::vec3( 153, 135, 206 ),
-        glm::vec3( 99, 178, 238 ),
-        glm::vec3( 118, 218, 145 )
-    };
-    std::srand( std::time( 0 ) );
-    _color = COLORS[rand() % _countof( COLORS )] / 255.f;
 }
 
 void PDMetaballModelFC::Init()
@@ -111,7 +95,6 @@ void PDMetaballModelFC::Init()
     _x.resize( 3, nb_points );
     _x0.resize( 3, nb_points );
     _v.resize( 3, nb_points );
-    _pene.resize( 3, nb_points );
     _fext.resize( 3, nb_points );
     _x_last.resize( 3, nb_points );
     _momentum.resize( 3, nb_points );
@@ -131,9 +114,7 @@ void PDMetaballModelFC::Init()
         _x_last.col( i ) = _x.col( i );
     }
     _M.resize( nb_points, nb_points );
-    _Minv.resize( nb_points, nb_points );
     _M.setFromTriplets( m_triplets.cbegin(), m_triplets.cend() );
-    _Minv.setFromTriplets( m_inv_triplets.cbegin(), m_inv_triplets.cend() );
 
     for (int i = 0; i < nb_points; i++)
     {
@@ -214,19 +195,16 @@ void PDMetaballModelFC::Init()
             x = _x0.coeff( 0, i );
             y = _x0.coeff( 1, i );
             z = _x0.coeff( 2, i );
-            bool val = parser.Eval();
-            if (val)
+            if (static_cast<bool>(parser.Eval()))
             {
-                _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
+                _attached_balls.insert( i );
             }
         }
     }
-    for (int i : _select_balls)
+    for (int i : _attached_balls)
     {
         _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _x0.col( i ) ) );
     }
-    _attached_balls = std::vector<int>( _select_balls.begin(), _select_balls.end() );
-    _select_balls.clear();
 
     std::vector<Eigen::Triplet<Real, int>> triplets;
     int total_id = 0;
@@ -235,9 +213,9 @@ void PDMetaballModelFC::Init()
         c->AddConstraint( triplets, total_id, 0.0f );
     }
     _p.setZero( 3, total_id );
-
     _AS.resize( total_id, nb_points );
     _AS.setFromTriplets( triplets.begin(), triplets.end() );
+
     triplets.clear();
     Eigen::SparseMatrix<Real> temp_StAt;
     temp_StAt.resize( total_id, nb_points );
@@ -252,180 +230,12 @@ void PDMetaballModelFC::Init()
 
     _C = _cfg._dt * _cfg._dt * _StAt * _AS;
     _P = _M + _C;
-
     _llt.compute( _P );
     if (_llt.info() != Eigen::ComputationInfo::Success)
         std::cout << "ERROR: " << _llt.info() << std::endl;
 
     std::cout << "Metaballs: " << nb_points << std::endl;
     std::cout << "ProjectVariable size: " << total_id << std::endl;
-}
-
-void PDMetaballModelFC::Update()
-{
-    InstrumentationTimer timer( "Update" );
-    if (Input::IsKeyDown( Input::Key::P ))
-    {
-        _simulate = !_simulate;
-    }
-    if (Input::IsMouseButtonDown( Input::MouseButton::Left ))
-    {
-        _hold_idx = -1;
-        glm::vec2 cursor = Input::GetMousePosition();
-        cursor.y = Camera::current->_viewport_size.y - cursor.y;
-        Ray r = Camera::current->ScreenPointToRay( cursor );
-
-        IntersectionRec rec;
-        rec.t = FLT_MAX;
-        bool intersect = false;
-        int id = -1;
-        for (int i = 0; i < _mesh->BallsNum(); ++i)
-        {
-            const auto& ball = _mesh->Ball( i );
-            if (RayBallIntersect( r, ball.x, ball.r, &rec, 0.f, rec.t ))
-            {
-                intersect = true;
-                id = i;
-            }
-        }
-
-        if (intersect)
-        {
-            _init_cursor = Input::GetMousePosition();
-        }
-        _hold_idx = id;
-
-        if (_hold_idx != -1 && Input::IsKeyHeld( Input::Key::LEFT_CONTROL ))
-        {
-            _select_balls.insert( _hold_idx );
-        }
-    }
-    if (_hold_idx != -1)
-    {
-        if (Input::IsMouseButtonHeld( Input::MouseButton::Left ))
-        {
-            glm::vec2 delta = Input::GetMousePosition() - _init_cursor;
-            glm::vec3 delta3d = -delta.x * Camera::current->mTransform.Left() - delta.y * Camera::current->mTransform.Up();
-            delta3d *= _cfg._force;
-            _ext_forces.insert( { _hold_idx, ToEigen( delta3d ) } );
-        }
-    }
-    if (Input::IsMouseButtonReleased( Input::MouseButton::Left ))
-    {
-        _hold_idx = -1;
-    }
-    if (Input::IsKeyDown( Input::Key::E ))
-    {
-        static float deg = 0.f;
-        glm::mat3 R = glm::rotate( glm::mat4( 1.f ), glm::radians( deg ), glm::normalize( glm::vec3( 0.2, 1, 0.5 ) ) );
-        deg += 10.f;
-        Matrix3 ER = ToEigen( R );
-        Vector3 cm0;
-        Vector3 cm;
-        cm0.setZero();
-        cm.setZero();
-        float m_sum = 0.f;
-        for (int i = 0; i < _mesh->BallsNum(); i++)
-        {
-            cm0 += _mesh->Ball( i ).m * _x0.col( i );
-            cm += _mesh->Ball( i ).m * _x.col( i );
-            m_sum += _mesh->Ball( i ).m;
-        }
-        cm0 /= m_sum;
-        cm /= m_sum;
-
-        for (int i = 0; i < _mesh->BallsNum(); i++)
-        {
-            Vector3 d0 = _x0.col( i ) - cm0;
-            _x.col( i ) = cm0 + ER * d0;
-        }
-
-        _simulate = false;
-    }
-    if (Input::IsKeyDown( Input::Key::O ))
-    {
-        _show_balls = !_show_balls;
-    }
-    if (Input::IsKeyDown( Input::Key::U ))
-    {
-        _show_surface = !_show_surface;
-    }
-    if (Input::IsKeyDown( Input::Key::L ))
-    {
-        PhysicalUpdate();
-    }
-    if (Input::IsKeyDown( Input::Key::K ))
-    {
-        CollisionDetection( nullptr );
-        PostPhysicalUpdate();
-    }
-
-    if (_simulate)
-    {
-        //for (size_t i = 0; i < _cfg._physical_step; i++)
-        //{
-        //    PhysicalUpdate();
-        //}
-    }
-
-    for (int i = 0; i < _mesh->BallsNum(); ++i)
-    {
-        _mesh->Ball( i ).x = ToGLM( _x.col( i ) );
-    }
-
-    //if (_cfg._const_type == 1)
-    //    ComputeBallOrit2();
-
-    UpdateSkinInfoBuffer();
-}
-
-void PDMetaballModelFC::Draw()
-{
-    if (_show_balls)
-    {
-        _mesh->Draw();
-        //_line_segments->Draw();
-    }
-
-    if (_show_surface)
-    {
-        _skin_vtx_buffer->BindBufferBase( 0 );
-        _skin_ball_buffer->BindBufferBase( 1 );
-        //_surface->_material_main->SetDiffuseColor( _color.x, _color.y, _color.z );
-        _surface->_material_main->mDiffuseColor = _color;
-        _surface->Draw();
-    }
-
-    Renderer::Get().SetTransform( _contacts_vis->mTransform.GetModelMat() );
-    Renderer::Get().UpdateTranformUniform();
-    if (_show_contacts)
-    {
-        _contacts_vis->Draw();
-    }
-    //for (auto& pair : _array_ext_forces)
-    //{
-    //    glm::vec3 start_pos = ToGLM( _current_pos.col( pair.first ).eval() );
-    //    glm::vec3 end_pos = ToGLM( (_current_pos.col( pair.first ) + pair.second.normalized() * 0.2f).eval() );
-    //    start_pos = start_pos + 0.05f * (end_pos - start_pos);
-    //    //_simple_ball->mTransform.SetPos( start_pos );
-    //    //_simple_ball->Draw();
-    //    _simple_ball->mTransform.SetPos( end_pos );
-    //    _simple_ball->Draw();
-    //    _simple_cylin->mTransform.SetPos( (start_pos + end_pos) * 0.5f );
-    //    _simple_cylin->mTransform.SetRotation( glm::fquat( glm::vec3( 0, 0, 1 ), glm::normalize( end_pos - start_pos ) ) );
-    //    _simple_cylin->mTransform.SetScale( glm::vec3( 0.1f, 0.1f, 0.145f ) );
-    //    _simple_cylin->Draw();
-    //}
-}
-
-void PDMetaballModelFC::DrawShadowDepth()
-{
-    if (_show_surface)
-    {
-        _skin_vtx_buffer->BindBufferBase( 0 );
-        _skin_ball_buffer->BindBufferBase( 1 );
-        _surface->DrawShadowDepth();
-    }
 }
 
 void PDMetaballModelFC::DrawGUI()
@@ -438,6 +248,11 @@ void PDMetaballModelFC::DrawGUI()
     ImGui::DragInt( "solve", &_cfg._nb_solve );
     ImGui::DragFloat( "stiffness", &_cfg._k_stiff, 1.0f, 0.0f, 5000.0f );
     ImGui::DragFloat( "force", &_cfg._force, 1.0f, 0.0f, 200.0f );
+    ImGui::Checkbox( "show balls", &_show_balls );
+    if (ImGui::Button( "one step" ))
+    {
+        SimulateOneStep();
+    }
     //if (ImGui::Button( "AddForce" ))
     //{
     //    _array_ext_forces.push_back( { 0, Vector3::Zero() } );
@@ -606,13 +421,13 @@ void PDMetaballModelFC::PDSolve()
                 if (djn < 0)
                 {
                     rj.y() = -djn;
-                    if (djt.norm() <= -djn * 0.1f)
+                    if (djt.norm() <= -djn * 0.5f)
                     {
                         rj += -djt;
                     }
                     else
                     {
-                        rj += -0.1f * (-djn) * djt.normalized();
+                        rj += -0.5f * (-djn) * djt.normalized();
                     }
                 }
                 _ksi.col( contact.id ) += contact.R * rj;
@@ -711,7 +526,6 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
             if (ret.has_value())
             {
                 Vector3 n = ToEigen( ret->nc );
-                //Vector3 tan = n.cross( Vector3( 1.1, 2.3, 4.5 ) ).normalized();
                 Vector3 tan = GetAnyOrthoVec( n ).normalized();
 #pragma omp critical
                 {
@@ -874,7 +688,73 @@ void PDMetaballModelFC::PostPhysicalUpdate()
     _ext_forces.clear();
 }
 
-void PD::PDMetaballModelFC::CreateSurfaceMapping()
+void PDMetaballModelFC::StartSimulation()
+{
+    _simulate = true;
+}
+
+void PDMetaballModelFC::StopSimulation()
+{
+    _simulate = false;
+}
+
+bool PDMetaballModelFC::IsSimulating() const
+{
+    return _simulate;
+}
+
+void PDMetaballModelFC::SimulateOneStep()
+{
+    UpdateSn();
+    CollisionDetection( nullptr );
+    PDSolve();
+    PostPhysicalUpdate();
+}
+
+void PDMetaballModelFC::AddExtForce( int ball_id, Vector3 f )
+{
+    if (_ext_forces.contains( ball_id ))
+        _ext_forces[ball_id] += f;
+    else
+        _ext_forces.insert( { ball_id, f } );
+}
+
+void PDMetaballModelFC::SetExtForce( int ball_id, Vector3 f )
+{
+    _ext_forces.insert( { ball_id, f } );
+}
+
+PDMetaballModelConfig& PDMetaballModelFC::GetConfig()
+{
+    return _cfg;
+}
+
+const PDMetaballModelConfig& PDMetaballModelFC::GetConfig() const
+{
+    return _cfg;
+}
+
+const PDMetaballModelFC::Matrix3X& PDMetaballModelFC::GetRestPos() const
+{
+    return _x0;
+}
+
+const PDMetaballModelFC::Matrix3X& PDMetaballModelFC::GetCurrPos() const
+{
+    return _x;
+}
+
+void PDMetaballModelFC::ClearAttachConstraints()
+{
+    _attached_balls.clear();
+}
+
+void PDMetaballModelFC::AddAttachConstraints( int ball_id )
+{
+    _attached_balls.insert( ball_id );
+}
+
+void PDMetaballModelFC::CreateSurfaceMapping()
 {
     auto start = std::chrono::high_resolution_clock::now();
     _vtx_skinning_table.resize( _surface->GetVertexNumber() );
@@ -926,7 +806,7 @@ void PD::PDMetaballModelFC::CreateSurfaceMapping()
     std::cout << "CreateSurfaceMapping: " << duration.count() << std::endl;
 }
 
-void PD::PDMetaballModelFC::UpdateSkinInfoBuffer()
+void PDMetaballModelFC::UpdateSkinInfoBuffer()
 {
     /*
     * single thread: 1000balls, 40~50 microsec.
@@ -934,6 +814,8 @@ void PD::PDMetaballModelFC::UpdateSkinInfoBuffer()
     */
     //using hrc = std::chrono::high_resolution_clock;
     //auto start_t = hrc::now();
+
+    //TODO: Add orientation computation when use edge constraints.
 
     _ball_skinning_infos.resize( _mesh->BallsNum() );
 #pragma omp parallel
@@ -970,7 +852,7 @@ void PD::PDMetaballModelFC::UpdateSkinInfoBuffer()
     _skin_ball_buffer->UpdateData( _ball_skinning_infos.data(), _ball_skinning_infos.size() * sizeof( _ball_skinning_infos[0] ), GL_DYNAMIC_DRAW );
 }
 
-void PD::PDMetaballModelFC::ComputeAinvForEdgeConsts()
+void PDMetaballModelFC::ComputeAinvForEdgeConsts()
 {
     _Ainv_for_edge_consts.resize( _mesh->BallsNum() );
     _weights_for_edge_consts.resize( _mesh->BallsNum() );
@@ -1014,6 +896,85 @@ void PD::PDMetaballModelFC::ComputeAinvForEdgeConsts()
         {
             _Ainv_for_edge_consts[i] = A.inverse();
         }
+    }
+}
+
+void PDMetaballFCBehavior::Start()
+{
+    _model = GetComponent<PDMetaballModelFC>();
+}
+
+void PDMetaballFCBehavior::Update()
+{
+    if (Input::IsMouseButtonDown( Input::MouseButton::Left ))
+    {
+        _hold_idx = -1;
+        glm::vec2 cursor = Input::GetMousePosition();
+        cursor.y = Camera::current->_viewport_size.y - cursor.y;
+        Ray r = Camera::current->ScreenPointToRay( cursor );
+
+        IntersectionRec rec;
+        rec.t = FLT_MAX;
+        bool intersect = false;
+        int id = -1;
+        for (int i = 0; i < _model->GetMetaballModel().BallsNum(); ++i)
+        {
+            const auto& ball = _model->GetMetaballModel().Ball( i );
+            if (RayBallIntersect( r, ball.x, ball.r, &rec, 0.f, rec.t ))
+            {
+                intersect = true;
+                id = i;
+            }
+        }
+
+        if (intersect)
+        {
+            _init_cursor = Input::GetMousePosition();
+        }
+        _hold_idx = id;
+
+        if (_hold_idx != -1 && Input::IsKeyHeld( Input::Key::LEFT_CONTROL ))
+        {
+            _select_balls.insert( _hold_idx );
+        }
+    }
+    if (_hold_idx != -1)
+    {
+        if (Input::IsMouseButtonHeld( Input::MouseButton::Left ))
+        {
+            glm::vec2 delta = Input::GetMousePosition() - _init_cursor;
+            glm::vec3 delta3d = -delta.x * Camera::current->mTransform.Left() - delta.y * Camera::current->mTransform.Up();
+            delta3d *= _model->GetConfig()._force;
+            _model->SetExtForce( _hold_idx, ToEigen( delta3d ) );
+        }
+    }
+    if (Input::IsMouseButtonReleased( Input::MouseButton::Left ))
+    {
+        _hold_idx = -1;
+    }
+}
+
+void PDMetaballFCBehavior::DrawGUI()
+{
+    std::stringstream ss;
+    ss << "Selection: ";
+    for (int id : _select_balls)
+    {
+        ss << id << " ";
+    }
+    ImGui::Text( ss.str().c_str() );
+    if (ImGui::Button( "Clear Selection" ))
+    {
+        _select_balls.clear();
+    }
+    if (ImGui::Button( "AttachSelectedBalls" ))
+    {
+        _model->ClearAttachConstraints();
+        for (int id : _select_balls)
+        {
+            _model->AddAttachConstraints( id );
+        }
+        _model->Init();
     }
 }
 

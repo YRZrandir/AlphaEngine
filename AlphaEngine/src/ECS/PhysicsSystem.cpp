@@ -11,10 +11,6 @@ PhysicsSystem::PhysicsSystem()
 void PhysicsSystem::Update()
 {
     auto pd_metaball_fc_models = EntityManager::Get().GetAllComponentOfType<PD::PDMetaballModelFC>();
-    for (auto model : pd_metaball_fc_models)
-    {
-        model->Update();
-    }
     for (int i = 0; i < _substeps; i++)
     {
 #ifdef MT

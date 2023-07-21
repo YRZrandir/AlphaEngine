@@ -4,6 +4,9 @@
 #include <tinycolormap.hpp>
 #include <omp.h>
 #include <cstdlib>
+#include <muParser.h>
+#include <boost/locale.hpp>
+
 #include "cuda_gl_interop.h"
 #include "CVT/WeightedCVT.h"
 #include "input/Input.h"
@@ -206,16 +209,28 @@ void PD::PDGPUMetaballModel::Init()
         }
         ComputeAinvForEdgeConsts();
     }
-    if (_cfg._attach_filter != nullptr)
+    if (!_cfg._attach_points_filter.empty())
     {
-        for (int i = 0; i < nb_points; ++i)
+        double x{ 0.0 };
+        double y{ 0.0 };
+        double z{ 0.0 };
+        mu::Parser parser;
+        parser.DefineVar( L"x", &x );
+        parser.DefineVar( L"y", &y );
+        parser.DefineVar( L"z", &z );
+        parser.SetExpr( boost::locale::conv::utf_to_utf<wchar_t>( _cfg._attach_points_filter ) );
+        for (int i = 0; i < nb_points; i++)
         {
-            if (_cfg._attach_filter( _mesh->Ball( i ).x0 ))
+            x = _rest_pos.coeff( 0, i );
+            y = _rest_pos.coeff( 1, i );
+            z = _rest_pos.coeff( 2, i );
+            if ((bool)parser.Eval())
             {
                 _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
             }
         }
     }
+
     for (int i : _select_balls)
     {
         _constraints.push_back( std::make_unique<AttachConstraint<Real>>( i, _cfg._k_attach, _rest_pos.col( i ) ) );
@@ -567,7 +582,6 @@ void PD::PDGPUMetaballModel::Draw()
             MapSurface();
             _surface->Draw();
         }
-        //_surface->_material_main->SetDiffuseColor( _color.x, _color.y, _color.z );
     }
 
     for (auto& pair : _array_ext_forces)

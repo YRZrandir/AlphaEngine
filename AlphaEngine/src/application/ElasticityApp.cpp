@@ -521,6 +521,7 @@ void ElasticityApp::Init()
 
     _systems.push_back( std::make_unique<RenderingSystem>() );
     _systems.push_back( std::make_unique<PhysicsSystem>() );
+    _systems.push_back( std::make_unique<BehaviorSystem>() );
     auto ent0 = EntityManager::Get().AddEntity();
     EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
     EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
@@ -540,11 +541,11 @@ void ElasticityApp::Init()
 
     //Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/box.obj" ) );
     PD::PDMetaballModelConfig cfg{};
-    cfg._method = 0;
+    cfg._method = 1;
     cfg._coarse_surface = "D:/models/bunny/bunny.obj";
     cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
     cfg._density = 1.0f;
-    cfg._sample_dx = 0.03f;
+    cfg._sample_dx = 0.05f;
     cfg._nb_lloyd = 0;
     cfg._k_attach = 200.0f;
     cfg._k_stiff = 30.0f;
@@ -552,8 +553,7 @@ void ElasticityApp::Init()
     cfg._dt = 0.005f;
     cfg._nb_solve = 20;
     cfg._const_type = 0;
-    //cfg._attach_filter = []( glm::vec3 v )->bool { return v[0] < -0.3f && v[1] > 0.3f; };
-    for (int i = -1; i <= 0; i++)
+    for (int i = 0; i <= 0; i++)
     {
         for (int j = -1; j <= 0; j++)
         {
@@ -567,6 +567,7 @@ void ElasticityApp::Init()
                 auto mat = EntityManager::Get().AddComponent<Material>( elastic_obj );
                 mat->mShader = "model_pd";
                 EntityManager::Get().AddComponent<MBSkinMeshRenderer>( elastic_obj );
+                EntityManager::Get().AddComponent<PD::PDMetaballFCBehavior>( elastic_obj );
             }
         }
     }
@@ -703,8 +704,12 @@ void ElasticityApp::DrawGUI()
             auto cutpos = name.rfind( ' ' );
             if (cutpos != std::string::npos)
                 name = name.substr( name.rfind( ' ' ) + 1 );
-            ImGui::SeparatorText( name.c_str() );
-            c.DrawGUI();
+            if (ImGui::TreeNode( name.c_str() ))
+            {
+                c.DrawGUI();
+                ImGui::TreePop();
+            }
+
         }
         ImGui::End();
     }
@@ -750,7 +755,6 @@ PD::PDGPUMetaballModel* ElasticityApp::LoadPDGPUMetaballModel( tinyxml2::XMLElem
     config._dt = std::stof( get_elem_text( root, "dt" ) );
     config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
     config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    config._attach_filter = []( glm::vec3 v )->bool { return  v[1] > 0.3f && v[0] > 0.3f; };
 
     std::stringstream ss( get_elem_text( root, "Displacement" ) );
     ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
@@ -814,42 +818,6 @@ PD::PDMetaballModel* ElasticityApp::LoadPDMetaballModel( tinyxml2::XMLElement* r
     }
 
     return model;
-}
-
-PD::PDMetaballModelFC* ElasticityApp::LoadPDMetaballModelFC( tinyxml2::XMLElement* root )
-{
-    auto get_elem_text = []( const tinyxml2::XMLElement* parent, const char* name ) {
-        return parent->FirstChildElement( name )->GetText();
-    };
-
-    PD::PDMetaballModelConfig config;
-    config._method = std::stoi( get_elem_text( root, "MetaballGenMethod" ) );
-    config._coarse_surface = boost::algorithm::trim_copy( std::string( get_elem_text( root, "Surface" ) ) );
-    if (config._method == 2)
-        config._metaball_path = boost::algorithm::trim_copy( std::string( get_elem_text( root, "MetaballFile" ) ) );
-    config._density = std::stof( get_elem_text( root, "Density" ) );
-    config._sample_dx = std::stof( get_elem_text( root, "Sampledx" ) );
-    config._nb_lloyd = std::stoi( get_elem_text( root, "NumberLloyd" ) );
-    config._k_attach = std::stof( get_elem_text( root, "K_Attach" ) );
-    config._k_stiff = std::stof( get_elem_text( root, "K_Stiff" ) );
-    config._k_edge_stiff = config._k_stiff;
-    config._nb_points = std::stoi( get_elem_text( root, "NumberPoints" ) );
-    config._dt = std::stof( get_elem_text( root, "dt" ) );
-    config._nb_solve = std::stoi( get_elem_text( root, "NumberSolve" ) );
-    config._const_type = std::stoi( get_elem_text( root, "ConstraintType" ) );
-    config._attach_points_filter = std::string( get_elem_text( root, "AttachPointsFilter" ) );
-    std::stringstream ss( get_elem_text( root, "Displacement" ) );
-    ss >> config._displacement.x >> config._displacement.y >> config._displacement.z;
-
-    auto surface = LoadPDMetaballHalfEdgeMesh( root->FirstChildElement( "FineSurface" ) );
-
-    auto model = Scene::active->AddChild( std::make_unique<PD::PDMetaballModelFC>( config ) );
-    if (root->FirstChildElement( "Name" ) != nullptr)
-    {
-        std::string name = get_elem_text( root, "Name" );
-        model->mName = name;
-    }
-    return  model;
 }
 
 HalfEdgeMesh* ElasticityApp::LoadMesh( tinyxml2::XMLElement* root )
@@ -1024,10 +992,6 @@ void ElasticityApp::LoadSceneFile( const char* filename )
             else if (std::strcmp( child->Name(), "PDMetaballModel" ) == 0)
             {
                 LoadPDMetaballModel( child );
-            }
-            else if (std::strcmp( child->Name(), "PDMetaballModelFC" ) == 0)
-            {
-                LoadPDMetaballModelFC( child );
             }
             else if (std::strcmp( child->Name(), "Mesh" ) == 0)
             {

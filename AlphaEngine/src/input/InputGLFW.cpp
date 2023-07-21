@@ -1,7 +1,7 @@
 #include "InputGLFW.h"
 #include <iostream>
 
-const std::unordered_map<InputGLFW::GlfwKey, Input::Key> InputGLFW::kKeyMap = 
+const std::unordered_map<InputGLFW::GlfwKey, Input::Key> InputGLFW::kKeyMap =
 {
     { GLFW_KEY_UNKNOWN        , Input::Key::UNKNOWN      },
     { GLFW_KEY_SPACE          , Input::Key::SPACE        },
@@ -124,16 +124,16 @@ const std::unordered_map<InputGLFW::GlfwKey, Input::Key> InputGLFW::kKeyMap =
     { GLFW_KEY_MENU           , Input::Key::MENU         }
 };
 
-Input::Key InputGLFW::GetKey(InputGLFW::GlfwKey key)
+Input::Key InputGLFW::GetKey( InputGLFW::GlfwKey key )
 {
-    if (kKeyMap.find(key) != kKeyMap.end())
+    if (kKeyMap.find( key ) != kKeyMap.end())
     {
-        return kKeyMap.at(key);
+        return kKeyMap.at( key );
     }
     return Input::Key::UNKNOWN;
 }
 
-Input::MouseButton InputGLFW::GetMouseButton(InputGLFW::GlfwMouseButton button)
+Input::MouseButton InputGLFW::GetMouseButton( InputGLFW::GlfwMouseButton button )
 {
     switch (button)
     {
@@ -147,21 +147,21 @@ Input::MouseButton InputGLFW::GetMouseButton(InputGLFW::GlfwMouseButton button)
         return Input::MouseButton::Middle;
         break;
     default:
-        //TODO: exception here
+        __debugbreak();
         break;
     }
 }
 
-void InputGLFW::KeyCallback(GLFWwindow* window, GlfwKey glfwKey, int scancode, GlfwAction action, int modbits)
+void InputGLFW::KeyCallback( GLFWwindow* window, GlfwKey glfwKey, int scancode, GlfwAction action, int modbits )
 {
-    Input::Key key = GetKey(glfwKey);
+    Input::Key key = GetKey( glfwKey );
     unsigned int index = static_cast<unsigned>(key);
     switch (action)
     {
     case GLFW_REPEAT:
         break;
     case GLFW_PRESS:
-        if (Input::IsKeyHeld(key) || Input::IsKeyDown(key))
+        if (Input::IsKeyHeld( key ) || Input::IsKeyDown( key ))
         {
             Input::mInput->mKeyStatus[index] = Input::Status::Held;
         }
@@ -171,7 +171,7 @@ void InputGLFW::KeyCallback(GLFWwindow* window, GlfwKey glfwKey, int scancode, G
         }
         break;
     case GLFW_RELEASE:
-        if (Input::IsKeyHeld(key) || Input::IsKeyDown(key))
+        if (Input::IsKeyHeld( key ) || Input::IsKeyDown( key ))
         {
             Input::mInput->mKeyStatus[index] = Input::Status::Up;
         }
@@ -181,35 +181,35 @@ void InputGLFW::KeyCallback(GLFWwindow* window, GlfwKey glfwKey, int scancode, G
         }
         break;
     default:
-        //TODO: exception here
+        __debugbreak();
         break;
     }
 }
 
-void InputGLFW::MousePosCallback(GLFWwindow* window, double x, double y)
+void InputGLFW::MousePosCallback( GLFWwindow* window, double x, double y )
 {
-    glm::vec2 newpos(x, y);
+    glm::vec2 newpos( x, y );
     Input::mInput->mMousePosDelta = newpos - Input::mInput->mMousePos;
     Input::mInput->mMousePos = newpos;
 }
 
-void InputGLFW::MouseButtonCallback(GLFWwindow* window, GlfwMouseButton glfwButton, GlfwAction action, int modbits)
+void InputGLFW::MouseButtonCallback( GLFWwindow* window, GlfwMouseButton glfwButton, GlfwAction action, int modbits )
 {
-    Input::MouseButton button = GetMouseButton(glfwButton);
+    Input::MouseButton button = GetMouseButton( glfwButton );
     switch (action)
     {
     case GLFW_PRESS:
-        if (Input::IsMouseButtonDown(button) || Input::IsMouseButtonHeld(button))
+        if (Input::IsMouseButtonDown( button ) || Input::IsMouseButtonHeld( button ))
         {
             Input::mInput->mMouseButtonStatus[static_cast<unsigned>(button)] = Input::Status::Held;
         }
         else
         {
             Input::mInput->mMouseButtonStatus[static_cast<unsigned>(button)] = Input::Status::Down;
-        }       
+        }
         break;
     case GLFW_RELEASE:
-        if (Input::IsMouseButtonDown(button) || Input::IsMouseButtonHeld(button))
+        if (Input::IsMouseButtonDown( button ) || Input::IsMouseButtonHeld( button ))
         {
             Input::mInput->mMouseButtonStatus[static_cast<unsigned>(button)] = Input::Status::Up;
         }
@@ -221,25 +221,25 @@ void InputGLFW::MouseButtonCallback(GLFWwindow* window, GlfwMouseButton glfwButt
     }
 }
 
-void InputGLFW::MouseScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
+void InputGLFW::MouseScrollCallback( GLFWwindow* window, double offsetX, double offsetY )
 {
-    Input::mInput->mMouseScrollDelta = glm::vec2(offsetX, offsetY);
+    Input::mInput->mMouseScrollDelta = glm::vec2( offsetX, offsetY );
 }
 
 InputGLFW::InputGLFW()
-    :InputGLFW(glfwGetCurrentContext())
+    :InputGLFW( glfwGetCurrentContext() )
 {
 }
 
-InputGLFW::InputGLFW(GLFWwindow* pGlfwWindow)
-    :mWindow(pGlfwWindow)
+InputGLFW::InputGLFW( GLFWwindow* pGlfwWindow )
+    :mWindow( pGlfwWindow )
 {
-    glfwSetKeyCallback(pGlfwWindow, InputGLFW::KeyCallback);
-    glfwSetCursorPosCallback(pGlfwWindow, InputGLFW::MousePosCallback);
-    glfwSetMouseButtonCallback(pGlfwWindow, InputGLFW::MouseButtonCallback);
-    glfwSetScrollCallback(pGlfwWindow, InputGLFW::MouseScrollCallback);
-    mKeyStatus.fill(Input::Status::Release);
-    mMouseButtonStatus.fill(Input::Status::Release);
+    glfwSetKeyCallback( pGlfwWindow, InputGLFW::KeyCallback );
+    glfwSetCursorPosCallback( pGlfwWindow, InputGLFW::MousePosCallback );
+    glfwSetMouseButtonCallback( pGlfwWindow, InputGLFW::MouseButtonCallback );
+    glfwSetScrollCallback( pGlfwWindow, InputGLFW::MouseScrollCallback );
+    mKeyStatus.fill( Input::Status::Release );
+    mMouseButtonStatus.fill( Input::Status::Release );
 }
 
 void InputGLFW::Update()
@@ -283,10 +283,10 @@ void InputGLFW::UpdateMouseButton()
 
 void InputGLFW::UpdateMousePos()
 {
-    mMousePosDelta = glm::vec2(0.f);
+    mMousePosDelta = glm::vec2( 0.f );
 }
 
 void InputGLFW::UpdateMouseScroll()
 {
-    mMouseScrollDelta = glm::vec2(0.f, 0.f);
+    mMouseScrollDelta = glm::vec2( 0.f, 0.f );
 }

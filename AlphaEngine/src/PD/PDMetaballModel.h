@@ -17,7 +17,6 @@ struct PDMetaballModelConfig
     int _method = 0; //0=optimization, 1=uniform, 2=sphere-tree
     std::string _coarse_surface;//A triangle mesh when _method==0 or 1
     std::string _metaball_path;//only when method == 2
-    std::string _fine_surface;
     float _sample_dx = 0.05f; //only used when _method==0 or 1
     float _density = 1.0f;
     float _k_stiff = 100.0f;
@@ -25,11 +24,9 @@ struct PDMetaballModelConfig
     float _k_edge_stiff = 0.8f;
     float _force = 100.f;
     float _dt = 0.033f; // time for a physical step
-    int _physical_step = 1;
     int _nb_solve = 5;
     int _nb_points = 100; //only used when _method==0;
     int _nb_lloyd = 5; //only used when _method==0;
-    std::function<bool( glm::vec3 )> _attach_filter = nullptr;
     std::string _attach_points_filter;
     int _const_type = 0; //0=meshless, 1=edge
     glm::vec3 _displacement = glm::vec3( 0.f );
