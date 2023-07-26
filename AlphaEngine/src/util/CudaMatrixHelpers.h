@@ -102,7 +102,7 @@ size_t CUDASpmvBufferSize( cusparseSpMatDescr_t M, cusparseDnVecDescr_t x, cuspa
     size_t buffer_size = 0;
     cusparseSpMV_bufferSize( sCuSparseContext, CUSPARSE_OPERATION_NON_TRANSPOSE,
         &alpha, M, x, &beta, y, datatype,
-        CUSPARSE_MV_ALG_DEFAULT, &buffer_size );
+        CUSPARSE_SPMV_ALG_DEFAULT, &buffer_size );
     return buffer_size;
 }
 
@@ -123,12 +123,12 @@ void CUDASpmv( cusparseSpMatDescr_t M, cusparseDnVecDescr_t x, cusparseDnVecDesc
         size_t buffer_size = 0;
         cusparseSpMV_bufferSize( sCuSparseContext, CUSPARSE_OPERATION_NON_TRANSPOSE,
             &alpha, M, x, &beta, y, datatype,
-            CUSPARSE_MV_ALG_DEFAULT, &buffer_size );
+            CUSPARSE_SPMV_ALG_DEFAULT, &buffer_size );
         cudaMalloc( &buffer, buffer_size );
     }
     cusparseSpMV( sCuSparseContext, CUSPARSE_OPERATION_NON_TRANSPOSE,
         &alpha, M, x, &beta, y, datatype,
-        CUSPARSE_MV_ALG_DEFAULT, buffer );
+        CUSPARSE_SPMV_ALG_DEFAULT, buffer );
     if (need_free)
     {
         cudaFree( buffer );

@@ -162,4 +162,19 @@ void Material::DrawGUI()
         ImGuiFileDialog::Instance()->Close();
     }
     ImGui::DragFloat( "Metallic", &mMetallic, 0.01f, 0.f, 1.f );
+
+    ImGui::Text( "Normal" );
+    if (ImGui::ImageButton( reinterpret_cast<void*>(mNormalTexture->GetID()), { 20, 20 } ))
+    {
+        ImGuiFileDialog::Instance()->OpenDialog( "Choose Image4", "Choose Image", "{.jpg,.png,.bmp,.jpeg}", ".", "" );
+    }
+    if (ImGuiFileDialog::Instance()->Display( "Choose Image4" ))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+            mNormalTexture->LoadFromFile( path );
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
 }

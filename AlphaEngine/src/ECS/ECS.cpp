@@ -2,6 +2,16 @@
 
 std::unique_ptr<EntityManager> EntityManager::_instance = nullptr;
 
+std::vector<unsigned> EntityManager::GetAllEntities() const
+{
+    std::vector<unsigned> result;
+    for (const auto& [id, ent] : _entities)
+    {
+        result.push_back( id );
+    }
+    return result;
+}
+
 std::vector<Behavior*> EntityManager::GetBehaviors() const
 {
     std::vector<Behavior*> results;

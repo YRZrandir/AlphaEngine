@@ -408,7 +408,7 @@ void PDMetaballModelFC::PDSolve()
             _ksi.row( r ).setZero();
         }
 
-#pragma omp parallel for
+        //#pragma omp parallel for
         for (int c = 0; c < _contacts.size(); c++)
         {
             const Contact& contact = _contacts[c];
@@ -496,22 +496,22 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 
     _contacts.clear();
 
-    for (int i = 0; i < _mesh->BallsNum(); i++)
-    {
-        Vector3 p = _x.col( i );
-        float r = _mesh->Ball( i ).r;
+    //for (int i = 0; i < _mesh->BallsNum(); i++)
+    //{
+    //    Vector3 p = _x.col( i );
+    //    float r = _mesh->Ball( i ).r;
 
-        Vector3 plane( 0, -1.0, 0 );
-        Vector3 plane_n( 0.0, 1, 0 );
-        plane_n.normalize();
+    //    Vector3 plane( 0, -1.0, 0 );
+    //    Vector3 plane_n( 0.0, 1, 0 );
+    //    plane_n.normalize();
 
-        float test = (p - plane).dot( plane_n );
-        if (test < r)
-        {
-            _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
-            _contacts.back().p = p + plane_n * (r - test);
-        }
-    }
+    //    float test = (p - plane).dot( plane_n );
+    //    if (test < r)
+    //    {
+    //        _contacts.emplace_back( plane_n, (Vector3( 0, 0, 1 ).cross( plane_n )).normalized(), i, 0 );
+    //        _contacts.back().p = p + plane_n * (r - test);
+    //    }
+    //}
 
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)
@@ -522,15 +522,25 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 
         for (auto rigid : rigid_bodys)
         {
-            auto ret = rigid->CheckMovingBall( ToGLM( xi0 ), ToGLM( xi ), r );
-            if (ret.has_value())
+            //            auto ret = rigid->CheckMovingBall( ToGLM( xi0 ), ToGLM( xi ), r );
+            //            if (ret.has_value())
+            //            {
+            //                Vector3 n = ToEigen( ret->nc ).cast<Real>();
+            //                Vector3 tan = GetAnyOrthoVec( n ).normalized();
+            //#pragma omp critical
+            //                {
+            //                    _contacts.emplace_back( n, tan, i, 0 );
+            //                    _contacts.back().p = ToEigen( ret->p ).cast<Real>();
+            //                }
+            //            }
+            auto result = rigid->CheckBall( ToGLM( xi.cast<float>() ), r, 0 );
+            for (auto& c : result)
             {
-                Vector3 n = ToEigen( ret->nc );
+                Vector3 n = ToEigen( c._n ).cast<Real>();
                 Vector3 tan = GetAnyOrthoVec( n ).normalized();
 #pragma omp critical
                 {
                     _contacts.emplace_back( n, tan, i, 0 );
-                    _contacts.back().p = ToEigen( ret->p );
                 }
             }
         }
@@ -558,14 +568,14 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 
         for (auto rigid : rigid_balls)
         {
-            if (glm::distance2( rigid->GetPos(), ToGLM( p ) ) < (r + rigid->GetRadius()) * (r + rigid->GetRadius()))
+            if (glm::distance2( rigid->GetPos(), ToGLM( p.cast<float>() ) ) < (r + rigid->GetRadius()) * (r + rigid->GetRadius()))
             {
-                Vector3 n = (p - ToEigen( rigid->GetPos() )).normalized();
+                Vector3 n = (p - ToEigen( rigid->GetPos() ).cast<Real>()).normalized();
                 Vector3 t = GetAnyOrthoVec( n ).normalized();
 #pragma omp critical
                 {
                     _contacts.emplace_back( n, t, i, 0 );
-                    _contacts.back().p = ToEigen( rigid->GetPos() ) + n * rigid->GetRadius();
+                    _contacts.back().p = ToEigen( rigid->GetPos() ).cast<Real>() + n * rigid->GetRadius();
                 }
             }
         }
@@ -578,7 +588,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
         {
             Vector3 pi = _x.col( i );
             Vector3 pi0 = _x_last.col( i );
-            float ri = _mesh->Ball( i ).r;
+            Real ri = _mesh->Ball( i ).r;
             Particle* si = &_mesh->Ball( i );
             si->color = glm::vec3( 0.8f );
             auto spheres_to_check = table->CheckIntersection( si );
@@ -594,9 +604,9 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
                 if (std::any_of( si->neighbors.cbegin(), si->neighbors.cend(), [this, sj]( int nei ) { return &(_mesh->Ball( nei )) == sj; } ))
                     continue;
 
-                Vector3 pj = ToEigen( sj->x );
+                Vector3 pj = ToEigen( sj->x ).cast<Real>();
                 Vector3 pj0 = sj->x_last;
-                float rj = sj->r;
+                Real rj = sj->r;
                 float t = 0.f;
                 if (TestMovingSphereSphere( ToGLM( pi0 ), ri * 1.1f, ToGLM( pi - pi0 ), ToGLM( pj0 ), rj * 1.1f, ToGLM( pj - pj0 ), &t ))
                 {
@@ -608,7 +618,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 #pragma omp critical
                     {
                         _contacts.emplace_back( n, tan, i, 1 );
-                        _contacts.back().uf = _contacts.back().R.transpose() * ToEigen( -sj->v );
+                        _contacts.back().uf = _contacts.back().R.transpose() * ToEigen( -sj->v ).cast<Real>();
                         _contacts.back().p = pci;
                     }
                 }
@@ -622,7 +632,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
         {
             Vector3 pi = _x.col( i );
             Vector3 pi0 = _x_last.col( i );
-            float ri = _mesh->Ball( i ).r;
+            Real ri = _mesh->Ball( i ).r;
             Particle* si = &_mesh->Ball( i );
             si->color = glm::vec3( 0.8 );
             for (auto model : pd_models)
@@ -634,9 +644,9 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
                 for (int j = 0; j < model->_mesh->BallsNum(); j++)
                 {
                     Particle* sj = &model->_mesh->Ball( j );
-                    Vector3 pj = ToEigen( sj->x );
+                    Vector3 pj = ToEigen( sj->x ).cast<Real>();
                     Vector3 pj0 = sj->x_last;
-                    float rj = sj->r;
+                    Real rj = sj->r;
                     if (si == sj)
                         continue;
                     if (glm::distance( si->x0, sj->x0 ) < (si->r + sj->r))
@@ -655,7 +665,7 @@ void PDMetaballModelFC::CollisionDetection( SpatialHash* table )
 #pragma omp critical
                         {
                             _contacts.emplace_back( n, tan, i, 1 );
-                            _contacts.back().uf = _contacts.back().R.transpose() * -ToEigen( -sj->v );
+                            _contacts.back().uf = _contacts.back().R.transpose() * -ToEigen( -sj->v ).cast<Real>();
                             _contacts.back().p = pci;
                         }
                     }
@@ -945,7 +955,7 @@ void PDMetaballFCBehavior::Update()
             glm::vec2 delta = Input::GetMousePosition() - _init_cursor;
             glm::vec3 delta3d = -delta.x * Camera::current->mTransform.Left() - delta.y * Camera::current->mTransform.Up();
             delta3d *= _model->GetConfig()._force;
-            _model->SetExtForce( _hold_idx, ToEigen( delta3d ) );
+            _model->SetExtForce( _hold_idx, ToEigen( delta3d ).cast<Real>() );
         }
     }
     if (Input::IsMouseButtonReleased( Input::MouseButton::Left ))
@@ -1003,8 +1013,8 @@ void SpatialHash::Insert( Sphere* s )
     {
         aabb_max[i] = std::max( aabb_max[i], s->x[i] + s->r * 1.1f );
         aabb_min[i] = std::min( aabb_min[i], s->x[i] - s->r * 1.1f );
-        aabb_max[i] = std::max( aabb_max[i], s->x_last[i] + s->r * 1.1f );
-        aabb_min[i] = std::min( aabb_min[i], s->x_last[i] - s->r * 1.1f );
+        aabb_max[i] = std::max( aabb_max[i], (float)(s->x_last[i] + s->r * 1.1f) );
+        aabb_min[i] = std::min( aabb_min[i], (float)(s->x_last[i] - s->r * 1.1f) );
     }
 
     int xmax = GridCoord( aabb_max.x() );
@@ -1039,8 +1049,8 @@ std::vector<SpatialHash::Sphere*> SpatialHash::CheckIntersection( Sphere* s ) co
     {
         aabb_max[i] = std::max( aabb_max[i], s->x[i] + s->r * 1.1f );
         aabb_min[i] = std::min( aabb_min[i], s->x[i] - s->r * 1.1f );
-        aabb_max[i] = std::max( aabb_max[i], s->x_last[i] + s->r * 1.1f );
-        aabb_min[i] = std::min( aabb_min[i], s->x_last[i] - s->r * 1.1f );
+        aabb_max[i] = std::max( aabb_max[i], (float)(s->x_last[i] + s->r * 1.1f) );
+        aabb_min[i] = std::min( aabb_min[i], (float)(s->x_last[i] - s->r * 1.1f) );
     }
     int xmax = GridCoord( aabb_max.x() );
     int ymax = GridCoord( aabb_max.y() );

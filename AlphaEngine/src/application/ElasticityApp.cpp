@@ -156,28 +156,9 @@ void ElasticityApp::Init()
     Scene::active = std::make_unique<PBDScene>( false );
 
     //Camera
-    auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 0.1, -2 ), 0.02f ) );
+    auto cam = Scene::active->AddChild( std::make_unique<FreeCamera>( "free", glm::vec3( 0, 2, -2 ), 0.02f ) );
     Camera::main = cam;
     Camera::current = Camera::main;
-    cam->mTransform.SetPos( glm::vec3( 0.0, 1.0, -1.0 ) );
-    cam->_yaw = 0.0f;
-    cam->_pitch = 35.4f;
-    //cam->mTransform.SetPos( glm::vec3( 0.582, -1.04, -3.09 ) );
-    //cam->_yaw = -12.6;
-    //cam->_pitch = -20.4;
-    /*
-    0.582, -1.04, -3.09
-    -12.6
-    -20.4
-    */
-
-    //Light
-    //Scene::active->AddChild( std::make_unique<PointLight>(
-    //    "uPointLights[0]",
-    //    glm::vec3( -1.4, 1.4, 2.5 ),
-    //    glm::vec3( 1, 1, 1 ),
-    //    70.0f,
-    //    1.0f, 0.2f, 0.1f ) );
 
     //Shaders
     const std::string SHADER_PATH = "res/shaders/";
@@ -522,40 +503,40 @@ void ElasticityApp::Init()
     _systems.push_back( std::make_unique<RenderingSystem>() );
     _systems.push_back( std::make_unique<PhysicsSystem>() );
     _systems.push_back( std::make_unique<BehaviorSystem>() );
-    auto ent0 = EntityManager::Get().AddEntity();
-    EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
-    EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
-    EntityManager::Get().AddComponent<Transform>( ent0 );
-    EntityManager::Get().AddComponent<Material>( ent0 );
+    //auto ent0 = EntityManager::Get().AddEntity();
+    //EntityManager::Get().AddComponent<HalfEdgeMesh>( ent0, "D:/models/ball.obj" );
+    //EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent0 );
+    //EntityManager::Get().AddComponent<Transform>( ent0 );
+    //EntityManager::Get().AddComponent<Material>( ent0 );
 
-    //auto ent1 = EntityManager::Get().AddEntity();
-    //EntityManager::Get().AddComponent<HalfEdgeMesh>( ent1, "D:/models/box.obj" );
-    //EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( ent1 );
-    //EntityManager::Get().AddComponent<Transform>( ent1, glm::vec3( 0, 0, 0 ), glm::vec3( 1.f ), glm::quat() );
-    //EntityManager::Get().AddComponent<Material>( ent1 );
+    Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/cube2.obj" ) );
+    auto floor_ent = EntityManager::Get().AddEntity( "floor" );
+    EntityManager::Get().AddComponent<HalfEdgeMesh>( floor_ent, "D:/models/cube2.obj" );
+    EntityManager::Get().AddComponent<HalfEdgeMeshRenderer>( floor_ent );
+    EntityManager::Get().AddComponent<Transform>( floor_ent );
+    EntityManager::Get().AddComponent<Material>( floor_ent );
 
-    auto ent_light = EntityManager::Get().AddEntity();
+    auto ent_light = EntityManager::Get().AddEntity( "dirlight" );
     EntityManager::Get().AddComponent<Transform>( ent_light, glm::vec3( 0, 2, 0 ), glm::vec3( 0.5f ), glm::quat() );
     EntityManager::Get().AddComponent<DirLight>( ent_light, glm::vec3( 0.1, -1, 0.1 ), glm::vec3( 1.f ), 1.0f );
 
-
-    //Scene::active->AddChild( std::make_unique<RigidStatic>( "D:/models/box.obj" ) );
     PD::PDMetaballModelConfig cfg{};
-    cfg._method = 1;
+    cfg._method = 0;
     cfg._coarse_surface = "D:/models/bunny/bunny.obj";
     cfg._metaball_path = "D:/models/duck/duck_coarse-medial.sph";
     cfg._density = 1.0f;
-    cfg._sample_dx = 0.05f;
+    cfg._sample_dx = 0.03f;
     cfg._nb_lloyd = 0;
     cfg._k_attach = 200.0f;
-    cfg._k_stiff = 30.0f;
-    cfg._nb_points = 100;
-    cfg._dt = 0.005f;
-    cfg._nb_solve = 20;
+    cfg._k_stiff = 10.0f;
+    cfg._nb_points = 48;
+    cfg._dt = 0.004f;
+    cfg._nb_solve = 15;
     cfg._const_type = 0;
-    for (int i = 0; i <= 0; i++)
+    cfg._displacement = glm::vec3( 0, 0, 0 );
+    for (int i = -1; i <= 1; i++)
     {
-        for (int j = -1; j <= 0; j++)
+        for (int j = -1; j <= 1; j++)
         {
             for (int k = 1; k <= 2; k++)
             {
@@ -688,11 +669,20 @@ void ElasticityApp::DrawGUI()
     }
 
     static unsigned selected_ent = 0;
-    if (Input::IsKeyDown( Input::Key::UP ))
+    ImGui::Begin( "Objects" );
+    for (unsigned int ent_id : EntityManager::Get().GetAllEntities())
     {
-        selected_ent++;
-        selected_ent %= (EntityManager::Get().NumberOfEntities() + 1);
+        auto name = EntityManager::Get().GetEntityName( ent_id );
+        if (name.empty())
+        {
+            name = "object" + std::to_string( ent_id );
+        }
+        if (ImGui::Button( name.c_str(), { 100, 20 } ))
+        {
+            selected_ent = ent_id;
+        }
     }
+    ImGui::End();
 
     if (selected_ent != 0)
     {

@@ -215,6 +215,8 @@ public:
         return ComponentRange<ComponentType>( _components[tid] );
     }
 
+    std::vector<unsigned> GetAllEntities() const;
+
     template <typename ComponentType>
     std::vector<unsigned> GetAllEntitiesWith() const
     {

@@ -54,7 +54,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -72,13 +72,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\DEP\cuda_12_1\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\DEP\cuda_12_1\lib\x64;D:\DEP\cuda_12_1\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;D:/DEP/include/boost-1_81;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\DEP\include\pcl-1.13;D:\Softwares\CUDA\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Softwares\CUDA\lib\x64;D:\Softwares\CUDA\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\DEP\include\pcl-1.13;D:\DEP\cuda_12_1\include;$(SolutionDir)CHAI3D\external\glew\include;$(SolutionDir)CHAI3D\src;$(SolutionDir)Imgui\include;$(SolutionDir)Geogram3rdparty;$(SolutionDir)Geogram;$(SolutionDir)SphereTree;$(SolutionDir)SDFGen;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\DEP\cuda_12_1\lib\x64;D:\DEP\cuda_12_1\lib;$(SolutionDir)Dep\lib;D:\DEP\lib;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(SolutionDir)Dep\include;D:/DEP/include;D:/DEP/include/boost-1_81;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -377,6 +377,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.8.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
   </ImportGroup>
 </Project>

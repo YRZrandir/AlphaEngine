@@ -175,7 +175,7 @@ void Transform::DrawGUI()
     glm::vec3 eulers = GetEulerAngleRadian();
     bool act2 = ImGui::DragFloat3( "rotation", &eulers.x, 0.1f, -glm::pi<float>(), glm::pi<float>() );
     if (act2)
-        mRotation = glm::toQuat( glm::orientate4( eulers ) );
+        SetRotation( eulers );
     if (act0 || act1 || act2)
         UpdateModelMat();
 

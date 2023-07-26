@@ -123,7 +123,6 @@ void PD::PDGPUMetaballModel::Init()
     _x.resize( 3, nb_points );
     _rest_pos.resize( 3, nb_points );
     _v.resize( 3, nb_points );
-    _pene.resize( 3, nb_points );
     _f_ext.resize( 3, nb_points );
     _last_pos.resize( 3, nb_points );
     _last_pos1.resize( 3, nb_points );
@@ -1069,8 +1068,6 @@ void PD::PDGPUMetaballModel::CollisionDetection()
     std::vector<PD::PDGPUMetaballModel*> pd_models = Scene::active->GetAllChildOfType<PD::PDGPUMetaballModel>();
     std::vector<RigidSDF*> rigid_sdfs = Scene::active->GetAllChildOfType<RigidSDF>();
     std::vector<RigidBall*> rigid_balls = Scene::active->GetAllChildOfType<RigidBall>();
-
-    _pene.fill( 0.f );
 
 #pragma omp parallel for
     for (int i = 0; i < _mesh->BallsNum(); i++)

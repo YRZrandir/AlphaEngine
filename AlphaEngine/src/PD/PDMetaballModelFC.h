@@ -9,7 +9,7 @@ class SpatialHash;
 class PDMetaballModelFC : public Component
 {
 public:
-    using Real = float;
+    using Real = double;
     using Vector2 = Eigen::Vector2<Real>;
     using Vector3 = Eigen::Vector3<Real>;
     using Vector4 = Eigen::Vector4<Real>;
